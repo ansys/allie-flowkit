@@ -1,5 +1,5 @@
-PyConv Shared types documentation |version|
-###########################################
+PyConv External functions documentation |version|
+#################################################
 
 
 .. toctree::
@@ -15,8 +15,8 @@ PyConv Shared types documentation |version|
 
       :material-regular:`code;48px`
 
-      Details the PyConv Shared types API, offering a comprehensive
-      reference for developers and users.
+      Details the PyConv external functions available for custom workflows,
+      offering a comprehensive reference for developers and users.
 
       +++
       .. button-link:: api_reference/index.html
