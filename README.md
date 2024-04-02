@@ -1,2 +1,3 @@
-# pyconv-external-functions
-PyConv repository holding external functions available through custom workflows
+# PyConv External functions
+
+External functions available for custom workflows in the PyConv project
