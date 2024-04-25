@@ -256,3 +256,12 @@ type summaryCounters struct {
 	ConstraintsAdded     int `json:"constraints_added"`
 	ConstraintsRemoved   int `json:"constraints_removed"`
 }
+
+// AppendMessageHistoryInput represents the input for the appendMessageHistory function.
+type AppendMessageHistoryRole string
+
+const (
+	user      AppendMessageHistoryRole = "user"
+	assistant AppendMessageHistoryRole = "assistant"
+	system    AppendMessageHistoryRole = "system"
+)

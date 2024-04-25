@@ -835,3 +835,34 @@ func CreateDbFilter(
 
 	return filters
 }
+
+// AppendMessageHistory appends a new message to the conversation history
+//
+// Parameters:
+//   - newMessage: the new message
+//   - role: the role of the message
+//   - history: the conversation history
+//
+// Returns:
+//   - updatedHistory: the updated conversation history
+func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, history []HistoricMessage) (updatedHistory []HistoricMessage) {
+	switch role {
+	case user:
+	case assistant:
+	case system:
+	default:
+		log.Printf("Invalid role: %v\n", role)
+		return history
+	}
+
+	// Create a new HistoricMessage
+	newMessageHistory := HistoricMessage{
+		Role:    string(role),
+		Content: newMessage,
+	}
+
+	// Append the new message to the history
+	history = append(history, newMessageHistory)
+
+	return history
+}
