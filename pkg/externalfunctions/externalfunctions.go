@@ -836,6 +836,15 @@ func CreateDbFilter(
 	return filters
 }
 
+// AppendMessageHistoryInput represents the input for the AppendMessageHistory function.
+type AppendMessageHistoryRole string
+
+const (
+	user      AppendMessageHistoryRole = "user"
+	assistant AppendMessageHistoryRole = "assistant"
+	system    AppendMessageHistoryRole = "system"
+)
+
 // AppendMessageHistory appends a new message to the conversation history
 //
 // Parameters:
