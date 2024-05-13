@@ -6,7 +6,7 @@ import os
 from ansys_sphinx_theme import ansys_logo_black, ansys_favicon, get_version_match
 
 # Project information
-project = "pyconv-externalfunctions"
+project = "allieflowkit-externalfunctions"
 copyright = f"(c) {datetime.now().year} ANSYS, Inc. All rights reserved"
 author = "ANSYS, Inc."
 
@@ -26,14 +26,14 @@ html_logo = ansys_logo_black
 html_favicon = ansys_favicon
 html_context = {
     "github_user": "ansys",
-    "github_repo": "pyconv-externalfunctions",
+    "github_repo": "allieflowkit-externalfunctions",
     "github_version": "main",
     "doc_path": "doc/source",
 }
 html_theme_options = {
-    "github_url": "https://github.com/ansys/pyconv-externalfunctions",
+    "github_url": "https://github.com/ansys/allieflowkit-externalfunctions",
     "additional_breadcrumbs": [
-        ("PyConv", "https://pyconv.docs.pyansys.com/"),
+        ("AllieFlowKit", "https://allieflowkit.docs.pyansys.com/"),
     ],
     "switcher": {
         "json_url": f"https://{cname}/versions.json",
