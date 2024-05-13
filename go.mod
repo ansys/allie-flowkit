@@ -1,3 +1,3 @@
-module github.com/ansys/pyconv-externalfunctions/pkg/externalfunctions
+module github.com/ansys/allieflowkit-externalfunctions/pkg/externalfunctions
 
 go 1.21
