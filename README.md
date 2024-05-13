@@ -1,3 +1,3 @@
-# PyConv External functions
+# AllieFlowKit External functions
 
-External functions available for custom workflows in the PyConv project
+External functions available for custom workflows in the AllieFlowKit project
