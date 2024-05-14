@@ -1,3 +1,3 @@
-# AllieFlowKit External functions
+# Allie FlowKit
 
-External functions available for custom workflows in the AllieFlowKit project
+External functions available for custom workflows in the Allie project
