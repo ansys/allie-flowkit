@@ -1,4 +1,4 @@
-AllieFlowKit External functions documentation |version|
+Allie Flow Kit documentation |version|
 #######################################################
 
 
@@ -15,7 +15,7 @@ AllieFlowKit External functions documentation |version|
 
       :material-regular:`code;48px`
 
-      Details the AllieFlowKit external functions available for custom workflows,
+      Details the Allie flow kit with external functions available for custom workflows,
       offering a comprehensive reference for developers and users.
 
       +++
