@@ -1,7 +1,5 @@
-ANSYS
-Ansys
-ansys
-PyConv External functions
-PyConv
+AllieFlowKit
+[Aa]llie
+(?i)Ansys
 API
 externalfunctions

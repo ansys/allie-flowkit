@@ -3,10 +3,10 @@
 from datetime import datetime
 import os
 
-from ansys_sphinx_theme import pyansys_logo_black, ansys_favicon, get_version_match
+from ansys_sphinx_theme import ansys_logo_black, ansys_favicon, get_version_match
 
 # Project information
-project = "pyconv-externalfunctions"
+project = "allie-flowkit"
 copyright = f"(c) {datetime.now().year} ANSYS, Inc. All rights reserved"
 author = "ANSYS, Inc."
 
@@ -22,18 +22,18 @@ cname = os.getenv("DOCUMENTATION_CNAME", "laughing-guide-5m1lvq6.pages.github.io
 # Select desired logo, theme, and declare the html title
 html_theme = "ansys_sphinx_theme"
 html_short_title = html_title = project
-html_logo = pyansys_logo_black
+html_logo = ansys_logo_black
 html_favicon = ansys_favicon
 html_context = {
     "github_user": "ansys",
-    "github_repo": "pyconv-externalfunctions",
+    "github_repo": "allie-flowkit",
     "github_version": "main",
     "doc_path": "doc/source",
 }
 html_theme_options = {
-    "github_url": "https://github.com/ansys/pyconv-externalfunctions",
+    "github_url": "https://github.com/ansys/allie-flowkit",
     "additional_breadcrumbs": [
-        ("PyConv", "https://pyconv.docs.pyansys.com/"),
+        ("Allie", "https://allie.docs.pyansys.com/"),
     ],
     "switcher": {
         "json_url": f"https://{cname}/versions.json",
