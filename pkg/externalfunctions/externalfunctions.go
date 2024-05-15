@@ -9,6 +9,26 @@ import (
 	"net/http"
 )
 
+var ExternalFunctionsMap = map[string]interface{}{
+	"PerformVectorEmbeddingRequest":    PerformVectorEmbeddingRequest,
+	"PerformKeywordExtractionRequest":  PerformKeywordExtractionRequest,
+	"PerformGeneralRequest":            PerformGeneralRequest,
+	"PerformCodeLLMRequest":            PerformCodeLLMRequest,
+	"BuildLibraryContext":              BuildLibraryContext,
+	"SendVectorsToKnowledgeDB":         SendVectorsToKnowledgeDB,
+	"GetListCollections":               GetListCollections,
+	"RetrieveDependencies":             RetrieveDependencies,
+	"GeneralNeo4jQuery":                GeneralNeo4jQuery,
+	"GeneralQuery":                     GeneralQuery,
+	"BuildFinalQueryForCodeLLMRequest": BuildFinalQueryForCodeLLMRequest,
+	"SimilaritySearch":                 SimilaritySearch,
+	"CreateKeywordsDbFilter":           CreateKeywordsDbFilter,
+	"CreateTagsDbFilter":               CreateTagsDbFilter,
+	"CreateMetadataDbFilter":           CreateMetadataDbFilter,
+	"CreateDbFilter":                   CreateDbFilter,
+	"AppendMessageHistory":             AppendMessageHistory,
+}
+
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
 //
 // Parameters:
