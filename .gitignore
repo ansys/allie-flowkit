@@ -26,3 +26,4 @@ dist
 # Extra
 .venv
 doc/_build
+/config.yaml

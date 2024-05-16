@@ -1,0 +1,5 @@
+{
+    "reportGeneralTypeIssues": "warning",
+    "reportAttributeAccessIssue": "warning",
+    "typeCheckingMode": "basic"
+}
