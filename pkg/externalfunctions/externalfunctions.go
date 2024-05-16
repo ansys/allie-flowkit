@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/ansys/allie-flowkit/pkg/config"
 )
 
 var ExternalFunctionsMap = map[string]interface{}{
@@ -36,9 +38,12 @@ var ExternalFunctionsMap = map[string]interface{}{
 //
 // Returns:
 //   - embeddedVector: the embedded vector in float32 format
-func PerformVectorEmbeddingRequest(input string, llmHandlerEndpoint string) (embeddedVector []float32) {
+func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	// Log the request
 	log.Println("Performing vector embedding request for demand:", input)
+
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint)
@@ -75,7 +80,10 @@ func PerformVectorEmbeddingRequest(input string, llmHandlerEndpoint string) (emb
 //
 // Returns:
 //   - keywords: the keywords extracted from the input string as a slice of strings
-func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32, llmHandlerEndpoint string) (keywords []string) {
+func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (keywords []string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint)
 
@@ -116,7 +124,10 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32, llm
 // Returns:
 //   - message: the generated message
 //   - stream: the stream channel
-func PerformGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string, llmHandlerEndpoint string) (message string, stream *chan string) {
+func PerformGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint)
 
@@ -161,7 +172,10 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 // Returns:
 //   - message: the generated code
 //   - stream: the stream channel
-func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream bool, llmHandlerEndpoint string) (message string, stream *chan string) {
+func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream bool) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint)
 
@@ -229,7 +243,9 @@ func BuildLibraryContext(message string, libraryContext string) (messageWithCont
 //
 // Returns:
 //   - databaseResponse: an array of the most relevant data
-func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64, knowledgeDbEndpoint string) (databaseResponse []DbResponse) {
+func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64) (databaseResponse []DbResponse) {
+	// get the KnowledgeDB endpoint
+	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Log the request
 	log.Println("Connecting to the KnowledgeDB.")
@@ -342,7 +358,10 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 //
 // Returns:
 //   - collectionsList: the list of collections
-func GetListCollections(knowledgeDbEndpoint string) (collectionsList []string) {
+func GetListCollections() (collectionsList []string) {
+	// get the KnowledgeDB endpoint
+	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+
 	// Specify the target endpoint.
 	requestURL := knowledgeDbEndpoint + "/list_collections"
 
@@ -404,8 +423,9 @@ func RetrieveDependencies(
 	relationshipDirection string,
 	sourceDocumentId string,
 	nodeTypesFilter DbArrayFilter,
-	maxHopsNumber int,
-	knowledgeDbEndpoint string) (dependenciesIds []string) {
+	maxHopsNumber int) (dependenciesIds []string) {
+	// get the KnowledgeDB endpoint
+	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/retrieve_dependencies"
@@ -470,7 +490,10 @@ func RetrieveDependencies(
 //
 // Returns:
 //   - databaseResponse: the Neo4j response
-func GeneralNeo4jQuery(query string, knowledgeDbEndpoint string) (databaseResponse neo4jResponse) {
+func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
+	// get the KnowledgeDB endpoint
+	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/general_neo4j_query"
 
@@ -532,7 +555,10 @@ func GeneralNeo4jQuery(query string, knowledgeDbEndpoint string) (databaseRespon
 //
 // Returns:
 //   - databaseResponse: the query results
-func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters DbFilters, knowledgeDbEndpoint string) (databaseResponse []DbResponse) {
+func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters DbFilters) (databaseResponse []DbResponse) {
+	// get the KnowledgeDB endpoint
+	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/query"
 
@@ -670,8 +696,10 @@ func SimilaritySearch(
 	getLeafNodes bool,
 	getSiblings bool,
 	getParent bool,
-	getChildren bool,
-	knowledgeDbEndpoint string) (databaseResponse []DbResponse) {
+	getChildren bool) (databaseResponse []DbResponse) {
+	// get the KnowledgeDB endpoint
+	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/similarity_search"
 

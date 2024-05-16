@@ -48,12 +48,6 @@ func StartServer() {
 // - grpcdefinition.ListOfFunctions: a list of all available functions
 // - error: an error if the function fails
 func (s *server) ListFunctions(ctx context.Context, req *grpcdefinition.ListFunctionsRequest) (*grpcdefinition.ListOfFunctions, error) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in ListFunctions: %v", r)
-		}
-	}()
 
 	// return all available functions
 	return &grpcdefinition.ListOfFunctions{Functions: internalstates.AvailableFunctions}, nil
@@ -71,12 +65,6 @@ func (s *server) ListFunctions(ctx context.Context, req *grpcdefinition.ListFunc
 // - grpcdefinition.FunctionOutputs: the outputs of the function
 // - error: an error if the function fails
 func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionInputs) (*grpcdefinition.FunctionOutputs, error) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in RunFunction: %v", r)
-		}
-	}()
 
 	// get function definition from available functions
 	functionDefinition, ok := internalstates.AvailableFunctions[req.Name]
@@ -103,14 +91,6 @@ func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionIn
 				return nil, fmt.Errorf("error converting input %s to type %s: %v", input.Name, functionDefinition.Input[i].GoType, err)
 			}
 		}
-	}
-
-	// check function definition if last input is an endpoint (llmHandlerEndpoint or knowledgeDbEndpoint) and append
-	if functionDefinition.Input[len(functionDefinition.Input)-1].Name == "llmHandlerEndpoint" {
-		inputs = append(inputs, *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT)
-	}
-	if functionDefinition.Input[len(functionDefinition.Input)-1].Name == "knowledgeDbEndpoint" {
-		inputs = append(inputs, *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT)
 	}
 
 	// get externalfunctions package and the function
@@ -154,12 +134,6 @@ func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionIn
 }
 
 func (s *server) StreamFunction(req *grpcdefinition.FunctionInputs, stream grpcdefinition.ExternalFunctions_StreamFunctionServer) error {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in StreamFunction: %v", r)
-		}
-	}()
 
 	// get function definition from available functions
 	functionDefinition, ok := internalstates.AvailableFunctions[req.Name]
@@ -188,14 +162,6 @@ func (s *server) StreamFunction(req *grpcdefinition.FunctionInputs, stream grpcd
 		}
 	}
 
-	// check function definition if last input is an endpoint (llmHandlerEndpoint or knowledgeDbEndpoint) and append
-	if functionDefinition.Input[len(functionDefinition.Input)-1].Name == "llmHandlerEndpoint" {
-		inputs = append(inputs, *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT)
-	}
-	if functionDefinition.Input[len(functionDefinition.Input)-1].Name == "knowledgeDbEndpoint" {
-		inputs = append(inputs, *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT)
-	}
-
 	// get externalfunctions package and the function
 	function, exists := externalfunctions.ExternalFunctionsMap[functionDefinition.Name]
 	if !exists {
@@ -217,9 +183,9 @@ func (s *server) StreamFunction(req *grpcdefinition.FunctionInputs, stream grpcd
 
 	// get stream channel from results
 	var streamChannel *chan string
-	for _, result := range results {
-		if reflect.TypeOf(result).String() == "*chan string" {
-			streamChannel = result.Interface().(*chan string)
+	for i, output := range functionDefinition.Output {
+		if output.GoType == "*chan string" {
+			streamChannel = results[i].Interface().(*chan string)
 		}
 	}
 
