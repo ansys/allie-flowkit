@@ -28,8 +28,11 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExternalFunctionsClient interface {
-	ListFunctions(ctx context.Context, in *ListFunctionsRequest, opts ...grpc.CallOption) (*ListOfFunctions, error)
+	// Lists all available functions with description, inputs and outputs.
+	ListFunctions(ctx context.Context, in *ListFunctionsRequest, opts ...grpc.CallOption) (*ListFunctionsResponse, error)
+	// Runs a specified function with provided inputs and returns the function outputs.
 	RunFunction(ctx context.Context, in *FunctionInputs, opts ...grpc.CallOption) (*FunctionOutputs, error)
+	// Runs a specified function with provided inputs and returns the function output as a stream.
 	StreamFunction(ctx context.Context, in *FunctionInputs, opts ...grpc.CallOption) (ExternalFunctions_StreamFunctionClient, error)
 }
 
@@ -41,8 +44,8 @@ func NewExternalFunctionsClient(cc grpc.ClientConnInterface) ExternalFunctionsCl
 	return &externalFunctionsClient{cc}
 }
 
-func (c *externalFunctionsClient) ListFunctions(ctx context.Context, in *ListFunctionsRequest, opts ...grpc.CallOption) (*ListOfFunctions, error) {
-	out := new(ListOfFunctions)
+func (c *externalFunctionsClient) ListFunctions(ctx context.Context, in *ListFunctionsRequest, opts ...grpc.CallOption) (*ListFunctionsResponse, error) {
+	out := new(ListFunctionsResponse)
 	err := c.cc.Invoke(ctx, ExternalFunctions_ListFunctions_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -95,8 +98,11 @@ func (x *externalFunctionsStreamFunctionClient) Recv() (*StreamOutput, error) {
 // All implementations must embed UnimplementedExternalFunctionsServer
 // for forward compatibility
 type ExternalFunctionsServer interface {
-	ListFunctions(context.Context, *ListFunctionsRequest) (*ListOfFunctions, error)
+	// Lists all available functions with description, inputs and outputs.
+	ListFunctions(context.Context, *ListFunctionsRequest) (*ListFunctionsResponse, error)
+	// Runs a specified function with provided inputs and returns the function outputs.
 	RunFunction(context.Context, *FunctionInputs) (*FunctionOutputs, error)
+	// Runs a specified function with provided inputs and returns the function output as a stream.
 	StreamFunction(*FunctionInputs, ExternalFunctions_StreamFunctionServer) error
 	mustEmbedUnimplementedExternalFunctionsServer()
 }
@@ -105,7 +111,7 @@ type ExternalFunctionsServer interface {
 type UnimplementedExternalFunctionsServer struct {
 }
 
-func (UnimplementedExternalFunctionsServer) ListFunctions(context.Context, *ListFunctionsRequest) (*ListOfFunctions, error) {
+func (UnimplementedExternalFunctionsServer) ListFunctions(context.Context, *ListFunctionsRequest) (*ListFunctionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListFunctions not implemented")
 }
 func (UnimplementedExternalFunctionsServer) RunFunction(context.Context, *FunctionInputs) (*FunctionOutputs, error) {

@@ -47,10 +47,10 @@ func StartServer() {
 // Returns:
 // - grpcdefinition.ListOfFunctions: a list of all available functions
 // - error: an error if the function fails
-func (s *server) ListFunctions(ctx context.Context, req *grpcdefinition.ListFunctionsRequest) (*grpcdefinition.ListOfFunctions, error) {
+func (s *server) ListFunctions(ctx context.Context, req *grpcdefinition.ListFunctionsRequest) (*grpcdefinition.ListFunctionsResponse, error) {
 
 	// return all available functions
-	return &grpcdefinition.ListOfFunctions{Functions: internalstates.AvailableFunctions}, nil
+	return &grpcdefinition.ListFunctionsResponse{Functions: internalstates.AvailableFunctions}, nil
 }
 
 // RunFunction runs a function from the external functions package
