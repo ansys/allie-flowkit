@@ -1,0 +1,8 @@
+# Port for the gRPC server
+EXTERNALFUNCTIONS_GRPC_PORT: 50051
+
+# LLM handler configuration: host and port
+LLM_HANDLER_ENDPOINT: "ws://localhost:8000"
+
+# Knowledge DB configuration: host and port
+KNOWLEDGE_DB_ENDPOINT: "http://localhost:3500"
