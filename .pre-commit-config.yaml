@@ -1,4 +1,4 @@
-ignore: |
+exclude: |
   ^pkg/grpcdefinition/
 
 repos:
