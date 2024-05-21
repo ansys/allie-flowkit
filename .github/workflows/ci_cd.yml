@@ -38,29 +38,6 @@ jobs:
     - name: Run pre-commit hook
       uses: pre-commit/action@v3.0.1
 
-  build:
-    name: Build project
-    needs: [style]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, ubuntu-latest]
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: 'go.mod'
-        cache-dependency-path: 'go.sum'
-
-    - name: Verify library builds
-      run: |
-        go build ./pkg/externalfunctions
-
   doc-style:
     name: "Documentation style"
     runs-on: ubuntu-latest
@@ -149,54 +126,6 @@ jobs:
           name: documentation-html-with-api
           path: documentation-html
 
-  release:
-    name: Generate GitHub release
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
-    needs: [doc-api-reference, build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Release to GitHub
-        uses: softprops/action-gh-release@v2
-        with:
-          fail_on_unmatched_files: false
-          generate_release_notes: true
-
-  main-repo-release:
-    name: Update main pyconv repo and create release
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
-    needs: [release]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout pyconv repository
-        run: |
-          git clone --branch main https://${{ secrets.PYCONV_RELEASE_TOKEN }}@github.com/ansys-internal/pyconv.git
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: 'pyconv/scripts/releasehelper/go.mod'
-
-      - name: Run tag script
-        run: |
-          cd pyconv/scripts/releasehelper
-          go run main.go "tag" ${{ github.ref_name }} ${{ secrets.PYCONV_RELEASE_TOKEN }}
-
-      - name: Commit and push to pyconv
-        run: |
-          cd pyconv
-          git config --global user.email '${{ github.actor }}@users.noreply.github.com'
-          git config --global user.name '${{ github.actor }}'
-          git commit -a -m 'New release triggered by ${{ github.event.repository.name }}'
-          git push origin main
-
-      - name: Run release script
-        run: |
-          cd pyconv/scripts/releasehelper
-          go run main.go "release" ${{ github.ref_name }} ${{ secrets.PYCONV_RELEASE_TOKEN }}
-
   upload_dev_docs:
     name: Upload dev documentation
     if: github.ref == 'refs/heads/main'
@@ -205,19 +134,6 @@ jobs:
     steps:
       - name: Deploy the latest documentation
         uses: ansys/actions/doc-deploy-dev@v6
-        with:
-          cname: ${{ env.DOCUMENTATION_CNAME }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          doc-artifact-name: documentation-html-with-api
-
-  upload_docs_release:
-    name: Upload release documentation
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
-    runs-on: ubuntu-latest
-    needs: [release]
-    steps:
-      - name: Deploy the stable documentation
-        uses: ansys/actions/doc-deploy-stable@v6
         with:
           cname: ${{ env.DOCUMENTATION_CNAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
