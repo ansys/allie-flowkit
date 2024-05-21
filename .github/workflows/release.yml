@@ -65,7 +65,7 @@ jobs:
       - name: Sign application
         working-directory: signtool
         run: |
-          $filename = (get-ChildItem installer -recurse | where {$_.name -like "*Setup*"}).Name
+          $filename = (get-ChildItem installer -recurse | where {$_.name -like "allie-flowkit-*"}).Name
           $jobname = $filename -replace ".{4}$"
           dotnet signclient.dll sign `
             -r ansyssigning@ansys.com `
