@@ -48,12 +48,36 @@ jobs:
       group: ansys-network
       labels: [self-hosted, Windows, signtool]
     steps:
-      - name: Call Ansys Sign tool
-        uses: ansys-internal/signtool-ansys-apps@main
+      - name: Checkout the SignTool
+        uses: actions/checkout@v4
         with:
-          app-artifact: windows-latest-binaries
-          signtool-password: ${{ secrets.SIGNTOOL_PWD }}
-          signed-artifact-name: windows-latest-binaries-signed
+          repository: ansys-internal/signtool-ansys-apps
+          token: ${{ secrets.SIGNTOOL_ACCESS_TOKEN }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-latest-binaries
+          path: signtool/installer
+
+      - name: List current structure
+        run: ls -R
+
+      - name: Sign application
+        working-directory: signtool
+        run: |
+          $filename = (get-ChildItem installer -recurse | where {$_.name -like "*Setup*"}).Name
+          $jobname = $filename -replace ".{4}$"
+          dotnet signclient.dll sign `
+            -r ansyssigning@ansys.com `
+            -s '${{ secrets.SIGNTOOL_PWD }}' `
+            -c AppSettings.json `
+            -n $jobname `
+            -i installer/$filename
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-latest-binaries-signed
+          path: signtool/installer/*.exe
 
   release:
     name: Create release
@@ -122,7 +146,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deployments/docker/Dockerfile
+          file: docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
@@ -136,7 +160,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: deployments/docker/Dockerfile
+          file: docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
