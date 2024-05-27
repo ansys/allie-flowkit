@@ -38,6 +38,29 @@ jobs:
     - name: Run pre-commit hook
       uses: pre-commit/action@v3.0.1
 
+  build:
+    name: Build project
+    needs: [style]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+        cache-dependency-path: 'go.sum'
+
+    - name: Verify library builds
+      run: |
+        go build ./pkg/externalfunctions
+
   doc-style:
     name: "Documentation style"
     runs-on: ubuntu-latest
