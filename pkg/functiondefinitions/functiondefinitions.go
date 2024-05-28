@@ -8,8 +8,8 @@ import (
 	"go/token"
 	"strings"
 
-	"github.com/ansys/allie-flowkit/pkg/grpcdefinition"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-sharedtypes/pkg/allieflowkitgrpc"
 )
 
 // ExtractFunctionDefinitionsFromPackage parses the given file for public functions and populates internalstates.AvailableFunctions.
@@ -92,18 +92,18 @@ func ExtractFunctionDefinitionsFromPackage(content string) error {
 		if fn, isFn := decl.(*ast.FuncDecl); isFn {
 			// Check if the function is exported
 			if fn.Name.IsExported() {
-				funcDef := &grpcdefinition.FunctionDefinition{
+				funcDef := &allieflowkitgrpc.FunctionDefinition{
 					Name:        fn.Name.Name,
 					Description: fn.Doc.Text(),
-					Input:       []*grpcdefinition.FunctionInputDefinition{},
-					Output:      []*grpcdefinition.FunctionOutputDefinition{},
+					Input:       []*allieflowkitgrpc.FunctionInputDefinition{},
+					Output:      []*allieflowkitgrpc.FunctionOutputDefinition{},
 				}
 
 				// Handle inputs (parameters)
 				if fn.Type.Params != nil {
 					for _, param := range fn.Type.Params.List {
 						if len(param.Names) == 0 {
-							funcDef.Input = append(funcDef.Input, &grpcdefinition.FunctionInputDefinition{
+							funcDef.Input = append(funcDef.Input, &allieflowkitgrpc.FunctionInputDefinition{
 								Name:   typeExprToString(param.Type),
 								Type:   typeExprToSimpleType(param.Type),
 								GoType: typeExprToString(param.Type),
@@ -124,7 +124,7 @@ func ExtractFunctionDefinitionsFromPackage(content string) error {
 									goType = "string"
 								}
 
-								funcDef.Input = append(funcDef.Input, &grpcdefinition.FunctionInputDefinition{
+								funcDef.Input = append(funcDef.Input, &allieflowkitgrpc.FunctionInputDefinition{
 									Name:    paramName.Name,
 									Type:    typeExprToSimpleType(param.Type),
 									GoType:  goType,
@@ -140,7 +140,7 @@ func ExtractFunctionDefinitionsFromPackage(content string) error {
 					for _, result := range fn.Type.Results.List {
 						if len(result.Names) == 0 {
 							goType := typeExprToString(result.Type)
-							funcDef.Output = append(funcDef.Output, &grpcdefinition.FunctionOutputDefinition{
+							funcDef.Output = append(funcDef.Output, &allieflowkitgrpc.FunctionOutputDefinition{
 								Name:   goType,
 								Type:   typeExprToSimpleType(result.Type),
 								GoType: goType,
@@ -148,7 +148,7 @@ func ExtractFunctionDefinitionsFromPackage(content string) error {
 						} else {
 							for _, resultName := range result.Names {
 								goType := typeExprToString(result.Type)
-								funcDef.Output = append(funcDef.Output, &grpcdefinition.FunctionOutputDefinition{
+								funcDef.Output = append(funcDef.Output, &allieflowkitgrpc.FunctionOutputDefinition{
 									Name:   resultName.Name,
 									Type:   typeExprToSimpleType(result.Type),
 									GoType: goType,
