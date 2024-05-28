@@ -137,7 +137,7 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel)
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -172,7 +172,7 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 // Returns:
 //   - message: the generated code
 //   - stream: the stream channel
-func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream bool) (message string, stream *chan string) {
+func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream bool, validateCode bool) (message string, stream *chan string) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
@@ -185,7 +185,7 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel)
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, validateCode)
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -205,6 +205,33 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 
 	// Close the response channel
 	close(responseChannel)
+
+	// Code validation
+	if validateCode {
+
+		// Extract the code from the response
+		pythonCode, err := extractPythonCode(responseAsStr)
+		if err != nil {
+			log.Printf("Error extracting Python code: %v\n", err)
+		} else {
+
+			// Validate the Python code
+			valid, warnings, err := validatePythonCode(pythonCode)
+			if err != nil {
+				log.Printf("Error validating Python code: %v\n", err)
+			} else {
+				if valid {
+					if warnings {
+						responseAsStr += "\nCode has warnings."
+					} else {
+						responseAsStr += "\nCode is valid."
+					}
+				} else {
+					responseAsStr += "\nCode is invalid."
+				}
+			}
+		}
+	}
 
 	// Return the response
 	return responseAsStr, nil

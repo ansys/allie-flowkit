@@ -3,7 +3,7 @@ module github.com/ansys/allie-flowkit
 go 1.21
 
 require (
-	github.com/ansys/allie-sharedtypes v0.0.0-20240527152016-820c599d44e2
+	github.com/ansys/allie-sharedtypes v0.0.0-20240528102011-19bce968e395
 	github.com/google/uuid v1.6.0
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1

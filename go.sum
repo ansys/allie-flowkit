@@ -1,5 +1,7 @@
 github.com/ansys/allie-sharedtypes v0.0.0-20240527152016-820c599d44e2 h1:vQHXvkFvKWvA4VQ86KlPF4cYebzb3dCu94x/gMhgo7o=
 github.com/ansys/allie-sharedtypes v0.0.0-20240527152016-820c599d44e2/go.mod h1:eVwPTWXqZjgZgVY3tCnH7YbGwkhSB7OfVCcaMz+fNBc=
+github.com/ansys/allie-sharedtypes v0.0.0-20240528102011-19bce968e395 h1:IQJTs348mGnoQVZ0b+OxegUCYQGV2DnEYMF5XrKhwWA=
+github.com/ansys/allie-sharedtypes v0.0.0-20240528102011-19bce968e395/go.mod h1:eVwPTWXqZjgZgVY3tCnH7YbGwkhSB7OfVCcaMz+fNBc=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
