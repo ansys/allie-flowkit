@@ -10,16 +10,16 @@ import (
 	"strconv"
 
 	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
+	"github.com/ansys/allie-sharedtypes/pkg/allieflowkitgrpc"
 
 	"github.com/ansys/allie-flowkit/pkg/config"
-	"github.com/ansys/allie-flowkit/pkg/grpcdefinition"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"google.golang.org/grpc"
 )
 
 // server is used to implement grpc_definition.ExternalFunctionsServer.
 type server struct {
-	grpcdefinition.UnimplementedExternalFunctionsServer
+	allieflowkitgrpc.UnimplementedExternalFunctionsServer
 }
 
 // StartServer starts the gRPC server
@@ -31,7 +31,7 @@ func StartServer() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	grpcdefinition.RegisterExternalFunctionsServer(s, &server{})
+	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
 	log.Printf("gRPC server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
@@ -45,12 +45,12 @@ func StartServer() {
 // - req: the request to list all available functions
 //
 // Returns:
-// - grpcdefinition.ListOfFunctions: a list of all available functions
+// - allieflowkitgrpc.ListOfFunctions: a list of all available functions
 // - error: an error if the function fails
-func (s *server) ListFunctions(ctx context.Context, req *grpcdefinition.ListFunctionsRequest) (*grpcdefinition.ListFunctionsResponse, error) {
+func (s *server) ListFunctions(ctx context.Context, req *allieflowkitgrpc.ListFunctionsRequest) (*allieflowkitgrpc.ListFunctionsResponse, error) {
 
 	// return all available functions
-	return &grpcdefinition.ListFunctionsResponse{Functions: internalstates.AvailableFunctions}, nil
+	return &allieflowkitgrpc.ListFunctionsResponse{Functions: internalstates.AvailableFunctions}, nil
 }
 
 // RunFunction runs a function from the external functions package
@@ -62,9 +62,9 @@ func (s *server) ListFunctions(ctx context.Context, req *grpcdefinition.ListFunc
 // - req: the request to run a function
 //
 // Returns:
-// - grpcdefinition.FunctionOutputs: the outputs of the function
+// - allieflowkitgrpc.FunctionOutputs: the outputs of the function
 // - error: an error if the function fails
-func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionInputs) (*grpcdefinition.FunctionOutputs, error) {
+func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.FunctionInputs) (*allieflowkitgrpc.FunctionOutputs, error) {
 
 	// get function definition from available functions
 	functionDefinition, ok := internalstates.AvailableFunctions[req.Name]
@@ -113,7 +113,7 @@ func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionIn
 	results := funcValue.Call(args)
 
 	// create output slice
-	outputs := []*grpcdefinition.FunctionOutput{}
+	outputs := []*allieflowkitgrpc.FunctionOutput{}
 	for i, result := range results {
 		// marshal value to json string
 		value, err := convertGivenTypeToString(result.Interface(), functionDefinition.Output[i].GoType)
@@ -122,7 +122,7 @@ func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionIn
 		}
 
 		// append output to slice
-		outputs = append(outputs, &grpcdefinition.FunctionOutput{
+		outputs = append(outputs, &allieflowkitgrpc.FunctionOutput{
 			Name:   functionDefinition.Output[i].Name,
 			GoType: functionDefinition.Output[i].GoType,
 			Value:  value,
@@ -130,10 +130,10 @@ func (s *server) RunFunction(ctx context.Context, req *grpcdefinition.FunctionIn
 	}
 
 	// return outputs
-	return &grpcdefinition.FunctionOutputs{Name: req.Name, Outputs: outputs}, nil
+	return &allieflowkitgrpc.FunctionOutputs{Name: req.Name, Outputs: outputs}, nil
 }
 
-func (s *server) StreamFunction(req *grpcdefinition.FunctionInputs, stream grpcdefinition.ExternalFunctions_StreamFunctionServer) error {
+func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream allieflowkitgrpc.ExternalFunctions_StreamFunctionServer) error {
 
 	// get function definition from available functions
 	functionDefinition, ok := internalstates.AvailableFunctions[req.Name]
@@ -193,7 +193,7 @@ func (s *server) StreamFunction(req *grpcdefinition.FunctionInputs, stream grpcd
 	var counter int32
 	for message := range *streamChannel {
 		// create output
-		output := &grpcdefinition.StreamOutput{
+		output := &allieflowkitgrpc.StreamOutput{
 			MessageCounter: counter,
 			IsLast:         false,
 			Value:          message,
@@ -210,7 +210,7 @@ func (s *server) StreamFunction(req *grpcdefinition.FunctionInputs, stream grpcd
 	}
 
 	// send last message
-	output := &grpcdefinition.StreamOutput{
+	output := &allieflowkitgrpc.StreamOutput{
 		MessageCounter: counter,
 		IsLast:         true,
 		Value:          "",
