@@ -5,10 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"os/exec"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/google/uuid"
 	"nhooyr.io/websocket"
@@ -19,10 +23,47 @@ import (
 // Parameters:
 //   - responseChannel: the response channel
 //   - streamChannel: the stream channel
-func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerResponse, streamChannel *chan string) {
+//   - validateCode: the flag to indicate whether the code should be validated
+func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerResponse, streamChannel *chan string, validateCode bool) {
+	responseAsStr := ""
 	for response := range *responseChannel {
+
+		// append the response to the responseAsStr
+		responseAsStr += *response.ChatData
+
+		// send the response to the stream channel
 		*streamChannel <- *response.ChatData
+
+		// check for last response
 		if *(response.IsLast) {
+
+			// check for code validation
+			if validateCode {
+				// Extract the code from the response
+				pythonCode, err := extractPythonCode(responseAsStr)
+				if err != nil {
+					log.Printf("Error extracting Python code: %v\n", err)
+				} else {
+
+					// Validate the Python code
+					valid, warnings, err := validatePythonCode(pythonCode)
+					if err != nil {
+						log.Printf("Error validating Python code: %v\n", err)
+					} else {
+						if valid {
+							if warnings {
+								*streamChannel <- "Code has warnings."
+							} else {
+								*streamChannel <- "Code is valid."
+							}
+						} else {
+							*streamChannel <- "Code is invalid."
+						}
+					}
+				}
+			}
+
+			// exit the loop
 			break
 		}
 	}
@@ -352,5 +393,99 @@ func createDbJsonFilter(fieldName string, fieldType string, filterData []string,
 		FieldType:  fieldType,
 		FilterData: filterData,
 		NeedAll:    needAll,
+	}
+}
+
+// randomNameGenerator generates a random name for the temporary Python script file
+//
+// Returns:
+//   - string: the name of the temporary Python script file
+func randomNameGenerator() string {
+	// Generate a random number to include in the Python script
+	randomNumber := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(1000000)
+
+	// Create a temporary Python script file
+	return fmt.Sprintf("temp_python_script_%d.py", randomNumber)
+}
+
+// extractPythonCode extracts the Python code from a markdown string. If the
+// string does not contain a code block, it is assumed that the string is
+// Python code and is returned as is.
+//
+// Parameters:
+//   - markdown: the markdown string
+//
+// Returns:
+//   - string: the Python code
+//   - error: error if any
+func extractPythonCode(markdown string) (pythonCode string, error error) {
+	// Define a regular expression pattern to match Python code blocks
+	pattern := "```python\\s*\\n([\\s\\S]*?)\\n\\s*```"
+
+	// Compile the regular expression
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", err
+	}
+
+	// Find the first match
+	match := regex.FindStringSubmatch(markdown)
+
+	if len(match) < 2 {
+		// No match found meaning that it is just Python code, presumably
+		return markdown, nil
+	}
+
+	// Extract and return the Python code
+	pythonCode = match[1]
+	return pythonCode, nil
+}
+
+// validatePythonCode validates the Python code using a Python code analysis tool (pyright)
+// and returns several values to indicate the validity of the Python code.
+//
+// Parameters:
+//   - pythonCode: the Python code to be validated
+//
+// Returns:
+//   - bool: true if the Python code is valid, false otherwise
+//   - bool: true if the Python code has potential errors, false otherwise
+//   - error: an error message if the Python code is invalid
+func validatePythonCode(pythonCode string) (bool, bool, error) {
+	// Create a temporary Python script file
+	tmpFileName := randomNameGenerator()
+	file, err := os.Create(tmpFileName)
+	if err != nil {
+		return false, false, err
+	}
+	defer func() {
+		_ = file.Close()
+		_ = os.Remove(tmpFileName) // Delete the temporary file
+	}()
+
+	// Write the Python code to the temporary file
+	_, err = file.WriteString(pythonCode)
+	if err != nil {
+		return false, false, err
+	}
+
+	// Run a Python code analysis tool (pyright) to check for API validity
+	cmd := exec.Command("pyright", tmpFileName)
+	output, err := cmd.CombinedOutput()
+
+	// Check if the Python code is valid (no errors in the output)
+	if err == nil {
+		// Check for potential warnings in output
+		outputAsStr := string(output)
+		if !strings.Contains(outputAsStr, "0 warnings") {
+			log.Println("Potential errors in Python code...")
+			return true, true, nil
+		} else {
+			return true, false, nil
+		}
+
+	} else {
+		// If there were errors in the output, return the error message
+		return false, false, fmt.Errorf("code validation failed: %s", output)
 	}
 }

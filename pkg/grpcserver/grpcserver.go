@@ -250,7 +250,11 @@ func convertStringToGivenType(value string, goType string) (interface{}, error) 
 	case "int":
 		return strconv.Atoi(value)
 	case "uint32":
-		return strconv.ParseUint(value, 10, 32)
+		value, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		return uint32(value), nil
 	case "bool":
 		return strconv.ParseBool(value)
 	case "[]string":
