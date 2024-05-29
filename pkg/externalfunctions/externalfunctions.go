@@ -678,12 +678,6 @@ func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []D
 // Returns:
 //   - finalQuery: the final query
 func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []DbResponse) (finalQuery string) {
-
-	// If there is no response from the KnowledgeDB, return the original request
-	if len(knowledgedbResponse) == 0 {
-		return "Generate the Python code for the following request:\n>>> Request:\n" + request + "\n"
-	}
-
 	// Build the final query using the KnowledgeDB response and the original request
 	// We have to use the text from the DB response and the original request.
 	//
@@ -712,15 +706,18 @@ func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []DbRe
 	// {original_request}
 	// ******************************************************************************
 
-	// Initial request
-	finalQuery = "Based on the following examples:\n\n"
+	// If there is no response from the KnowledgeDB, return the original request
+	if len(knowledgedbResponse) > 0 {
+		// Initial request
+		finalQuery = "Based on the following examples:\n\n"
 
-	for i, element := range knowledgedbResponse {
-		// Add the example number
-		finalQuery += "--- START EXAMPLE " + fmt.Sprint(i+1) + "---\n"
-		finalQuery += ">>> Summary:\n" + element.Summary + "\n\n"
-		finalQuery += ">>> Code snippet:\n```python\n" + element.Text + "\n```\n"
-		finalQuery += "--- END EXAMPLE " + fmt.Sprint(i+1) + "---\n\n"
+		for i, element := range knowledgedbResponse {
+			// Add the example number
+			finalQuery += "--- START EXAMPLE " + fmt.Sprint(i+1) + "---\n"
+			finalQuery += ">>> Summary:\n" + element.Summary + "\n\n"
+			finalQuery += ">>> Code snippet:\n```python\n" + element.Text + "\n```\n"
+			finalQuery += "--- END EXAMPLE " + fmt.Sprint(i+1) + "---\n\n"
+		}
 	}
 
 	// Pass in the original request
