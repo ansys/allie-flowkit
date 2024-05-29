@@ -638,6 +638,24 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	return response.QueryResult
 }
 
+func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []DbResponse) (finalQuery string) {
+
+	// If there is no response from the KnowledgeDB, return the original request
+	if len(knowledgedbResponse) == 0 {
+		return request
+	}
+
+	// Build the final query using the KnowledgeDB response and the original request
+	finalQuery = "Based on the following examples:\n\n--- INFO START ---\n"
+	for _, example := range knowledgedbResponse {
+		finalQuery += example.Text + "\n"
+	}
+	finalQuery += "--- INFO END ---\n\n" + request + "\n"
+
+	// Return the final query
+	return finalQuery
+}
+
 // BuildFinalQueryForCodeLLMRequest builds the final query for a code generation
 // request to LLM. The final query is a markdown string that contains the
 // original request and the code examples from the KnowledgeDB.
@@ -649,6 +667,12 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 // Returns:
 //   - finalQuery: the final query
 func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []DbResponse) (finalQuery string) {
+
+	// If there is no response from the KnowledgeDB, return the original request
+	if len(knowledgedbResponse) == 0 {
+		return "Generate the Python code for the following request:\n>>> Request:\n" + request + "\n"
+	}
+
 	// Build the final query using the KnowledgeDB response and the original request
 	// We have to use the text from the DB response and the original request.
 	//
