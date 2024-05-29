@@ -12,23 +12,24 @@ import (
 )
 
 var ExternalFunctionsMap = map[string]interface{}{
-	"PerformVectorEmbeddingRequest":    PerformVectorEmbeddingRequest,
-	"PerformKeywordExtractionRequest":  PerformKeywordExtractionRequest,
-	"PerformGeneralRequest":            PerformGeneralRequest,
-	"PerformCodeLLMRequest":            PerformCodeLLMRequest,
-	"BuildLibraryContext":              BuildLibraryContext,
-	"SendVectorsToKnowledgeDB":         SendVectorsToKnowledgeDB,
-	"GetListCollections":               GetListCollections,
-	"RetrieveDependencies":             RetrieveDependencies,
-	"GeneralNeo4jQuery":                GeneralNeo4jQuery,
-	"GeneralQuery":                     GeneralQuery,
-	"BuildFinalQueryForCodeLLMRequest": BuildFinalQueryForCodeLLMRequest,
-	"SimilaritySearch":                 SimilaritySearch,
-	"CreateKeywordsDbFilter":           CreateKeywordsDbFilter,
-	"CreateTagsDbFilter":               CreateTagsDbFilter,
-	"CreateMetadataDbFilter":           CreateMetadataDbFilter,
-	"CreateDbFilter":                   CreateDbFilter,
-	"AppendMessageHistory":             AppendMessageHistory,
+	"PerformVectorEmbeddingRequest":       PerformVectorEmbeddingRequest,
+	"PerformKeywordExtractionRequest":     PerformKeywordExtractionRequest,
+	"PerformGeneralRequest":               PerformGeneralRequest,
+	"PerformCodeLLMRequest":               PerformCodeLLMRequest,
+	"BuildLibraryContext":                 BuildLibraryContext,
+	"SendVectorsToKnowledgeDB":            SendVectorsToKnowledgeDB,
+	"GetListCollections":                  GetListCollections,
+	"RetrieveDependencies":                RetrieveDependencies,
+	"GeneralNeo4jQuery":                   GeneralNeo4jQuery,
+	"GeneralQuery":                        GeneralQuery,
+	"BuildFinalQueryForGeneralLLMRequest": BuildFinalQueryForGeneralLLMRequest,
+	"BuildFinalQueryForCodeLLMRequest":    BuildFinalQueryForCodeLLMRequest,
+	"SimilaritySearch":                    SimilaritySearch,
+	"CreateKeywordsDbFilter":              CreateKeywordsDbFilter,
+	"CreateTagsDbFilter":                  CreateTagsDbFilter,
+	"CreateMetadataDbFilter":              CreateMetadataDbFilter,
+	"CreateDbFilter":                      CreateDbFilter,
+	"AppendMessageHistory":                AppendMessageHistory,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -638,6 +639,34 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	return response.QueryResult
 }
 
+// BuildFinalQueryForGeneralLLMRequest builds the final query for a general
+// request to LLM. The final query is a markdown string that contains the
+// original request and the examples from the KnowledgeDB.
+//
+// Parameters:
+//   - request: the original request
+//   - knowledgedbResponse: the KnowledgeDB response
+//
+// Returns:
+//   - finalQuery: the final query
+func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []DbResponse) (finalQuery string) {
+
+	// If there is no response from the KnowledgeDB, return the original request
+	if len(knowledgedbResponse) == 0 {
+		return request
+	}
+
+	// Build the final query using the KnowledgeDB response and the original request
+	finalQuery = "Based on the following examples:\n\n--- INFO START ---\n"
+	for _, example := range knowledgedbResponse {
+		finalQuery += example.Text + "\n"
+	}
+	finalQuery += "--- INFO END ---\n\n" + request + "\n"
+
+	// Return the final query
+	return finalQuery
+}
+
 // BuildFinalQueryForCodeLLMRequest builds the final query for a code generation
 // request to LLM. The final query is a markdown string that contains the
 // original request and the code examples from the KnowledgeDB.
@@ -677,15 +706,18 @@ func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []DbRe
 	// {original_request}
 	// ******************************************************************************
 
-	// Initial request
-	finalQuery = "Based on the following examples:\n\n"
+	// If there is no response from the KnowledgeDB, return the original request
+	if len(knowledgedbResponse) > 0 {
+		// Initial request
+		finalQuery = "Based on the following examples:\n\n"
 
-	for i, element := range knowledgedbResponse {
-		// Add the example number
-		finalQuery += "--- START EXAMPLE " + fmt.Sprint(i+1) + "---\n"
-		finalQuery += ">>> Summary:\n" + element.Summary + "\n\n"
-		finalQuery += ">>> Code snippet:\n```python\n" + element.Text + "\n```\n"
-		finalQuery += "--- END EXAMPLE " + fmt.Sprint(i+1) + "---\n\n"
+		for i, element := range knowledgedbResponse {
+			// Add the example number
+			finalQuery += "--- START EXAMPLE " + fmt.Sprint(i+1) + "---\n"
+			finalQuery += ">>> Summary:\n" + element.Summary + "\n\n"
+			finalQuery += ">>> Code snippet:\n```python\n" + element.Text + "\n```\n"
+			finalQuery += "--- END EXAMPLE " + fmt.Sprint(i+1) + "---\n\n"
+		}
 	}
 
 	// Pass in the original request
