@@ -17,9 +17,9 @@ var externalFunctionsFile string
 func main() {
 	// Read configuration file...
 	// 1st option: read from environment variable
-	configFile := os.Getenv("PYCONV_CONFIG_PATH")
+	configFile := os.Getenv("ALLIE_CONFIG_PATH")
 	if configFile == "" {
-		log.Println("PYCONV_CONFIG_PATH environment variable not found...")
+		log.Println("ALLIE_CONFIG_PATH environment variable not found...")
 		log.Println("Searching for configuration file (config.yaml) at same level as the agent...")
 		// 2nd option: read from default location... root directory
 		configFile = "config.yaml"

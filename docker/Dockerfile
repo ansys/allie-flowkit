@@ -25,7 +25,7 @@ RUN npm install -g pyright --quiet && npm cache clean --force
 RUN python -m pip install --upgrade pip --quiet --no-cache-dir --root-user-action=ignore
 RUN pip install pyright --quiet --no-cache-dir --root-user-action=ignore
 
-# Install the requirements for PyConv: PyAnsys libs + scientific Python libs
+# Install the requirements for ALLIE: PyAnsys libs + scientific Python libs
 RUN pip install \
     ansys-additive-core \
     ansys-dpf-composites  \

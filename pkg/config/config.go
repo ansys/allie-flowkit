@@ -19,7 +19,7 @@ var AllieFlowkitConfig *AllieFlowkitConfigStruct
 
 // TODO: specify mandatory fields and optional fields
 
-// PyConvAgentConfigStruct is the structure of the configuration file
+// ALLIEAgentConfigStruct is the structure of the configuration file
 type AllieFlowkitConfigStruct struct {
 	EXTERNALFUNCTIONS_GRPC_PORT *string `yaml:"EXTERNALFUNCTIONS_GRPC_PORT,omitempty"`
 	LLM_HANDLER_ENDPOINT        *string `yaml:"LLM_HANDLER_ENDPOINT,omitempty"`
@@ -45,13 +45,13 @@ func LoadConfigFromFile(file string) error {
 	return err
 }
 
-// ReadConfigFromFile reads the configuration from a YAML file into the PyConvAgentConfigStruct.
+// ReadConfigFromFile reads the configuration from a YAML file into the ALLIEAgentConfigStruct.
 //
 // Parameters:
 //   - file: the YAML file to load the configuration from
 //
 // Returns:
-//   - *PyConvAgentConfigStruct: the configuration structure
+//   - *ALLIEAgentConfigStruct: the configuration structure
 //   - error: an error message if the YAML file cannot be loaded
 func (c *AllieFlowkitConfigStruct) ReadConfigFromFile(file string) (*AllieFlowkitConfigStruct, error) {
 	yamlFile, err := os.ReadFile(file)
