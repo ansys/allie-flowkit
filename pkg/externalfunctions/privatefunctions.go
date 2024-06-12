@@ -489,3 +489,10 @@ func validatePythonCode(pythonCode string) (bool, bool, error) {
 		return false, false, fmt.Errorf("code validation failed: %s", output)
 	}
 }
+
+func formatTemplate(template string, data map[string]string) string {
+	for key, value := range data {
+		template = strings.ReplaceAll(template, `{`+key+`}`, value)
+	}
+	return template
+}

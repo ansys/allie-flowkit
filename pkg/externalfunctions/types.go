@@ -256,3 +256,9 @@ type summaryCounters struct {
 	ConstraintsAdded     int `json:"constraints_added"`
 	ConstraintsRemoved   int `json:"constraints_removed"`
 }
+
+type DefaultFields struct {
+	QueryWord         string
+	FieldName         string
+	FieldDefaultValue string
+}
