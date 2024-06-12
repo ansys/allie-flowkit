@@ -1057,6 +1057,15 @@ func ExtractFieldsFromQuery(query string, fieldValues map[string][]string, defau
 	return fields
 }
 
+// PerformLLMRephraseRequest performs a rephrase request to LLM
+//
+// Parameters:
+//   - template: the template for the rephrase request
+//   - query: the user query
+//   - history: the conversation history
+//
+// Returns:
+//   - rephrasedQuery: the rephrased query
 func PerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
 	// Append messages with conversation entries
 	historyMessages := ""
