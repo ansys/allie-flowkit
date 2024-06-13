@@ -489,3 +489,18 @@ func validatePythonCode(pythonCode string) (bool, bool, error) {
 		return false, false, fmt.Errorf("code validation failed: %s", output)
 	}
 }
+
+// formatTemplate formats a template string with the given data
+//
+// Parameters:
+//   - template: the template string
+//   - data: the data to be used for formatting
+//
+// Returns:
+//   - string: the formatted template string
+func formatTemplate(template string, data map[string]string) string {
+	for key, value := range data {
+		template = strings.ReplaceAll(template, `{`+key+`}`, value)
+	}
+	return template
+}

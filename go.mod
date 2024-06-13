@@ -11,7 +11,10 @@ require (
 	nhooyr.io/websocket v1.8.11
 )
 
+require github.com/texttheater/golang-levenshtein v1.0.1 // indirect
+
 require (
+	github.com/schollz/closestmatch v2.1.0+incompatible
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
