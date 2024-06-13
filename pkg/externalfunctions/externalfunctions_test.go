@@ -77,11 +77,88 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.query, func(t *testing.T) {
-			result := ExtractFieldsFromQuery(tc.query, fieldValues, defaultFields)
+			result := AnsysGPTExtractFieldsFromQuery(tc.query, fieldValues, defaultFields)
 			for key, value := range tc.want {
 				if result[key] != value {
 					t.Errorf("For query %q, expected %s: %s, but got %s", tc.query, key, value, result[key])
 				}
+			}
+		})
+	}
+}
+
+func TestAnsysGPTCheckProhibitedWords(t *testing.T) {
+	prohibitedWords := []string{
+		"gun", "firearm", "armament", "ammunition", "launchvehicle", "missile", "ballistic", "rocket", "torpedo", "bomb",
+		"satellite", "mine", "explosive", "ordinance", "energetic materials", "propellants", "incendiary",
+		"war", "groundvehicles", "weapon", "biological agent", "spacecraft",
+		"nuclear", "classifiedarticles", "directedenergyweapons", "explosion", "jetengine", "defense", "military", "terrorism",
+	}
+	errorResponseMessage := "Prohibited content detected."
+
+	testCases := []struct {
+		query       string
+		wantFound   bool
+		wantMessage string
+	}{
+		{
+			query:       "This is a test query about gun control.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "We need more information on rocket launches.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "What are the new developments in space exploration?",
+			wantFound:   false,
+			wantMessage: "",
+		},
+		{
+			query:       "Can you tell me about nuclear power plants?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Details on biological agent research.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "How does a jetengine work?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "This text should not trigger any prohibited words.",
+			wantFound:   false,
+			wantMessage: "",
+		},
+		{
+			query:       "The new ordinance passed yesterday.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Understanding the chemistry of propellants.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "How to prevent explosion in a chemical plant?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.query, func(t *testing.T) {
+			found, message := AnsysGPTCheckProhibitedWords(tc.query, prohibitedWords, errorResponseMessage)
+			if found != tc.wantFound || message != tc.wantMessage {
+				t.Errorf("For query %q, expected (%v, %s) but got (%v, %s)",
+					tc.query, tc.wantFound, tc.wantMessage, found, message)
 			}
 		})
 	}
