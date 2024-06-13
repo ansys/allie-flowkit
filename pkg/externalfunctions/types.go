@@ -257,6 +257,7 @@ type summaryCounters struct {
 	ConstraintsRemoved   int `json:"constraints_removed"`
 }
 
+// DefaultFields represents the default fields for the user query.
 type DefaultFields struct {
 	QueryWord         string
 	FieldName         string
