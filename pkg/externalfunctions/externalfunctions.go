@@ -7,8 +7,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
+	"strings"
 
 	"github.com/ansys/allie-flowkit/pkg/config"
+	"github.com/schollz/closestmatch"
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
 var ExternalFunctionsMap = map[string]interface{}{
@@ -30,6 +34,8 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"CreateMetadataDbFilter":              CreateMetadataDbFilter,
 	"CreateDbFilter":                      CreateDbFilter,
 	"AppendMessageHistory":                AppendMessageHistory,
+	"ExtractFieldsFromQuery":              ExtractFieldsFromQuery,
+	"PerformLLMRephraseRequest":           PerformLLMRephraseRequest,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -981,4 +987,107 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	history = append(history, newMessageHistory)
 
 	return history
+}
+
+// ExtractFieldsFromQuery extracts the fields from the user query
+//
+// Parameters:
+//   - query: the user query
+//   - fieldValues: the field values that the user query can contain
+//   - defaultFields: the default fields that the user query can contain
+//
+// Returns:
+//   - fields: the extracted fields
+func ExtractFieldsFromQuery(query string, fieldValues map[string][]string, defaultFields []DefaultFields) (fields map[string]string) {
+	// Initialize the fields map
+	fields = make(map[string]string)
+
+	// Check each field
+	for field, values := range fieldValues {
+
+		// Initializing the field with None
+		fields[field] = ""
+
+		// Sort the values by length in descending order
+		sort.Slice(values, func(i, j int) bool {
+			return len(values[i]) > len(values[j])
+		})
+
+		// Check each possible value for exact match ignoring case
+		for _, value := range values {
+			if strings.Contains(strings.ToLower(query), strings.ToLower(value)) {
+				fields[field] = value
+				fmt.Println("Exact match found for", field, ":", value)
+				break
+			}
+		}
+
+		// Split the query into words
+		words := strings.Fields(query)
+
+		// If no exact match found, use fuzzy matching
+		if fields[field] == "" {
+			cutoff := 0.75
+			cm := closestmatch.New(words, []int{3})
+			for _, value := range values {
+				for _, word := range strings.Fields(value) {
+					closestWord := cm.Closest(word)
+					distance := levenshtein.RatioForStrings([]rune(word), []rune(closestWord), levenshtein.DefaultOptions)
+					if distance >= cutoff {
+						fields[field] = value
+						fmt.Println("Fuzzy match found for", field, ":", distance)
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// If default value is found, use it
+	for _, defaultField := range defaultFields {
+		value, ok := fields[defaultField.FieldName]
+		if ok && value == "" {
+			if strings.Contains(strings.ToLower(query), strings.ToLower(defaultField.QueryWord)) {
+				fields[defaultField.FieldName] = defaultField.FieldDefaultValue
+				fmt.Println("Default value found for", defaultField.FieldName, ":", defaultField.FieldDefaultValue)
+			}
+		}
+	}
+
+	return fields
+}
+
+// PerformLLMRephraseRequest performs a rephrase request to LLM
+//
+// Parameters:
+//   - template: the template for the rephrase request
+//   - query: the user query
+//   - history: the conversation history
+//
+// Returns:
+//   - rephrasedQuery: the rephrased query
+func PerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
+	// Append messages with conversation entries
+	historyMessages := ""
+	for _, entry := range history {
+		switch entry.Role {
+		case "user":
+			historyMessages += "HumanMessage(content): " + entry.Content + "\n"
+		case "assistant":
+			historyMessages += "AIMessage(content): " + entry.Content + "\n"
+		}
+	}
+
+	// Create map for the data to be used in the template
+	dataMap := make(map[string]string)
+	dataMap["query"] = query
+	dataMap["chat_history"] = historyMessages
+
+	// Format the template
+	systemTemplate := formatTemplate(template, dataMap)
+
+	// Perform the general request
+	rephrasedQuery, _ = PerformGeneralRequest(query, history, false, systemTemplate)
+
+	return rephrasedQuery
 }
