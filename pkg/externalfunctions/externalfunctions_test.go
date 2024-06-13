@@ -86,34 +86,3 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 		})
 	}
 }
-
-// func TestPerformLLMRephraseRequest(t *testing.T) {
-// 	template := `Orders: You are a technical support assistant that is professional, friendly, multilingual that determines the contextual relevance between the current query in '{query}' and previous content from '{chat_history}' and create a rephrased query **only in the case of a 'follow-up query'**: \n
-
-// 	You are an expert at finding if there is *contextual relevance* between the current query in '{query}' and most recent content in *'HumanMessage(content) and AIMessage(content)' of '{chat_history}'*. \n
-
-// 	Your expertise lies in understanding the context of the conversation and identifying whether the '{query}' is a continuation of the most recent topic or a new topic altogether.\n
-
-// 	*Only* if the '{query}' is about seeking additional information to the recent content from *'HumanMessage(content) and AIMessage(content)' of '{chat_history}'*, you must consider the '{query}' as a 'follow-up query'. \n
-// 	`
-// 	query := "How to define a remote point in the course Ansys mechanical?"
-
-// 	history := []HistoricMessage{
-// 		{
-// 			Role:    "system",
-// 			Content: "you are a pirate",
-// 		},
-// 		{
-// 			Role:    "user",
-// 			Content: "How to define a bean in Pymapdl?",
-// 		},
-// 		{
-// 			Role:    "assistant",
-// 			Content: "i dont know",
-// 		},
-// 	}
-
-// 	result := PerformLLMRephraseRequest(template, query, history)
-
-// 	t.Logf("Result: %s", result)
-// }
