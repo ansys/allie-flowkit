@@ -34,8 +34,9 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"CreateMetadataDbFilter":              CreateMetadataDbFilter,
 	"CreateDbFilter":                      CreateDbFilter,
 	"AppendMessageHistory":                AppendMessageHistory,
-	"ExtractFieldsFromQuery":              ExtractFieldsFromQuery,
-	"PerformLLMRephraseRequest":           PerformLLMRephraseRequest,
+	"AnsysGPTCheckProhibitedWords":        AnsysGPTCheckProhibitedWords,
+	"AnsysGPTExtractFieldsFromQuery":      AnsysGPTExtractFieldsFromQuery,
+	"AnsysGPTPerformLLMRephraseRequest":   AnsysGPTPerformLLMRephraseRequest,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -989,7 +990,39 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	return history
 }
 
-// ExtractFieldsFromQuery extracts the fields from the user query
+// AnsysGPTCheckProhibitedWords checks the user query for prohibited words
+//
+// Parameters:
+//   - query: the user query
+//   - prohibitedWords: the list of prohibited words
+//   - errorResponseMessage: the error response message
+//
+// Returns:
+//   - foundProhibited: the flag indicating whether prohibited words were found
+//   - responseMessage: the response message
+func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorResponseMessage string) (foundProhibited bool, responseMessage string) {
+	// Check each prohibited word for exact match ignoring case
+	for _, prohibitedWord := range prohibitedWords {
+		if strings.Contains(strings.ToLower(query), strings.ToLower(prohibitedWord)) {
+			return true, errorResponseMessage
+		}
+	}
+
+	// If no exact match found, use fuzzy matching
+	cutoff := 0.9
+	cm := closestmatch.New(prohibitedWords, []int{3})
+	for _, word := range strings.Fields(query) {
+		closestWord := cm.Closest(word)
+		distance := levenshtein.RatioForStrings([]rune(word), []rune(closestWord), levenshtein.DefaultOptions)
+		if distance >= cutoff {
+			return true, errorResponseMessage
+		}
+	}
+
+	return false, ""
+}
+
+// AnsysGPTExtractFieldsFromQuery extracts the fields from the user query
 //
 // Parameters:
 //   - query: the user query
@@ -998,7 +1031,7 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 //
 // Returns:
 //   - fields: the extracted fields
-func ExtractFieldsFromQuery(query string, fieldValues map[string][]string, defaultFields []DefaultFields) (fields map[string]string) {
+func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]string, defaultFields []DefaultFields) (fields map[string]string) {
 	// Initialize the fields map
 	fields = make(map[string]string)
 
@@ -1057,7 +1090,7 @@ func ExtractFieldsFromQuery(query string, fieldValues map[string][]string, defau
 	return fields
 }
 
-// PerformLLMRephraseRequest performs a rephrase request to LLM
+// AnsysGPTPerformLLMRephraseRequest performs a rephrase request to LLM
 //
 // Parameters:
 //   - template: the template for the rephrase request
@@ -1066,7 +1099,7 @@ func ExtractFieldsFromQuery(query string, fieldValues map[string][]string, defau
 //
 // Returns:
 //   - rephrasedQuery: the rephrased query
-func PerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
+func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
 	// Append messages with conversation entries
 	historyMessages := ""
 	for _, entry := range history {
