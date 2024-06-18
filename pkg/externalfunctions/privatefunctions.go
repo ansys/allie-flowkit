@@ -509,7 +509,7 @@ func formatTemplate(template string, data map[string]string) string {
 	return template
 }
 
-// ACSSemanticHybridSearch performs a semantic hybrid search in ACS
+// ansysGPTACSSemanticHybridSearch performs a semantic hybrid search in ACS
 //
 // Parameters:
 //   - query: the query string

@@ -264,6 +264,7 @@ type AnsysGPTDefaultFields struct {
 	FieldDefaultValue string
 }
 
+// ACSRequest represents the request structure for the Azure Cognitive Search.
 type ACSSearchRequest struct {
 	Search                string           `json:"search"`
 	VectorQueries         []ACSVectorQuery `json:"vectorQueries"`
@@ -276,6 +277,7 @@ type ACSSearchRequest struct {
 	Count                 bool             `json:"count"`
 }
 
+// ACSVectorQuery represents the vector query structure for the Azure Cognitive Search.
 type ACSVectorQuery struct {
 	Kind   string    `json:"kind"`
 	K      int       `json:"k"`
@@ -283,12 +285,14 @@ type ACSVectorQuery struct {
 	Fields string    `json:"fields"`
 }
 
+// ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search.
 type ACSSearchResponseStruct struct {
 	OdataContext string              `json:"@odata.context"`
 	OdataCount   int                 `json:"@odata.count"`
 	Value        []ACSSearchResponse `json:"value"`
 }
 
+// ACSSearchResponse represents the response structure for the Azure Cognitive Search.
 type ACSSearchResponse struct {
 	Physics             string  `json:"physics"`
 	SourceTitleLvl3     string  `json:"sourceTitle_lvl3"`
@@ -305,6 +309,7 @@ type ACSSearchResponse struct {
 	SearchRerankerScore float64 `json:"@search.reranker_score"`
 }
 
+// AnsysGPTCitation represents the citation structure for the Ansys GPT.
 type AnsysGPTCitation struct {
 	Title     string  `json:"Title"`
 	URL       string  `json:"URL"`
