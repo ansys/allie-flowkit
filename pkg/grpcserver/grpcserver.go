@@ -232,11 +232,11 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 // Returns:
 // - output: an interface containing the converted value
 // - err: an error containing the error message
-func convertStringToGivenType(value string, goType string) (interface{}, error) {
+func convertStringToGivenType(value string, goType string) (output interface{}, err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			log.Printf("Panic occured in convertStringToGivenType: %v", r)
+			err = fmt.Errorf("panic occured in convertStringToGivenType: %v", r)
 		}
 	}()
 
@@ -244,18 +244,29 @@ func convertStringToGivenType(value string, goType string) (interface{}, error) 
 	case "string":
 		return value, nil
 	case "float32":
+		if value == "" {
+			value = "0"
+		}
 		return strconv.ParseFloat(value, 32)
 	case "float64":
+		if value == "" {
+			value = "0"
+		}
 		return strconv.ParseFloat(value, 64)
 	case "int":
+		if value == "" {
+			value = "0"
+		}
 		return strconv.Atoi(value)
 	case "uint32":
-		value, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
-			return nil, err
+		if value == "" {
+			value = "0"
 		}
-		return uint32(value), nil
+		return strconv.ParseUint(value, 10, 32)
 	case "bool":
+		if value == "" {
+			value = "false"
+		}
 		return strconv.ParseBool(value)
 	case "[]string":
 		if value == "" {
@@ -347,6 +358,16 @@ func convertStringToGivenType(value string, goType string) (interface{}, error) 
 			return nil, err
 		}
 		return output, nil
+	case "map[string][]string":
+		if value == "" {
+			value = "{}"
+		}
+		output := map[string][]string{}
+		err := json.Unmarshal([]byte(value), &output)
+		if err != nil {
+			return nil, err
+		}
+		return output, nil
 	case "DbArrayFilter":
 		if value == "" {
 			value = "{}"
@@ -401,6 +422,39 @@ func convertStringToGivenType(value string, goType string) (interface{}, error) 
 		var output *chan string
 		output = nil
 		return output, nil
+
+	case "[]AnsysGPTDefaultFields":
+		if value == "" {
+			value = "[]"
+		}
+		output := []externalfunctions.AnsysGPTDefaultFields{}
+		err := json.Unmarshal([]byte(value), &output)
+		if err != nil {
+			return nil, err
+		}
+		return output, nil
+
+	case "[]ACSSearchResponse":
+		if value == "" {
+			value = "[]"
+		}
+		output := []externalfunctions.ACSSearchResponse{}
+		err := json.Unmarshal([]byte(value), &output)
+		if err != nil {
+			return nil, err
+		}
+		return output, nil
+
+	case "[]AnsysGPTCitation":
+		if value == "" {
+			value = "[]"
+		}
+		output := []externalfunctions.AnsysGPTCitation{}
+		err := json.Unmarshal([]byte(value), &output)
+		if err != nil {
+			return nil, err
+		}
+		return output, nil
 	}
 
 	return nil, fmt.Errorf("unsupported GoType: '%s'", goType)
@@ -415,11 +469,11 @@ func convertStringToGivenType(value string, goType string) (interface{}, error) 
 // Returns:
 // - string: a string containing the converted value
 // - err: an error containing the error message
-func convertGivenTypeToString(value interface{}, goType string) (string, error) {
+func convertGivenTypeToString(value interface{}, goType string) (output string, err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			log.Printf("Panic occured in convertGivenTypeToString: %v", r)
+			err = fmt.Errorf("panic occured in ConvertGivenTypeToString: %v", r)
 		}
 	}()
 
@@ -490,6 +544,12 @@ func convertGivenTypeToString(value interface{}, goType string) (string, error) 
 			return "", err
 		}
 		return string(output), nil
+	case "map[string][]string":
+		output, err := json.Marshal(value.(map[string][]string))
+		if err != nil {
+			return "", err
+		}
+		return string(output), nil
 	case "DbArrayFilter":
 		output, err := json.Marshal(value.(externalfunctions.DbArrayFilter))
 		if err != nil {
@@ -522,6 +582,24 @@ func convertGivenTypeToString(value interface{}, goType string) (string, error) 
 		return string(output), nil
 	case "*chan string":
 		return "", nil
+	case "[]AnsysGPTDefaultFields":
+		output, err := json.Marshal(value.([]externalfunctions.AnsysGPTDefaultFields))
+		if err != nil {
+			return "", err
+		}
+		return string(output), nil
+	case "[]ACSSearchResponse":
+		output, err := json.Marshal(value.([]externalfunctions.ACSSearchResponse))
+		if err != nil {
+			return "", err
+		}
+		return string(output), nil
+	case "[]AnsysGPTCitation":
+		output, err := json.Marshal(value.([]externalfunctions.AnsysGPTCitation))
+		if err != nil {
+			return "", err
+		}
+		return string(output), nil
 	}
 
 	return "", fmt.Errorf("unsupported GoType: '%s'", goType)

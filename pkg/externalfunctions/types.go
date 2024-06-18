@@ -258,8 +258,55 @@ type summaryCounters struct {
 }
 
 // DefaultFields represents the default fields for the user query.
-type DefaultFields struct {
+type AnsysGPTDefaultFields struct {
 	QueryWord         string
 	FieldName         string
 	FieldDefaultValue string
+}
+
+type ACSSearchRequest struct {
+	Search                string           `json:"search"`
+	VectorQueries         []ACSVectorQuery `json:"vectorQueries"`
+	VectorFilterMode      string           `json:"vectorFilterMode"`
+	Filter                string           `json:"filter"`
+	QueryType             string           `json:"queryType"`
+	SemanticConfiguration string           `json:"semanticConfiguration"`
+	Top                   int              `json:"top"`
+	Select                string           `json:"select"`
+	Count                 bool             `json:"count"`
+}
+
+type ACSVectorQuery struct {
+	Kind   string    `json:"kind"`
+	K      int       `json:"k"`
+	Vector []float32 `json:"vector"`
+	Fields string    `json:"fields"`
+}
+
+type ACSSearchResponseStruct struct {
+	OdataContext string              `json:"@odata.context"`
+	OdataCount   int                 `json:"@odata.count"`
+	Value        []ACSSearchResponse `json:"value"`
+}
+
+type ACSSearchResponse struct {
+	Physics             string  `json:"physics"`
+	SourceTitleLvl3     string  `json:"sourceTitle_lvl3"`
+	SourceURLLvl3       string  `json:"sourceURL_lvl3"`
+	TokenSize           int     `json:"tokenSize"`
+	SourceTitleLvl2     string  `json:"sourceTitle_lvl2"`
+	Weight              float64 `json:"weight"`
+	SourceURLLvl2       string  `json:"sourceURL_lvl2"`
+	Product             string  `json:"product"`
+	Content             string  `json:"content"`
+	TypeOFasset         string  `json:"typeOFasset"`
+	Version             string  `json:"version"`
+	SearchScore         float64 `json:"@search.score"`
+	SearchRerankerScore float64 `json:"@search.reranker_score"`
+}
+
+type AnsysGPTCitation struct {
+	Title     string  `json:"Title"`
+	URL       string  `json:"URL"`
+	Relevance float64 `json:"Relevance"`
 }

@@ -24,6 +24,9 @@ type AllieFlowkitConfigStruct struct {
 	EXTERNALFUNCTIONS_GRPC_PORT *string `yaml:"EXTERNALFUNCTIONS_GRPC_PORT,omitempty"`
 	LLM_HANDLER_ENDPOINT        *string `yaml:"LLM_HANDLER_ENDPOINT,omitempty"`
 	KNOWLEDGE_DB_ENDPOINT       *string `yaml:"KNOWLEDGE_DB_ENDPOINT,omitempty"`
+	ACS_ENDPOINT                string  `yaml:"ACS_ENDPOINT,omitempty"`
+	ACS_API_KEY                 string  `yaml:"ACS_API_KEY,omitempty"`
+	ACS_API_VERSION             string  `yaml:"ACS_API_VERSION,omitempty"`
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -141,7 +144,9 @@ func checkForMissingFields(c *AllieFlowkitConfigStruct) []string {
 		fieldValue := v.Field(i)
 		if isZero(fieldValue) {
 			yamlKey := getYamlKeyFromTag(fieldTag)
-			missingFields = append(missingFields, yamlKey)
+			if yamlKey != "ACS_ENDPOINT" && yamlKey != "ACS_API_KEY" && yamlKey != "ACS_API_VERSION" {
+				missingFields = append(missingFields, yamlKey)
+			}
 		}
 	}
 

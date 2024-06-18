@@ -1,11 +1,14 @@
 package externalfunctions
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -14,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ansys/allie-flowkit/pkg/config"
 	"github.com/google/uuid"
 	"nhooyr.io/websocket"
 )
@@ -503,4 +507,111 @@ func formatTemplate(template string, data map[string]string) string {
 		template = strings.ReplaceAll(template, `{`+key+`}`, value)
 	}
 	return template
+}
+
+// ACSSemanticHybridSearch performs a semantic hybrid search in ACS
+//
+// Parameters:
+//   - query: the query string
+//   - embeddedQuery: the embedded query
+//   - indexName: the index name
+//   - filter: string build in specific format (https://learn.microsoft.com/en-us/azure/search/search-filters)
+//   - filterAfterVectorSearch: the flag to define the filter order (recommended true)
+//   - returnedProperties: the properties to be returned
+//   - topK: the number of results to be returned from vector search
+//   - searchedEmbeddedFields: the ACS fields to be searched
+//
+// Returns:
+//   - output: the search results
+func ansysGPTACSSemanticHybridSearch(
+	query string,
+	embeddedQuery []float32,
+	indexName string,
+	filter map[string]string,
+	topK int) (output []ACSSearchResponse) {
+
+	// get credentials
+	acsEndpoint := config.AllieFlowkitConfig.ACS_ENDPOINT
+	acsApiKey := config.AllieFlowkitConfig.ACS_API_KEY
+	acsApiVersion := config.AllieFlowkitConfig.ACS_API_VERSION
+
+	// define searchedProperties and returnedProperties
+	searchedEmbeddedFields := "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+	returnedProperties := "physics, sourceTitle_lvl3, sourceURL_lvl3, sourceTitle_lvl2, weight, sourceURL_lvl2, product, content, typeOFasset, version"
+
+	// Create the URL
+	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
+
+	// Construct the filter query
+	var filterData []string
+	for key, value := range filter {
+		if value != "" {
+			filterData = append(filterData, fmt.Sprintf("%s eq '%s'", key, value))
+		}
+	}
+	filterQuery := strings.Join(filterData, " or ")
+
+	log.Printf("filter_data is : %s\n", filterQuery)
+
+	// Create the search request payload
+	searchRequest := ACSSearchRequest{
+		Search: query,
+		VectorQueries: []ACSVectorQuery{
+			{
+				Kind:   "vector",
+				K:      30,
+				Vector: embeddedQuery,
+				Fields: searchedEmbeddedFields,
+			},
+		},
+		VectorFilterMode:      "postFilter",
+		Filter:                filterQuery,
+		QueryType:             "semantic",
+		SemanticConfiguration: "my-semantic-config",
+		Top:                   topK,
+		Select:                returnedProperties,
+		Count:                 true,
+	}
+
+	requestBody, err := json.Marshal(searchRequest)
+	if err != nil {
+		log.Printf("failed to marshal search request: %v\n", err)
+		return nil
+	}
+
+	// Create the HTTP request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
+	if err != nil {
+		log.Printf("failed to create HTTP request: %v\n", err)
+		return nil
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("api-key", acsApiKey)
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("failed to execute HTTP request: %v\n", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	// Read and return the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("failed to read response body: %v\n", err)
+		return nil
+	}
+
+	// conver body to []map[string]interface{}
+	respObject := ACSSearchResponseStruct{}
+	err = json.Unmarshal(body, &respObject)
+	if err != nil {
+		log.Printf("failed to unmarshal response body: %v\n", err)
+		return nil
+	}
+
+	return respObject.Value
 }
