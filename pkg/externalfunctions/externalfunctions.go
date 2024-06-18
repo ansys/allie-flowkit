@@ -1131,7 +1131,6 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 
 	// Format the template
 	systemTemplate := formatTemplate(template, dataMap)
-	fmt.Println("systemTemplate:", systemTemplate)
 
 	// Perform the general request
 	rephrasedQuery, _ = PerformGeneralRequest(query, nil, false, systemTemplate)
