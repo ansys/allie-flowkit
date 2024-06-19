@@ -11,7 +11,7 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 		"product":       {"forte", "scade", "mechanical", "mechanical apdl", "fluent", "embedded software", "avxcelerate", "designxplorer", "designmodeler", "cloud direct", "maxwell", "stk", "ls-dyna", "lsdyna", "gateway", "granta", "rocky", "icepak", "siwave", "cfx", " meshing", " lumerical", "motion", "autodyn", "minerva", "redhawk-sc", "totem", "totem-sc", "powerartist", "raptorx", "velocerf", "exalto", "pathfinder", "pathfinder-sc", "diakopto", "pragonx", "primex", "on-chip electromagnetics", "redhawk-sc electrothermal", "redhawk-sc security", "voltage-timing and clock jitter", "medini", "ensight", "forte", "discovery", "hfss", "sherlock", "spaceclaim", "twin builder", "additive prep", "additive print", "composite cure sim", "composite preppost", "ncode designlife", "spaceclaim directmodeler", "cfx pre", "cfx solver", "cfx turbogrid", "icem cfd", "workbench platform"},
 	}
 
-	defaultFields := []DefaultFields{
+	defaultFields := []AnsysGPTDefaultFields{
 		{
 			QueryWord:         "course",
 			FieldName:         "type_of_asset",

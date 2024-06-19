@@ -6,3 +6,8 @@ LLM_HANDLER_ENDPOINT: "ws://localhost:8000"
 
 # Knowledge DB configuration: host and port
 KNOWLEDGE_DB_ENDPOINT: "http://localhost:3500"
+
+# Azure Cognitive Services configuration
+ACS_ENDPOINT: ""
+ACS_API_KEY: ""
+ACS_API_VERSION: ""
