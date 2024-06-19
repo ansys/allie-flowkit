@@ -247,7 +247,11 @@ func convertStringToGivenType(value string, goType string) (output interface{}, 
 		if value == "" {
 			value = "0"
 		}
-		return strconv.ParseFloat(value, 32)
+		valueFloat64, err := strconv.ParseFloat(value, 32)
+		if err != nil {
+			return nil, err
+		}
+		return float32(valueFloat64), nil
 	case "float64":
 		if value == "" {
 			value = "0"
@@ -262,7 +266,11 @@ func convertStringToGivenType(value string, goType string) (output interface{}, 
 		if value == "" {
 			value = "0"
 		}
-		return strconv.ParseUint(value, 10, 32)
+		valueUint64, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		return uint32(valueUint64), nil
 	case "bool":
 		if value == "" {
 			value = "false"
