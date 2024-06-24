@@ -147,7 +147,7 @@ jobs:
 
       - name: Build and push Docker image
         if: env.is_dev_tag == 'false'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
@@ -161,7 +161,7 @@ jobs:
 
       - name: Build and push Docker image dev
         if: env.is_dev_tag == 'true'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile
