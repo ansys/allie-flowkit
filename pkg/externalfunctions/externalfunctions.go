@@ -1114,7 +1114,10 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
 	fmt.Println("Performing rephrase request...")
 	// Append messages with conversation entries
+
 	historyMessages := ""
+	// Use only the last message from the history
+
 	for _, entry := range history {
 		switch entry.Role {
 		case "user":
@@ -1132,8 +1135,14 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	// Format the template
 	systemTemplate := formatTemplate(template, dataMap)
 
+	// print the system template
+	fmt.Println("System template:", systemTemplate)
+
 	// Perform the general request
 	rephrasedQuery, _ = PerformGeneralRequest(query, nil, false, systemTemplate)
+
+	// print the rephrased query
+	fmt.Println("Rephrased query:", rephrasedQuery)
 
 	return rephrasedQuery
 }
