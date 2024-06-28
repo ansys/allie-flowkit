@@ -1115,14 +1115,27 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	fmt.Println("Performing rephrase request...")
 	// Append messages with conversation entries
 	historyMessages := ""
-	for _, entry := range history {
-		switch entry.Role {
-		case "user":
-			historyMessages += "HumanMessage(content): " + entry.Content + "\n"
-		case "assistant":
-			historyMessages += "AIMessage(content): " + entry.Content + "\n"
-		}
-	}
+	// for _, entry := range history {
+	// 	switch entry.Role {
+	// 	case "user":
+	// 		historyMessages += "HumanMessage(content): " + entry.Content + "\n"
+	// 	case "assistant":
+	// 		historyMessages += "AIMessage(content): " + entry.Content + "\n"
+	// 	}
+	// }
+	// adding a sample comment
+
+	// last message from history
+    if len(history) > 0 {
+        lastEntry := history[len(history)-1]
+        switch lastEntry.Role {
+        case "user":
+            historyMessages += "HumanMessage(content): " + lastEntry.Content + "\n"
+        case "assistant":
+            historyMessages += "AIMessage(content): " + lastEntry.Content + "\n"
+        }
+    }
+
 
 	// Create map for the data to be used in the template
 	dataMap := make(map[string]string)
