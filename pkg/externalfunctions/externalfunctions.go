@@ -67,7 +67,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	var embedding32 []float32
 	for response := range responseChannel {
 		// Log LLM response
-		log.Println("Received embeddings response... Storing array.")
+		log.Println("Received embeddings response.")
 
 		// Get embedded vector array
 		embedding32 = response.EmbeddedData
@@ -121,7 +121,9 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	// Unmarshal JSON data into the result variable
 	err := json.Unmarshal([]byte(responseAsStr), &keywords)
 	if err != nil {
-		log.Fatalf("Error unmarshalling JSON data: %s", err)
+		errMessage := fmt.Sprintf("Error unmarshalling keywords response from allie-llm: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Return the response
@@ -227,13 +229,17 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 		// Extract the code from the response
 		pythonCode, err := extractPythonCode(responseAsStr)
 		if err != nil {
-			log.Printf("Error extracting Python code: %v\n", err)
+			errMessage := fmt.Sprintf("Error extracting Python code: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
 		} else {
 
 			// Validate the Python code
 			valid, warnings, err := validatePythonCode(pythonCode)
 			if err != nil {
-				log.Printf("Error validating Python code: %v\n", err)
+				errMessage := fmt.Sprintf("Error validating Python code: %v", err)
+				log.Println(errMessage)
+				panic(errMessage)
 			} else {
 				if valid {
 					if warnings {
@@ -326,7 +332,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Specify the target endpoint.
@@ -335,7 +343,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -345,14 +355,18 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Log the similarity search response
@@ -363,7 +377,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	var mostRelevantData []DbResponse
@@ -410,7 +426,9 @@ func GetListCollections() (collectionsList []string) {
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating GET /list_collections request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -420,24 +438,34 @@ func GetListCollections() (collectionsList []string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending GET /list_collections request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Unmarshal the response body to the appropriate struct.
 	var response DBListCollectionsOutput
 	err = json.Unmarshal(body, &response)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
 
 	// Log the result and return the list of collections
-	if err != nil || !response.Success {
-		log.Println("List collections retrieval failed!")
-		return []string{}
+	if !response.Success {
+		errMessage := "Failed to retrieve list of collections from allie-db"
+		log.Println(errMessage)
+		panic(errMessage)
 	} else {
 		log.Println("List collections response received!")
 		log.Println("Collections:", response.Collections)
@@ -485,13 +513,17 @@ func RetrieveDependencies(
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -501,14 +533,18 @@ func RetrieveDependencies(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB RetrieveDependencies response received!")
@@ -517,7 +553,9 @@ func RetrieveDependencies(
 	var response retrieveDependenciesOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return response.DependenciesIds
@@ -547,13 +585,17 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -563,14 +605,18 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB GeneralNeo4jQuery response received!")
@@ -579,7 +625,9 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	var response GeneralNeo4jQueryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return response.Response
@@ -615,13 +663,17 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -631,14 +683,18 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /query request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /query request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB GeneralQuery response received!")
@@ -647,7 +703,9 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	var response queryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return response.QueryResult
@@ -793,13 +851,17 @@ func SimilaritySearch(
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -809,14 +871,18 @@ func SimilaritySearch(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB SimilaritySearch response received!")
@@ -825,7 +891,9 @@ func SimilaritySearch(
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	var similarityResults []DbResponse
@@ -981,8 +1049,9 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	case assistant:
 	case system:
 	default:
-		log.Printf("Invalid role: %v\n", role)
-		return history
+		errMessage := fmt.Sprintf("Invalid role used for 'AppendMessageHistory': %v", role)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// skip for empty messages
