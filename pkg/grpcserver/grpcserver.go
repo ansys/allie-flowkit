@@ -64,12 +64,18 @@ func (s *server) ListFunctions(ctx context.Context, req *allieflowkitgrpc.ListFu
 // Returns:
 // - allieflowkitgrpc.FunctionOutputs: the outputs of the function
 // - error: an error if the function fails
-func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.FunctionInputs) (*allieflowkitgrpc.FunctionOutputs, error) {
+func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.FunctionInputs) (output *allieflowkitgrpc.FunctionOutputs, err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = fmt.Errorf("error occured in gRPC server allie-flowkit during RunFunction of '%v': %v", req.Name, r)
+		}
+	}()
 
 	// get function definition from available functions
 	functionDefinition, ok := internalstates.AvailableFunctions[req.Name]
 	if !ok {
-		return nil, fmt.Errorf("function with id %s not found", req.Name)
+		return nil, fmt.Errorf("function with name %s not found", req.Name)
 	}
 
 	// create input slice
@@ -133,7 +139,23 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 	return &allieflowkitgrpc.FunctionOutputs{Name: req.Name, Outputs: outputs}, nil
 }
 
-func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream allieflowkitgrpc.ExternalFunctions_StreamFunctionServer) error {
+// StreamFunction streams a function from the external functions package
+// The function is identified by the function id
+// The function inputs are passed as a list of FunctionInput
+//
+// Parameters:
+// - req: the request to stream a function
+// - stream: the stream to send the function outputs
+//
+// Returns:
+// - error: an error if the function fails
+func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream allieflowkitgrpc.ExternalFunctions_StreamFunctionServer) (err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = fmt.Errorf("error occured in gRPC server allie-flowkit during StreamFunction of '%v': %v", req.Name, r)
+		}
+	}()
 
 	// get function definition from available functions
 	functionDefinition, ok := internalstates.AvailableFunctions[req.Name]
@@ -215,7 +237,7 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 		IsLast:         true,
 		Value:          "",
 	}
-	err := stream.Send(output)
+	err = stream.Send(output)
 	if err != nil {
 		return err
 	}
