@@ -1,0 +1,17 @@
+[
+  {
+    "name": "dev",
+    "version": "dev",
+    "url": "https://laughing-guide-5m1lvq6.pages.github.io/version/dev/"
+  },
+  {
+    "name": "0.3 (stable)",
+    "version": "0.3",
+    "url": "https://laughing-guide-5m1lvq6.pages.github.io/version/stable/"
+  },
+  {
+    "name": "0.1",
+    "version": "0.1",
+    "url": "https://laughing-guide-5m1lvq6.pages.github.io/version/0.1/"
+  }
+]
