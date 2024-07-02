@@ -31,6 +31,11 @@ import (
 func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerResponse, streamChannel *chan string, validateCode bool) {
 	responseAsStr := ""
 	for response := range *responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			*streamChannel <- response.Error.Message
+			break
+		}
 
 		// append the response to the responseAsStr
 		responseAsStr += *response.ChatData
@@ -110,9 +115,9 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
 	go listener(c, responseChannel)
-	go writer(c, requestChannelChat)
+	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel)
 
 	return responseChannel // Return the response channel
 }
@@ -133,9 +138,9 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerR
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
 	go listener(c, responseChannel)
-	go writer(c, requestChannelEmbeddings)
+	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "")
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel)
 
 	return responseChannel // Return the response channel
 }
@@ -185,7 +190,15 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to read message from allie-llm: %v", err)
 			log.Println(errMessage)
-			panic(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 		switch typ {
 		case websocket.MessageText, websocket.MessageBinary:
@@ -201,14 +214,30 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 				} else {
 					errMessage := fmt.Sprintf("failed to unmarshal message from allie-llm: %v", err)
 					log.Println(errMessage)
-					panic(errMessage)
+					response := HandlerResponse{
+						Type: "error",
+						Error: &ErrorResponse{
+							Code:    4,
+							Message: errMessage,
+						},
+					}
+					responseChannel <- response
+					return
 				}
 			}
 
 			if response.Type == "error" {
 				errMessage := fmt.Sprintf("error in request %v: %v (%v)\n", response.InstructionGuid, response.Error.Code, response.Error.Message)
 				log.Println(errMessage)
-				panic(errMessage)
+				response := HandlerResponse{
+					Type: "error",
+					Error: &ErrorResponse{
+						Code:    4,
+						Message: errMessage,
+					},
+				}
+				responseChannel <- response
+				return
 			} else {
 				switch response.Type {
 				case "chat":
@@ -223,7 +252,6 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 					log.Println("Embeddings received from allie-llm.")
 				case "info":
 					log.Printf("Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
-					continue
 				default:
 					log.Println("Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
@@ -251,7 +279,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 // Parameters:
 //   - c: the websocket connection
 //   - RequestChannel: the request channel
-func writer(c *websocket.Conn, RequestChannel chan []byte) {
+func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan HandlerResponse) {
 	for {
 		requestJSON := <-RequestChannel
 
@@ -259,7 +287,15 @@ func writer(c *websocket.Conn, RequestChannel chan []byte) {
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to write message to allie-llm: %v", err)
 			log.Println(errMessage)
-			panic(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 	}
 }
@@ -274,7 +310,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte) {
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string) {
+func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse) {
 	request := HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
@@ -292,14 +328,30 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 		if chatRequestType == "" {
 			errMessage := "Property 'ChatRequestType' is required for 'Adapter' type 'chat' requests to allie-llm."
 			log.Println(errMessage)
-			panic(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 		request.ChatRequestType = chatRequestType
 
 		if dataStream == "" {
 			errMessage := "Property 'DataStream' is required for for 'Adapter' type 'chat' requests to allie-llm."
 			log.Println(errMessage)
-			panic(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 
 		if dataStream == "true" {
@@ -323,7 +375,15 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to marshal request to allie-llm: %v", err)
 		log.Println(errMessage)
-		panic(errMessage)
+		response := HandlerResponse{
+			Type: "error",
+			Error: &ErrorResponse{
+				Code:    4,
+				Message: errMessage,
+			},
+		}
+		responseChannel <- response
+		return
 	}
 
 	RequestChannel <- requestJSON
