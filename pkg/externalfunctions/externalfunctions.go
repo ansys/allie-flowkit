@@ -66,6 +66,11 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	// Process the first response and close the channel
 	var embedding32 []float32
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Log LLM response
 		log.Println("Received embeddings response.")
 
@@ -105,6 +110,10 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	// Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
 
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
@@ -163,6 +172,11 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
 
@@ -211,6 +225,11 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
 
@@ -1264,6 +1283,11 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []HistoricMessage, sys
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
 
