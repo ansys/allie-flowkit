@@ -34,7 +34,7 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerRespon
 		// Check if the response is an error
 		if response.Type == "error" {
 			*streamChannel <- response.Error.Message
-			return
+			break
 		}
 
 		// append the response to the responseAsStr
