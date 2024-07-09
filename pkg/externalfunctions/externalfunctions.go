@@ -7,11 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/ansys/allie-flowkit/pkg/config"
-	"github.com/schollz/closestmatch"
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
@@ -1101,20 +1101,34 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 //   - foundProhibited: the flag indicating whether prohibited words were found
 //   - responseMessage: the response message
 func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorResponseMessage string) (foundProhibited bool, responseMessage string) {
-	// Check each prohibited word for exact match ignoring case
-	for _, prohibitedWord := range prohibitedWords {
-		if strings.Contains(strings.ToLower(query), strings.ToLower(prohibitedWord)) {
+	// Check if all words in the value are present as whole words in the query
+	queryLower := strings.ToLower(query)
+	for _, prohibitedValue := range prohibitedWords {
+		allWordsMatch := true
+		for _, fieldWord := range strings.Fields(strings.ToLower(prohibitedValue)) {
+			pattern := `\b` + regexp.QuoteMeta(fieldWord) + `\b`
+			match, _ := regexp.MatchString(pattern, queryLower)
+			if !match {
+				allWordsMatch = false
+				break
+			}
+		}
+		if allWordsMatch {
 			return true, errorResponseMessage
 		}
 	}
 
-	// If no exact match found, use fuzzy matching
+	// Check for prohibited words using fuzzy matching
 	cutoff := 0.9
-	cm := closestmatch.New(prohibitedWords, []int{3})
 	for _, word := range strings.Fields(query) {
-		closestWord := cm.Closest(word)
-		distance := levenshtein.RatioForStrings([]rune(word), []rune(closestWord), levenshtein.DefaultOptions)
-		if distance >= cutoff {
+		closestDistance := 0.0
+		for _, prohibitedValue := range prohibitedWords {
+			distance := levenshtein.RatioForStrings([]rune(word), []rune(prohibitedValue), levenshtein.DefaultOptions)
+			if distance >= closestDistance {
+				closestDistance = distance
+			}
+		}
+		if closestDistance >= cutoff {
 			return true, errorResponseMessage
 		}
 	}
@@ -1137,7 +1151,6 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 
 	// Check each field
 	for field, values := range fieldValues {
-
 		// Initializing the field with None
 		fields[field] = ""
 
@@ -1146,29 +1159,45 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 			return len(values[i]) > len(values[j])
 		})
 
-		// Check each possible value for exact match ignoring case
-		for _, value := range values {
-			if strings.Contains(strings.ToLower(query), strings.ToLower(value)) {
-				fields[field] = value
-				fmt.Println("Exact match found for", field, ":", value)
+		// Check if all words in the value are present as whole words in the query
+		lowercaseQuery := strings.ToLower(query)
+		for _, fieldValue := range values {
+			allWordsMatch := true
+			for _, fieldWord := range strings.Fields(strings.ToLower(fieldValue)) {
+				pattern := `\b` + regexp.QuoteMeta(fieldWord) + `\b`
+				match, _ := regexp.MatchString(pattern, lowercaseQuery)
+				if !match {
+					allWordsMatch = false
+					break
+				}
+			}
+
+			if allWordsMatch {
+				fields[field] = fieldValue
+				fmt.Println("Exact match found for", field, ":", fieldValue)
 				break
 			}
 		}
 
 		// Split the query into words
-		words := strings.Fields(query)
+		words := strings.Fields(lowercaseQuery)
 
 		// If no exact match found, use fuzzy matching
 		if fields[field] == "" {
 			cutoff := 0.75
-			cm := closestmatch.New(words, []int{3})
-			for _, value := range values {
-				for _, word := range strings.Fields(value) {
-					closestWord := cm.Closest(word)
-					distance := levenshtein.RatioForStrings([]rune(word), []rune(closestWord), levenshtein.DefaultOptions)
-					if distance >= cutoff {
-						fields[field] = value
-						fmt.Println("Fuzzy match found for", field, ":", distance)
+			for _, fieldValue := range values {
+				for _, fieldWord := range strings.Fields(fieldValue) {
+					closestDistance := 0.0
+					for _, queryWord := range words {
+						distance := levenshtein.RatioForStrings([]rune(fieldWord), []rune(queryWord), levenshtein.DefaultOptions)
+						if distance >= closestDistance {
+							closestDistance = distance
+						}
+					}
+
+					if closestDistance >= cutoff {
+						fields[field] = fieldValue
+						fmt.Println("Fuzzy match found for", field, ":", closestDistance)
 						break
 					}
 				}

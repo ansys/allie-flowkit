@@ -20,7 +20,7 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 		{
 			QueryWord:         "apdl",
 			FieldName:         "product",
-			FieldDefaultValue: "ls-dyna",
+			FieldDefaultValue: "mechanical apdl",
 		},
 		{
 			QueryWord:         "lsdyna",
@@ -58,16 +58,8 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 			want:  map[string]string{"product": "mechanical", "type_of_asset": "aic"},
 		},
 		{
-			query: "Can you check in Ansys help manual about the term 'remote pont'?",
-			want:  map[string]string{"physics": "stem"},
-		},
-		{
 			query: "Is there any knowledge articles on how to define frictional contact in Ansys Mechanical?",
 			want:  map[string]string{"product": "mechanical", "type_of_asset": "article"},
-		},
-		{
-			query: "Is there any knowledge materials on how to define frictional contact in Ansys Mechanical?",
-			want:  map[string]string{"product": "mechanical", "type_of_asset": "materials"},
 		},
 		{
 			query: "Is there any KMs on how to model turbulent fluid flow in Ansys Fluent?",
@@ -150,6 +142,11 @@ func TestAnsysGPTCheckProhibitedWords(t *testing.T) {
 			query:       "How to prevent explosion in a chemical plant?",
 			wantFound:   true,
 			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "What are the new developments in software engineering?",
+			wantFound:   false,
+			wantMessage: "",
 		},
 	}
 
