@@ -248,17 +248,13 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 		// Extract the code from the response
 		pythonCode, err := extractPythonCode(responseAsStr)
 		if err != nil {
-			errMessage := fmt.Sprintf("Error extracting Python code: %v", err)
-			log.Println(errMessage)
-			panic(errMessage)
+			log.Printf("Error extracting Python code: %v", err)
 		} else {
 
 			// Validate the Python code
 			valid, warnings, err := validatePythonCode(pythonCode)
 			if err != nil {
-				errMessage := fmt.Sprintf("Error validating Python code: %v", err)
-				log.Println(errMessage)
-				panic(errMessage)
+				log.Printf("Error validating Python code: %v", err)
 			} else {
 				if valid {
 					if warnings {
