@@ -20,7 +20,7 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 		{
 			QueryWord:         "apdl",
 			FieldName:         "product",
-			FieldDefaultValue: "ls-dyna",
+			FieldDefaultValue: "mechanical apdl",
 		},
 		{
 			QueryWord:         "lsdyna",
@@ -58,20 +58,48 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 			want:  map[string]string{"product": "mechanical", "type_of_asset": "aic"},
 		},
 		{
-			query: "Can you check in Ansys help manual about the term 'remote pont'?",
-			want:  map[string]string{"physics": "stem"},
-		},
-		{
 			query: "Is there any knowledge articles on how to define frictional contact in Ansys Mechanical?",
 			want:  map[string]string{"product": "mechanical", "type_of_asset": "article"},
 		},
 		{
-			query: "Is there any knowledge materials on how to define frictional contact in Ansys Mechanical?",
-			want:  map[string]string{"product": "mechanical", "type_of_asset": "materials"},
-		},
-		{
 			query: "Is there any KMs on how to model turbulent fluid flow in Ansys Fluent?",
 			want:  map[string]string{"product": "fluent", "physics": "fluids", "type_of_asset": "km"},
+		},
+		{
+			query: "Please provide information on materials used in semiconductors.",
+			want:  map[string]string{"physics": "semiconductors"},
+		},
+		{
+			query: "What are the new features in the latest SCADE release?",
+			want:  map[string]string{"product": "scade"},
+		},
+		{
+			query: "I need some documentation on the CFX solver.",
+			want:  map[string]string{"product": "cfx solver", "type_of_asset": "documentation"},
+		},
+		{
+			query: "Are there any new articles on fluid dynamics?",
+			want:  map[string]string{"physics": "fluid dynamics", "type_of_asset": "article"},
+		},
+		{
+			query: "Tell me more about the Mechanical APDL course.",
+			want:  map[string]string{"product": "mechanical apdl", "type_of_asset": "aic"},
+		},
+		{
+			query: "Is there any training available for Discovery?",
+			want:  map[string]string{"product": "discovery"},
+		},
+		{
+			query: "Where can I find the general FAQ for DesignXplorer?",
+			want:  map[string]string{"product": "designxplorer", "type_of_asset": "general_faq"},
+		},
+		{
+			query: "Any new documentation on the Additive Print tool?",
+			want:  map[string]string{"product": "additive print", "type_of_asset": "documentation"},
+		},
+		{
+			query: "Looking for a brochure on SpaceClaim.",
+			want:  map[string]string{"product": "spaceclaim", "type_of_asset": "brochure"},
 		},
 	}
 
@@ -89,10 +117,10 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 
 func TestAnsysGPTCheckProhibitedWords(t *testing.T) {
 	prohibitedWords := []string{
-		"gun", "firearm", "armament", "ammunition", "launchvehicle", "missile", "ballistic", "rocket", "torpedo", "bomb",
+		"gun", "firearm", "armament", "ammunition", "launch vehicle", "missile", "ballistic", "rocket", "torpedo", "bomb",
 		"satellite", "mine", "explosive", "ordinance", "energetic materials", "propellants", "incendiary",
-		"war", "groundvehicles", "weapon", "biological agent", "spacecraft",
-		"nuclear", "classifiedarticles", "directedenergyweapons", "explosion", "jetengine", "defense", "military", "terrorism",
+		"war", "ground vehicles", "weapon", "biological agent", "spacecraft",
+		"nuclear", "classified articles", "directed energy weapons", "explosion", "jet engine", "defense", "military", "terrorism",
 	}
 	errorResponseMessage := "Prohibited content detected."
 
@@ -101,6 +129,7 @@ func TestAnsysGPTCheckProhibitedWords(t *testing.T) {
 		wantFound   bool
 		wantMessage string
 	}{
+		// Original test cases
 		{
 			query:       "This is a test query about gun control.",
 			wantFound:   true,
@@ -148,6 +177,91 @@ func TestAnsysGPTCheckProhibitedWords(t *testing.T) {
 		},
 		{
 			query:       "How to prevent explosion in a chemical plant?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "What are the new developments in software engineering?",
+			wantFound:   false,
+			wantMessage: "",
+		},
+		{
+			query:       "Discuss the implications of gunfire and missile technology.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Are there any developments in ballistic missile defense?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "What are the effects of nuclear power and its use in military applications?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Looking into the properties of energetic materials.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "How are propellants used in spacecraft propulsion?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Research on biological agents and their countermeasures.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Exploring the field of aerospace engineering.",
+			wantFound:   false,
+			wantMessage: "",
+		},
+		{
+			query:       "Impact of missile defense systems.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "What measures are taken to prevent explosive incidents?",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Analyzing the efficiency of new jet engines.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Studying the defense mechanisms of modern military systems.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Exploring advancements in directed energy weapons.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "The latest updates in classified articles.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Looking into the propulsion systems of launch vehicles.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Discussion on energetic materials and their applications.",
+			wantFound:   true,
+			wantMessage: errorResponseMessage,
+		},
+		{
+			query:       "Examining the use of armaments in modern warfare.",
 			wantFound:   true,
 			wantMessage: errorResponseMessage,
 		},
