@@ -7,11 +7,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/ansys/allie-flowkit/pkg/config"
-	"github.com/schollz/closestmatch"
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
@@ -66,8 +66,13 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	// Process the first response and close the channel
 	var embedding32 []float32
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Log LLM response
-		log.Println("Received embeddings response... Storing array.")
+		log.Println("Received embeddings response.")
 
 		// Get embedded vector array
 		embedding32 = response.EmbeddedData
@@ -105,6 +110,10 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	// Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
 
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
@@ -121,7 +130,9 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	// Unmarshal JSON data into the result variable
 	err := json.Unmarshal([]byte(responseAsStr), &keywords)
 	if err != nil {
-		log.Fatalf("Error unmarshalling JSON data: %s", err)
+		errMessage := fmt.Sprintf("Error unmarshalling keywords response from allie-llm: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Return the response
@@ -161,6 +172,11 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
 
@@ -209,6 +225,11 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
 
@@ -227,13 +248,17 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 		// Extract the code from the response
 		pythonCode, err := extractPythonCode(responseAsStr)
 		if err != nil {
-			log.Printf("Error extracting Python code: %v\n", err)
+			errMessage := fmt.Sprintf("Error extracting Python code: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
 		} else {
 
 			// Validate the Python code
 			valid, warnings, err := validatePythonCode(pythonCode)
 			if err != nil {
-				log.Printf("Error validating Python code: %v\n", err)
+				errMessage := fmt.Sprintf("Error validating Python code: %v", err)
+				log.Println(errMessage)
+				panic(errMessage)
 			} else {
 				if valid {
 					if warnings {
@@ -326,7 +351,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Specify the target endpoint.
@@ -335,7 +362,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -345,14 +374,18 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Log the similarity search response
@@ -363,7 +396,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	var mostRelevantData []DbResponse
@@ -410,7 +445,9 @@ func GetListCollections() (collectionsList []string) {
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating GET /list_collections request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -420,24 +457,34 @@ func GetListCollections() (collectionsList []string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending GET /list_collections request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Unmarshal the response body to the appropriate struct.
 	var response DBListCollectionsOutput
 	err = json.Unmarshal(body, &response)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
 
 	// Log the result and return the list of collections
-	if err != nil || !response.Success {
-		log.Println("List collections retrieval failed!")
-		return []string{}
+	if !response.Success {
+		errMessage := "Failed to retrieve list of collections from allie-db"
+		log.Println(errMessage)
+		panic(errMessage)
 	} else {
 		log.Println("List collections response received!")
 		log.Println("Collections:", response.Collections)
@@ -485,13 +532,17 @@ func RetrieveDependencies(
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -501,14 +552,18 @@ func RetrieveDependencies(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB RetrieveDependencies response received!")
@@ -517,7 +572,9 @@ func RetrieveDependencies(
 	var response retrieveDependenciesOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return response.DependenciesIds
@@ -547,13 +604,17 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -563,14 +624,18 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB GeneralNeo4jQuery response received!")
@@ -579,7 +644,9 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	var response GeneralNeo4jQueryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return response.Response
@@ -615,13 +682,17 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /query request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -631,14 +702,18 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /query request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /query request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB GeneralQuery response received!")
@@ -647,7 +722,9 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	var response queryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return response.QueryResult
@@ -793,13 +870,17 @@ func SimilaritySearch(
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Set the appropriate content type for the request.
@@ -809,14 +890,18 @@ func SimilaritySearch(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	log.Println("Knowledge DB SimilaritySearch response received!")
@@ -825,7 +910,9 @@ func SimilaritySearch(
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		log.Fatal(err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	var similarityResults []DbResponse
@@ -981,8 +1068,9 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	case assistant:
 	case system:
 	default:
-		log.Printf("Invalid role: %v\n", role)
-		return history
+		errMessage := fmt.Sprintf("Invalid role used for 'AppendMessageHistory': %v", role)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// skip for empty messages
@@ -1013,21 +1101,50 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 //   - foundProhibited: the flag indicating whether prohibited words were found
 //   - responseMessage: the response message
 func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorResponseMessage string) (foundProhibited bool, responseMessage string) {
-	// Check each prohibited word for exact match ignoring case
-	for _, prohibitedWord := range prohibitedWords {
-		if strings.Contains(strings.ToLower(query), strings.ToLower(prohibitedWord)) {
+	// Check if all words in the value are present as whole words in the query
+	queryLower := strings.ToLower(query)
+	queryLower = strings.ReplaceAll(queryLower, ".", "")
+	for _, prohibitedValue := range prohibitedWords {
+		allWordsMatch := true
+		for _, fieldWord := range strings.Fields(strings.ToLower(prohibitedValue)) {
+			pattern := `\b` + regexp.QuoteMeta(fieldWord) + `\b`
+			match, _ := regexp.MatchString(pattern, queryLower)
+			if !match {
+				allWordsMatch = false
+				break
+			}
+		}
+		if allWordsMatch {
 			return true, errorResponseMessage
 		}
 	}
 
-	// If no exact match found, use fuzzy matching
+	// Check for prohibited words using fuzzy matching
 	cutoff := 0.9
-	cm := closestmatch.New(prohibitedWords, []int{3})
-	for _, word := range strings.Fields(query) {
-		closestWord := cm.Closest(word)
-		distance := levenshtein.RatioForStrings([]rune(word), []rune(closestWord), levenshtein.DefaultOptions)
-		if distance >= cutoff {
+	for _, prohibitedValue := range prohibitedWords {
+		wordMatchCount := 0
+		for _, fieldWord := range strings.Fields(strings.ToLower(prohibitedValue)) {
+			for _, word := range strings.Fields(queryLower) {
+				distance := levenshtein.RatioForStrings([]rune(word), []rune(fieldWord), levenshtein.DefaultOptions)
+				if distance >= cutoff {
+					wordMatchCount++
+					break
+				}
+			}
+		}
+
+		if wordMatchCount == len(strings.Fields(prohibitedValue)) {
 			return true, errorResponseMessage
+		}
+
+		// If multiple words are present in the field , also check for the whole words without spaces
+		if strings.Contains(prohibitedValue, " ") {
+			for _, word := range strings.Fields(queryLower) {
+				distance := levenshtein.RatioForStrings([]rune(word), []rune(prohibitedValue), levenshtein.DefaultOptions)
+				if distance >= cutoff {
+					return true, errorResponseMessage
+				}
+			}
 		}
 	}
 
@@ -1049,7 +1166,6 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 
 	// Check each field
 	for field, values := range fieldValues {
-
 		// Initializing the field with None
 		fields[field] = ""
 
@@ -1058,30 +1174,40 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 			return len(values[i]) > len(values[j])
 		})
 
-		// Check each possible value for exact match ignoring case
-		for _, value := range values {
-			if strings.Contains(strings.ToLower(query), strings.ToLower(value)) {
-				fields[field] = value
-				fmt.Println("Exact match found for", field, ":", value)
+		// Check if all words in the value are present as whole words in the query
+		lowercaseQuery := strings.ToLower(query)
+		for _, fieldValue := range values {
+			allWordsMatch := true
+			for _, fieldWord := range strings.Fields(strings.ToLower(fieldValue)) {
+				pattern := `\b` + regexp.QuoteMeta(fieldWord) + `\b`
+				match, _ := regexp.MatchString(pattern, lowercaseQuery)
+				if !match {
+					allWordsMatch = false
+					break
+				}
+			}
+
+			if allWordsMatch {
+				fields[field] = fieldValue
+				fmt.Println("Exact match found for", field, ":", fieldValue)
 				break
 			}
 		}
 
 		// Split the query into words
-		words := strings.Fields(query)
+		words := strings.Fields(lowercaseQuery)
 
 		// If no exact match found, use fuzzy matching
 		if fields[field] == "" {
 			cutoff := 0.75
-			cm := closestmatch.New(words, []int{3})
-			for _, value := range values {
-				for _, word := range strings.Fields(value) {
-					closestWord := cm.Closest(word)
-					distance := levenshtein.RatioForStrings([]rune(word), []rune(closestWord), levenshtein.DefaultOptions)
-					if distance >= cutoff {
-						fields[field] = value
-						fmt.Println("Fuzzy match found for", field, ":", distance)
-						break
+			for _, fieldValue := range values {
+				for _, fieldWord := range strings.Fields(fieldValue) {
+					for _, queryWord := range words {
+						distance := levenshtein.RatioForStrings([]rune(fieldWord), []rune(queryWord), levenshtein.DefaultOptions)
+						if distance >= cutoff {
+							fields[field] = fieldValue
+							break
+						}
 					}
 				}
 			}
@@ -1199,6 +1325,11 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []HistoricMessage, sys
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
 		// Accumulate the responses
 		responseAsStr += *(response.ChatData)
 

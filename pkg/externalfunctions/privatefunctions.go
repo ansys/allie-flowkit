@@ -31,6 +31,11 @@ import (
 func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerResponse, streamChannel *chan string, validateCode bool) {
 	responseAsStr := ""
 	for response := range *responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			*streamChannel <- response.Error.Message
+			break
+		}
 
 		// append the response to the responseAsStr
 		responseAsStr += *response.ChatData
@@ -106,9 +111,9 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
 	go listener(c, responseChannel)
-	go writer(c, requestChannelChat)
+	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel)
 
 	return responseChannel // Return the response channel
 }
@@ -129,9 +134,9 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerR
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
 	go listener(c, responseChannel)
-	go writer(c, requestChannelEmbeddings)
+	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "")
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel)
 
 	return responseChannel // Return the response channel
 }
@@ -141,24 +146,21 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerR
 // Returns:
 //   - *websocket.Conn: the websocket connection
 func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in initializeClient: %v\n", r)
-		}
-	}()
-
 	url := llmHandlerEndpoint
 
 	c, _, err := websocket.Dial(context.Background(), url, nil)
 	if err != nil {
-		log.Printf("Failed to connect to the websocket: %v\n", err)
+		errMessage := fmt.Sprintf("failed to connect to allie-llm: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Send "testkey" for authentication
 	err = c.Write(context.Background(), websocket.MessageText, []byte("testkey"))
 	if err != nil {
-		log.Printf("Failed to send authentication message: %v\n", err)
+		errMessage := fmt.Sprintf("failed to send authentication message to allie-llm: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return c
@@ -170,12 +172,6 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 //   - c: the websocket connection
 //   - responseChannel: the response channel
 func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in listener: %v\n", r)
-		}
-	}()
 
 	// Close the connection when the function returns
 	defer c.Close(websocket.StatusNormalClosure, "")
@@ -188,7 +184,16 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		stopListener = true
 		typ, message, err := c.Read(context.Background())
 		if err != nil {
-			log.Printf("Failed to read from the websocket: %v", err)
+			errMessage := fmt.Sprintf("failed to read message from allie-llm: %v", err)
+			log.Println(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
 			return
 		}
 		switch typ {
@@ -203,14 +208,31 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 					log.Println("Authentication to LLM was successful.")
 					continue
 				} else {
-					log.Printf("Failed to unmarshal the message: %v\n", err)
-					log.Printf("Failure message (as string): %v\n", msgAsStr)
+					errMessage := fmt.Sprintf("failed to unmarshal message from allie-llm: %v", err)
+					log.Println(errMessage)
+					response := HandlerResponse{
+						Type: "error",
+						Error: &ErrorResponse{
+							Code:    4,
+							Message: errMessage,
+						},
+					}
+					responseChannel <- response
 					return
 				}
 			}
 
 			if response.Type == "error" {
-				log.Printf("Error in request %v: %v (%v)\n", response.InstructionGuid, response.Error.Code, response.Error.Message)
+				errMessage := fmt.Sprintf("error in request %v: %v (%v)\n", response.InstructionGuid, response.Error.Code, response.Error.Message)
+				log.Println(errMessage)
+				response := HandlerResponse{
+					Type: "error",
+					Error: &ErrorResponse{
+						Code:    4,
+						Message: errMessage,
+					},
+				}
+				responseChannel <- response
 				return
 			} else {
 				switch response.Type {
@@ -220,21 +242,20 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 						stopListener = false
 					} else {
 						// If it is the last message, stop listening
-						log.Println("Chat response completely received from LLM.")
+						log.Println("Chat response completely received from allie-llm.")
 					}
 				case "embeddings":
-					log.Println("Embeddings received from LLM.")
+					log.Println("Embeddings received from allie-llm.")
 				case "info":
 					log.Printf("Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
-					continue
 				default:
-					log.Println("Not supported adapter type.")
+					log.Println("Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
 				// Send the response to the channel
 				responseChannel <- response
 			}
 		default:
-			log.Printf("Unhandled message type: %v\n", typ)
+			log.Printf("Response with unsupported message type '%v'received from allie-llm. Ignoring...\n", typ)
 		}
 
 		// If stopListener is true, stop the listener
@@ -243,7 +264,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		// - the embeddings response is received
 		// - an unsupported adapter type is received
 		if stopListener {
-			log.Println("Stopping listener for LLM Handler request.")
+			log.Println("Stopping listener for allie-llm request.")
 			return
 		}
 	}
@@ -254,19 +275,23 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 // Parameters:
 //   - c: the websocket connection
 //   - RequestChannel: the request channel
-func writer(c *websocket.Conn, RequestChannel chan []byte) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in writer: %v\n", r)
-		}
-	}()
+func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan HandlerResponse) {
 	for {
 		requestJSON := <-RequestChannel
 
 		err := c.Write(context.Background(), websocket.MessageBinary, requestJSON)
 		if err != nil {
-			log.Printf("Failed to send message: %v\n", err)
+			errMessage := fmt.Sprintf("failed to write message to allie-llm: %v", err)
+			log.Println(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 	}
 }
@@ -281,14 +306,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte) {
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Printf("Panic occured in SendRequest: %v\n", r)
-		}
-	}()
-
+func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse) {
 	request := HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
@@ -304,12 +322,32 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 
 	if adapter == "chat" {
 		if chatRequestType == "" {
-			log.Println("ChatRequestType is required for chat adapter")
+			errMessage := "Property 'ChatRequestType' is required for 'Adapter' type 'chat' requests to allie-llm."
+			log.Println(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 		request.ChatRequestType = chatRequestType
 
 		if dataStream == "" {
-			log.Println("DataStream is required for chat adapter")
+			errMessage := "Property 'DataStream' is required for for 'Adapter' type 'chat' requests to allie-llm."
+			log.Println(errMessage)
+			response := HandlerResponse{
+				Type: "error",
+				Error: &ErrorResponse{
+					Code:    4,
+					Message: errMessage,
+				},
+			}
+			responseChannel <- response
+			return
 		}
 
 		if dataStream == "true" {
@@ -331,7 +369,17 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
-		log.Printf("Failed to marshal the message: %v\n", err)
+		errMessage := fmt.Sprintf("failed to marshal request to allie-llm: %v", err)
+		log.Println(errMessage)
+		response := HandlerResponse{
+			Type: "error",
+			Error: &ErrorResponse{
+				Code:    4,
+				Message: errMessage,
+			},
+		}
+		responseChannel <- response
+		return
 	}
 
 	RequestChannel <- requestJSON
@@ -343,13 +391,6 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 //   - c: the websocket connection
 //   - RequestChannel: the request channel
 func shutdownHandler(c *websocket.Conn) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			i := fmt.Sprintf("%v", r)
-			log.Printf("Panic in shutdownHandler: %v\n", i)
-		}
-	}()
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT)
 
@@ -575,15 +616,17 @@ func ansysGPTACSSemanticHybridSearch(
 
 	requestBody, err := json.Marshal(searchRequest)
 	if err != nil {
-		log.Printf("failed to marshal search request: %v\n", err)
-		return nil
+		errMessage := fmt.Sprintf("failed to marshal search request to ACS: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// Create the HTTP request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	if err != nil {
-		log.Printf("failed to create HTTP request: %v\n", err)
-		return nil
+		errMessage := fmt.Sprintf("failed to create POST request for ACS: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -593,24 +636,27 @@ func ansysGPTACSSemanticHybridSearch(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("failed to execute HTTP request: %v\n", err)
-		return nil
+		errMessage := fmt.Sprintf("failed to send POST request to ACS: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 	defer resp.Body.Close()
 
 	// Read and return the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("failed to read response body: %v\n", err)
-		return nil
+		errMessage := fmt.Sprintf("failed to read response body from ACS: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	// conver body to []map[string]interface{}
 	respObject := ACSSearchResponseStruct{}
 	err = json.Unmarshal(body, &respObject)
 	if err != nil {
-		log.Printf("failed to unmarshal response body: %v\n", err)
-		return nil
+		errMessage := fmt.Sprintf("failed to unmarshal response body from ACS: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
 	}
 
 	return respObject.Value
