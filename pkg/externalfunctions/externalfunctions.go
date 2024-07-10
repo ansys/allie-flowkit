@@ -1103,6 +1103,7 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorResponseMessage string) (foundProhibited bool, responseMessage string) {
 	// Check if all words in the value are present as whole words in the query
 	queryLower := strings.ToLower(query)
+	queryLower = strings.ReplaceAll(queryLower, ".", "")
 	for _, prohibitedValue := range prohibitedWords {
 		allWordsMatch := true
 		for _, fieldWord := range strings.Fields(strings.ToLower(prohibitedValue)) {
@@ -1120,16 +1121,30 @@ func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorR
 
 	// Check for prohibited words using fuzzy matching
 	cutoff := 0.9
-	for _, word := range strings.Fields(query) {
-		closestDistance := 0.0
-		for _, prohibitedValue := range prohibitedWords {
-			distance := levenshtein.RatioForStrings([]rune(word), []rune(prohibitedValue), levenshtein.DefaultOptions)
-			if distance >= closestDistance {
-				closestDistance = distance
+	for _, prohibitedValue := range prohibitedWords {
+		wordMatchCount := 0
+		for _, fieldWord := range strings.Fields(strings.ToLower(prohibitedValue)) {
+			for _, word := range strings.Fields(queryLower) {
+				distance := levenshtein.RatioForStrings([]rune(word), []rune(fieldWord), levenshtein.DefaultOptions)
+				if distance >= cutoff {
+					wordMatchCount++
+					break
+				}
 			}
 		}
-		if closestDistance >= cutoff {
+
+		if wordMatchCount == len(strings.Fields(prohibitedValue)) {
 			return true, errorResponseMessage
+		}
+
+		// If multiple words are present in the field , also check for the whole words without spaces
+		if strings.Contains(prohibitedValue, " ") {
+			for _, word := range strings.Fields(queryLower) {
+				distance := levenshtein.RatioForStrings([]rune(word), []rune(prohibitedValue), levenshtein.DefaultOptions)
+				if distance >= cutoff {
+					return true, errorResponseMessage
+				}
+			}
 		}
 	}
 
@@ -1187,18 +1202,12 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 			cutoff := 0.75
 			for _, fieldValue := range values {
 				for _, fieldWord := range strings.Fields(fieldValue) {
-					closestDistance := 0.0
 					for _, queryWord := range words {
 						distance := levenshtein.RatioForStrings([]rune(fieldWord), []rune(queryWord), levenshtein.DefaultOptions)
-						if distance >= closestDistance {
-							closestDistance = distance
+						if distance >= cutoff {
+							fields[field] = fieldValue
+							break
 						}
-					}
-
-					if closestDistance >= cutoff {
-						fields[field] = fieldValue
-						fmt.Println("Fuzzy match found for", field, ":", closestDistance)
-						break
 					}
 				}
 			}
