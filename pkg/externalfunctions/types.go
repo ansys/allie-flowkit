@@ -1,9 +1,5 @@
 package externalfunctions
 
-// requestChannelEmbeddings and requestChannelChat are the channels used to send requests to the LLM Handler.
-var requestChannelEmbeddings chan []byte
-var requestChannelChat chan []byte
-
 // HandlerRequest represents the client request for a specific chat or embeddings operation.
 type HandlerRequest struct {
 	Adapter             string            `json:"adapter"` // "chat", "embeddings"
