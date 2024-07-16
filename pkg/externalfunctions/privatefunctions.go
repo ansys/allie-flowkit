@@ -14,6 +14,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -137,7 +138,6 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerR
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
 	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel)
-
 	return responseChannel // Return the response channel
 }
 
@@ -660,4 +660,137 @@ func ansysGPTACSSemanticHybridSearch(
 	}
 
 	return respObject.Value
+}
+
+// dataExtractionDocumentLevelHandler handles the data extraction at document level.
+//
+// Parameters:
+//   - inputChannel: the input channel
+//   - chunks: the document chunks
+//   - documentId: the document ID
+//   - documentPath: the document path
+//   - getSummary: the flag to indicate whether to get the summary
+//   - getKeywords: the flag to indicate whether to get the keywords
+//   - numKeywords: the number of keywords
+//
+// Returns:
+//   - orderedChildDataObjects: the ordered child data objects
+func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, chunks []string, documentId string, documentPath string, getSummary bool,
+	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*DataExtractionDocumentData) {
+	instructionSequenceWaitGroup := &sync.WaitGroup{}
+	orderedChildData := make([]*DataExtractionDocumentData, 0, len(chunks))
+
+	for idx, chunk := range chunks {
+		// Create data child object
+		childData := &DataExtractionDocumentData{
+			Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			DocumentId:   documentId,
+			DocumentName: documentPath,
+			Text:         chunk,
+		}
+
+		// Assing previous and next sibling ids if necessary
+		if idx > 0 {
+			orderedChildData[idx-1].NextSiblingId = childData.Guid
+			childData.PreviousSiblingId = orderedChildData[idx-1].Guid
+		}
+
+		orderedChildData = append(orderedChildData, childData)
+
+		if len(childData.Text) > 0 {
+			// Create embedding for child
+			embeddingChannelItem := dataExtractionNewLlmInputChannelItem(childData, instructionSequenceWaitGroup, "embeddings", "", 0, &sync.Mutex{})
+			instructionSequenceWaitGroup.Add(1)
+
+			// Send embedding request to llm input channel
+			inputChannel <- embeddingChannelItem
+
+			// Create summary for child if enabled
+			if getSummary {
+				summaryChannelItem := dataExtractionNewLlmInputChannelItem(childData, instructionSequenceWaitGroup, "chat", "summary", 0, &sync.Mutex{})
+				instructionSequenceWaitGroup.Add(1)
+
+				// Send summary request to llm input channel
+				inputChannel <- summaryChannelItem
+			}
+
+			// Create keywords for child if enabled
+			if getKeywords {
+				keywordsChannelItem := dataExtractionNewLlmInputChannelItem(childData, instructionSequenceWaitGroup, "chat", "keywords", numKeywords, &sync.Mutex{})
+				instructionSequenceWaitGroup.Add(1)
+
+				// Send keywords request to llm input channel
+				inputChannel <- keywordsChannelItem
+			}
+		}
+	}
+
+	instructionSequenceWaitGroup.Wait()
+
+	return orderedChildData
+}
+
+// dataExtractionNewLlmInputChannelItem creates a new llm input channel item.
+//
+// Parameters:
+//   - data: data.
+//   - instructionSequenceWaitGroup: instruction sequence wait group.
+//   - adapter: adapter.
+//   - chatRequestType: chat request type.
+//   - maxNumberOfKeywords: max number of keywords.
+//   - lock: lock.
+//   - collectionName: collection name.
+//
+// Returns:
+//   - llmInputChannelItem: llm input channel item.
+func dataExtractionNewLlmInputChannelItem(data *DataExtractionDocumentData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem {
+	return &DataExtractionLLMInputChannelItem{
+		Data:                         data,
+		InstructionSequenceWaitGroup: instructionSequenceWaitGroup,
+		Adapter:                      adapter,
+		ChatRequestType:              chatRequestType,
+		MaxNumberOfKeywords:          maxNumberOfKeywords,
+		Lock:                         lock,
+	}
+}
+
+func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan *DataExtractionLLMInputChannelItem, embeddingsDimensions int) {
+	defer waitgroup.Done()
+	// Listen to Input Channel
+	for instruction := range inputChannel {
+		// Check if text field for chunk is empty
+		if instruction.Data.Text == "" {
+			log.Printf("Text field is empty for document %v \n", instruction.Data.DocumentName)
+
+			//If adapter type is embedding, set embedding to empty slice of dimension confstructs.GlobalConfig.EMBEDDINGS_DIMENSIONS
+			if instruction.Adapter == "embeddings" {
+				instruction.Lock.Lock()
+				instruction.Data.Embedding = make([]float32, embeddingsDimensions)
+				instruction.Lock.Unlock()
+			}
+
+			// Lower instruction sequence waitgroup counter and update processed instructions counter
+			instruction.InstructionSequenceWaitGroup.Done()
+			continue
+		}
+
+		// If text field is not empty perform request to LLM Handler depending on adapter type
+		instruction.Lock.Lock()
+		switch instruction.Adapter {
+		case "embeddings":
+			instruction.Data.Embedding = PerformVectorEmbeddingRequest(instruction.Data.Text)
+		case "chat":
+			if instruction.ChatRequestType == "summary" {
+				instruction.Data.Summary = PerformSummaryRequest(instruction.Data.Text)
+			} else if instruction.ChatRequestType == "keywords" {
+				instruction.Data.Keywords = PerformKeywordExtractionRequest(instruction.Data.Text, instruction.MaxNumberOfKeywords)
+			}
+		}
+		instruction.Lock.Unlock()
+
+		// Lower instruction sequence waitgroup counter
+		instruction.InstructionSequenceWaitGroup.Done()
+	}
+
+	log.Println("LLM Handler Worker stopped.")
 }
