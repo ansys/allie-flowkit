@@ -485,6 +485,17 @@ func convertStringToGivenType(value string, goType string) (output interface{}, 
 			return nil, err
 		}
 		return output, nil
+
+	case "[]DataExtractionDocumentData":
+		if value == "" {
+			value = "[]"
+		}
+		output := []externalfunctions.DataExtractionDocumentData{}
+		err := json.Unmarshal([]byte(value), &output)
+		if err != nil {
+			return nil, err
+		}
+		return output, nil
 	}
 
 	return nil, fmt.Errorf("unsupported GoType: '%s'", goType)
@@ -626,6 +637,13 @@ func convertGivenTypeToString(value interface{}, goType string) (output string, 
 		return string(output), nil
 	case "[]AnsysGPTCitation":
 		output, err := json.Marshal(value.([]externalfunctions.AnsysGPTCitation))
+		if err != nil {
+			return "", err
+		}
+		return string(output), nil
+
+	case "[]DataExtractionDocumentData":
+		output, err := json.Marshal(value.([]externalfunctions.DataExtractionDocumentData))
 		if err != nil {
 			return "", err
 		}

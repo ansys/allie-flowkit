@@ -45,7 +45,9 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTReorderSearchResponse":                 AnsysGPTReorderSearchResponse,
 	"AnsysGPTGetSystemPrompt":                       AnsysGPTGetSystemPrompt,
 	"DataExtractionDownloadGithubFileContent":       DataExtractionDownloadGithubFileContent,
+	"DataExtractionGetLocalFileContent":             DataExtractionGetLocalFileContent,
 	"DataExtractionLangchainSplitter":               DataExtractionLangchainSplitter,
+	"DataExtractionGenerateDocumentTree":            DataExtractionGenerateDocumentTree,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -167,7 +169,6 @@ func PerformSummaryRequest(input string) (summary string) {
 
 		// If we are at the last message, break the loop
 		if *(response.IsLast) {
-			fmt.Println("Last message received" + input)
 			break
 		}
 	}

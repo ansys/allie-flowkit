@@ -145,11 +145,28 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		output = append(output, chunk.PageContent)
 	}
 
+	// Log number of chunks and chunk size
+	log.Printf("Splitted document in %v chunks \n", len(output))
+
 	return output
 }
 
+// DataExtractionGenerateDocumentTree generates a tree structure from the document chunks.
+// Parameters:
+//   - documentName: name of the document.
+//   - documentId: id of the document.
+//   - documentChunks: chunks of the document.
+//   - embeddingsDimensions: dimensions of the embeddings.
+//   - getSummary: whether to get summary.
+//   - getKeywords: whether to get keywords.
+//   - numKeywords: number of keywords.
+//   - chunkSize: size of the chunks.
+//   - numLlmWorkers: number of llm workers.
+//
+// Returns:
+//   - documentData: tree structure of the document.
 func DataExtractionGenerateDocumentTree(documentName string, documentId string, documentChunks []string,
-	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (documentData []*DataExtractionDocumentData) {
+	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []DataExtractionDocumentData) {
 
 	log.Printf("Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
 
@@ -182,7 +199,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	}
 
 	// Add root data object to document data
-	documentData = append(documentData, rootData)
+	documentData := []*DataExtractionDocumentData{rootData}
 
 	// Create child data objects
 	orderedChildDataObjects, err := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, errorChannel, documentChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
@@ -310,9 +327,15 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 
 	log.Printf("Finished processing document: %s \n", documentName)
 
+	// Copy document data to returned document data
+	returnedDocumentData = make([]DataExtractionDocumentData, len(documentData))
+	for i, data := range documentData {
+		returnedDocumentData[i] = *data
+	}
+
 	// Close llm handler input channel and wait for all workers to finish
 	close(llmHandlerInputChannel)
 	llmHandlerWaitGroup.Wait()
 
-	return documentData
+	return returnedDocumentData
 }

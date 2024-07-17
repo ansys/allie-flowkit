@@ -900,7 +900,6 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 
 		// If we are at the last message, break the loop
 		if *(response.IsLast) {
-			fmt.Println("Last message received" + input)
 			break
 		}
 	}
@@ -943,7 +942,6 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 
 		// If we are at the last message, break the loop
 		if *(response.IsLast) {
-			fmt.Println("Last message received" + input)
 			break
 		}
 	}
