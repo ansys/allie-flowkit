@@ -106,7 +106,7 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //   - chan HandlerResponse: the response channel
 func sendChatRequest(data string, chatRequestType string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string) chan HandlerResponse {
 	// Initiate the channels
-	requestChannelChat = make(chan []byte, 400)
+	requestChannelChat := make(chan []byte, 400)
 	responseChannel := make(chan HandlerResponse) // Create a channel for responses
 
 	c := initializeClient(llmHandlerEndpoint)
@@ -129,7 +129,7 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 //   - chan HandlerResponse: the response channel
 func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerResponse {
 	// Initiate the channels
-	requestChannelEmbeddings = make(chan []byte, 400)
+	requestChannelEmbeddings := make(chan []byte, 400)
 	responseChannel := make(chan HandlerResponse) // Create a channel for responses
 
 	c := initializeClient(llmHandlerEndpoint)
