@@ -20,6 +20,149 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// GetGithubFilesToExtract gets all files from github that need to be extracted.
+//
+// Parameters:
+//   - ctx: logger context.
+//   - waitgroup: waitgroup for the worker.
+func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
+	githubRepoBranch string, githubAccessToken string, githubFileExtensions []string,
+	githubFilteredDirectories []string, githubExcludedDirectories []string) (githubFilesToExtract []string) {
+
+	ctx_backgr := context.Background()
+
+	// Setup OAuth2 token source with the GitHub access token.
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: githubAccessToken},
+	)
+
+	// Create an OAuth2 client with the token source.
+	tc := oauth2.NewClient(ctx_backgr, ts)
+
+	// Initialize a new GitHub client with the OAuth2 client.
+	client := github.NewClient(tc)
+
+	// Retrieve the specified branch's SHA (commit hash) from the GitHub repository. This is used to identify the latest state of the branch.
+	branch, _, err := client.Repositories.GetBranch(ctx_backgr, githubRepoOwner, githubRepoName, githubRepoBranch, 1)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting branch %s: %v", githubRepoBranch, err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+
+	// Extract the SHA from the branch information.
+	sha := *branch.Commit.SHA
+
+	// Retrieve the Git tree associated with the SHA. This tree represents the directory structure (files and subdirectories) of the repository at the specified SHA.
+	tree, _, err := client.Git.GetTree(ctx_backgr, githubRepoOwner, githubRepoName, sha, true)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting tree: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+
+	filteredGithubTreeEntries := []*github.TreeEntry{}
+
+	// Make sure that filteredDirectories and excludedDirectories do not have \ in path
+	for i, directory := range githubFilteredDirectories {
+		githubFilteredDirectories[i] = strings.ReplaceAll(directory, "\\", "/")
+	}
+	for i, directory := range githubExcludedDirectories {
+		githubExcludedDirectories[i] = strings.ReplaceAll(directory, "\\", "/")
+	}
+
+	// If filtered directories are specified, only get files from those directories
+	if len(githubFilteredDirectories) > 0 {
+		for _, directory := range githubFilteredDirectories {
+
+			// Check whether excluded directories are in filtered directories
+			excludedDirectoriesInFilteredDirectories := []string{}
+			for _, excludedDirectory := range githubExcludedDirectories {
+				if strings.HasPrefix(excludedDirectory, directory) {
+					excludedDirectoriesInFilteredDirectories = append(excludedDirectoriesInFilteredDirectories, excludedDirectory)
+				}
+			}
+
+			for _, treeEntry := range tree.Entries {
+				if strings.HasPrefix(*treeEntry.Path, directory) {
+					// Make sure that the directory is not in the excluded directories
+					isExcludedDirectory := false
+					for _, excludedDirectory := range excludedDirectoriesInFilteredDirectories {
+						if strings.HasPrefix(*treeEntry.Path, excludedDirectory) {
+							isExcludedDirectory = true
+							break
+						}
+					}
+
+					// If directory is in excluded directories, skip it
+					if isExcludedDirectory {
+						continue
+					}
+
+					// If directory is not in excluded directories, add it to the list of filtered directories
+					filteredGithubTreeEntries = append(filteredGithubTreeEntries, treeEntry)
+				}
+			}
+		}
+	}
+
+	// If no filtered directories are specified, get all files and check for excluded directories
+	if len(githubFilteredDirectories) == 0 && len(githubExcludedDirectories) > 0 {
+		for _, treeEntry := range tree.Entries {
+			// Make sure that the directory is not in the excluded directories
+			isExcludedDirectory := false
+			for _, excludedDirectory := range githubExcludedDirectories {
+				if strings.HasPrefix(*treeEntry.Path, excludedDirectory) {
+					isExcludedDirectory = true
+					break
+				}
+			}
+
+			// If directory is in excluded directories, skip it
+			if isExcludedDirectory {
+				continue
+			}
+
+			// If directory is not in excluded directories, add it to the list of filtered directories
+			filteredGithubTreeEntries = append(filteredGithubTreeEntries, treeEntry)
+		}
+	}
+
+	// If no filtered directories are specified and no excluded directories are specified, get all files
+	if len(githubFilteredDirectories) == 0 && len(githubExcludedDirectories) == 0 {
+		filteredGithubTreeEntries = tree.Entries
+	}
+
+	// Make sure all fileExtensions are lower case
+	for i, fileExtension := range githubFileExtensions {
+		githubFileExtensions[i] = strings.ToLower(fileExtension)
+	}
+
+	// Make sure only files are in list and filter by file extensions
+	for _, entry := range filteredGithubTreeEntries {
+		if *entry.Type == "blob" {
+
+			// Check file extension and add to list if it matches the file extensions in the extraction details
+			if len(githubFileExtensions) > 0 {
+				for _, fileExtension := range githubFileExtensions {
+					if strings.HasSuffix(strings.ToLower(*entry.Path), fileExtension) {
+						githubFilesToExtract = append(githubFilesToExtract, *entry.Path)
+					}
+				}
+			} else {
+				// If no file extensions are specified, add all files to the list
+				githubFilesToExtract = append(githubFilesToExtract, *entry.Path)
+			}
+		}
+	}
+
+	for _, file := range githubFilesToExtract {
+		log.Printf("File to extract: %s \n", file)
+	}
+
+	return githubFilesToExtract
+}
+
 // DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.
 // Parameters:
 //   - githubRepoName: name of the github repository.
