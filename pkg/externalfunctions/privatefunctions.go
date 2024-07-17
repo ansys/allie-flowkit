@@ -675,8 +675,8 @@ func ansysGPTACSSemanticHybridSearch(
 //
 // Returns:
 //   - orderedChildDataObjects: the ordered child data objects
-func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, chunks []string, documentId string, documentPath string, getSummary bool,
-	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*DataExtractionDocumentData) {
+func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, chunks []string, documentId string, documentPath string, getSummary bool,
+	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*DataExtractionDocumentData, err error) {
 	instructionSequenceWaitGroup := &sync.WaitGroup{}
 	orderedChildData := make([]*DataExtractionDocumentData, 0, len(chunks))
 
@@ -725,9 +725,23 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 		}
 	}
 
-	instructionSequenceWaitGroup.Wait()
+	// Separate goroutine to wait on the wait group and signal completion
+	doneChan := make(chan struct{})
+	go func() {
+		instructionSequenceWaitGroup.Wait()
+		close(doneChan)
+	}()
 
-	return orderedChildData
+	// Main goroutine to listen on the error channel and done channel
+	for {
+		select {
+		case err := <-errorChannel:
+			return nil, err
+
+		case <-doneChan:
+			return orderedChildData, nil
+		}
+	}
 }
 
 // dataExtractionNewLlmInputChannelItem creates a new llm input channel item.
@@ -754,7 +768,17 @@ func dataExtractionNewLlmInputChannelItem(data *DataExtractionDocumentData, inst
 	}
 }
 
-func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan *DataExtractionLLMInputChannelItem, embeddingsDimensions int) {
+// dataExtractionLLMHandlerWorker is a worker function for the LLM Handler requests during data extraction.
+//
+// Parameters:
+//   - waitgroup: the wait group
+//   - inputChannel: the input channel
+//   - errorChannel: the error channel
+//   - embeddingsDimensions: the embeddings dimensions
+//
+// Returns:
+//   - error: an error if any
+func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, embeddingsDimensions int) {
 	defer waitgroup.Done()
 	// Listen to Input Channel
 	for instruction := range inputChannel {
@@ -778,12 +802,24 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 		instruction.Lock.Lock()
 		switch instruction.Adapter {
 		case "embeddings":
-			instruction.Data.Embedding = PerformVectorEmbeddingRequest(instruction.Data.Text)
+			res, err := llmHandlerPerformVectorEmbeddingRequest(instruction.Data.Text)
+			if err != nil {
+				errorChannel <- err
+			}
+			instruction.Data.Embedding = res
 		case "chat":
 			if instruction.ChatRequestType == "summary" {
-				instruction.Data.Summary = PerformSummaryRequest(instruction.Data.Text)
+				res, err := llmHandlerPerformSummaryRequest(instruction.Data.Text)
+				if err != nil {
+					errorChannel <- err
+				}
+				instruction.Data.Summary = res
 			} else if instruction.ChatRequestType == "keywords" {
-				instruction.Data.Keywords = PerformKeywordExtractionRequest(instruction.Data.Text, instruction.MaxNumberOfKeywords)
+				res, err := llmHandlerPerformKeywordExtractionRequest(instruction.Data.Text, instruction.MaxNumberOfKeywords)
+				if err != nil {
+					errorChannel <- err
+				}
+				instruction.Data.Keywords = res
 			}
 		}
 		instruction.Lock.Unlock()
@@ -793,4 +829,130 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 	}
 
 	log.Println("LLM Handler Worker stopped.")
+}
+
+// llmHandlerPerformVectorEmbeddingRequest performs a vector embedding request to LLM Handler.
+//
+// Parameters:
+//   - input: the input string
+//
+// Returns:
+//   - embeddedVector: the embedded vector
+//   - error: an error if any
+func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []float32, err error) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send embeddings request
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint)
+
+	// Process the first response and close the channel
+	var embedding32 []float32
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			return nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Get embedded vector array
+		embedding32 = response.EmbeddedData
+
+		// Mark that the first response has been received
+		firstResponseReceived := true
+
+		// Exit the loop after processing the first response
+		if firstResponseReceived {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	return embedding32, nil
+}
+
+// llmHandlerPerformSummaryRequest performs a summary request to LLM Handler.
+//
+// Parameters:
+//   - input: the input string
+//
+// Returns:
+//   - summary: the summary
+//   - error: an error if any
+func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint)
+
+	// Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			return "", fmt.Errorf("error in summary request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			fmt.Println("Last message received" + input)
+			break
+		}
+	}
+
+	log.Println("Received summary response.")
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil
+}
+
+// llmHandlerPerformKeywordExtractionRequest performs a keyword extraction request to LLM Handler.
+//
+// Parameters:
+//   - input: the input string
+//   - numKeywords: the number of keywords
+//
+// Returns:
+//   - keywords: the keywords
+//   - error: an error if any
+func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32) (keywords []string, err error) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint)
+
+	// Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			return nil, fmt.Errorf("error in keyword extraction request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			fmt.Println("Last message received" + input)
+			break
+		}
+	}
+
+	log.Println("Received keywords response.")
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return strings.Split(responseAsStr, ","), nil
 }

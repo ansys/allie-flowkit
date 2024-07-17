@@ -101,11 +101,12 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	// Create llm handler input channel and wait group
 	llmHandlerInputChannel := make(chan *DataExtractionLLMInputChannelItem, 40)
 	llmHandlerWaitGroup := sync.WaitGroup{}
+	errorChannel := make(chan error, 1)
 
 	// Start LLM Handler workers
 	for i := 0; i < numLlmWorkers; i++ {
 		llmHandlerWaitGroup.Add(1)
-		go dataExtractionLLMHandlerWorker(&llmHandlerWaitGroup, llmHandlerInputChannel, embeddingsDimensions)
+		go dataExtractionLLMHandlerWorker(&llmHandlerWaitGroup, llmHandlerInputChannel, errorChannel, embeddingsDimensions)
 	}
 
 	// Create root data object
@@ -129,7 +130,10 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	documentData = append(documentData, rootData)
 
 	// Create child data objects
-	orderedChildDataObjects := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, documentChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
+	orderedChildDataObjects, err := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, errorChannel, documentChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
+	if err != nil {
+		panic(err.Error())
+	}
 
 	// If summary is disabled -> flat structure, only iterate over chunks
 	if !getSummary {
@@ -190,7 +194,10 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 				textChunks = append(textChunks, branch.Text)
 			}
 
-			orderedChildDataObjectsFromBranches := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, textChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
+			orderedChildDataObjectsFromBranches, err := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, errorChannel, textChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
+			if err != nil {
+				panic(err.Error())
+			}
 
 			// Exit if only one -> assign details to root
 			if len(orderedChildDataObjectsFromBranches) == 1 {
