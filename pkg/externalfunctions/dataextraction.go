@@ -3,8 +3,11 @@ package externalfunctions
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 
@@ -17,6 +20,17 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.
+// Parameters:
+//   - githubRepoName: name of the github repository.
+//   - githubRepoOwner: owner of the github repository.
+//   - githubRepoBranch: branch of the github repository.
+//   - gihubFilePath: path to file in the github repository.
+//   - githubAccessToken: access token for github.
+//
+// Returns:
+//   - checksum: checksum of file.
+//   - content: content of file.
 func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content string) {
 
@@ -48,6 +62,47 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 	return checksum, content
 }
 
+// DataExtractionGetLocalFileContent reads local file and returns checksum and content.
+// Parameters:
+//   - localFilePath: path to file.
+//
+// Returns:
+//   - checksum: checksum of file.
+//   - content: content of file.
+func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, content string) {
+	// Read file
+	contentBytes, err := os.ReadFile(localFilePath)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+
+	// Calculate checksum
+	hash := sha256.New()
+	_, err = hash.Write(contentBytes)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+
+	// Convert checksum to a hexadecimal string
+	checksum = hex.EncodeToString(hash.Sum(nil))
+
+	// Convert content to a string
+	content = string(contentBytes)
+
+	return checksum, content
+}
+
+// DataExtractionLangchainSplitter splits content into chunks using langchain.
+// Parameters:
+//   - content: content to split.
+//   - documentType: type of document.
+//
+// Returns:
+//   - output: chunks as an slice of strings.
 func DataExtractionLangchainSplitter(content string, documentType string, chunkSize int, chunkOverlap int) (output []string) {
 	output = []string{content}
 	var splittedChunks []schema.Document
