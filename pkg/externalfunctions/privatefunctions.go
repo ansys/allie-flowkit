@@ -1212,3 +1212,100 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 	// Return the response
 	return strings.Split(responseAsStr, ","), nil
 }
+
+// dataExtractionPerformSplitterRequest performs a data extraction splitter request to the Python service.
+//
+// Parameters:
+//   - content: the content
+//   - documentType: the document type
+//   - chunkSize: the chunk size
+//   - chunkOverlap: the chunk overlap
+//
+// Returns:
+//   - output: the output
+//   - error: an error if any
+func dataExtractionPerformSplitterRequest(content []byte, documentType string, chunkSize int, chunkOverlap int) (output []string, err error) {
+	// Define the URL and headers
+	url := config.AllieFlowkitConfig.PYTHON_SERVICE_ENDPOINT + "/splitter/" + documentType
+	headers := map[string]string{
+		"Content-Type": "application/json",
+	}
+	splitterRequest := DataExtractionSplitterServiceRequest{
+		Text:         content,
+		ChunkSize:    chunkSize,
+		ChunkOverlap: chunkOverlap,
+	}
+
+	// Marshal the request
+	body, err := json.Marshal(splitterRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send the request
+	response, err := httpRequest("POST", url, headers, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshall response to  DataExtractionSplitterServiceResponse
+	splitterResponse := DataExtractionSplitterServiceResponse{}
+	err = json.Unmarshal(response, &splitterResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the chunks
+	output = splitterResponse.Chunks
+
+	return output, nil
+}
+
+// httpRequest is a general function for making HTTP requests.
+//
+// Parameters:
+//   - method: HTTP method.
+//   - url: URL to make the request to.
+//   - headers: headers to include in the request.
+//   - body: body of the request.
+//
+// Returns:
+//   - response body.
+//   - error.
+func httpRequest(method, url string, headers map[string]string, body []byte) ([]byte, error) {
+	// Create a new request using http
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// Add headers
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	// Create a new HTTP client and set timeout
+	client := &http.Client{
+		Timeout: time.Second * 30,
+	}
+
+	// Send the request
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the status code is not 200 OK
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return respBody, fmt.Errorf("HTTP request failed with status code %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
+}
