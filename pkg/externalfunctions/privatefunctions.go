@@ -20,7 +20,9 @@ import (
 	"time"
 
 	"github.com/ansys/allie-flowkit/pkg/config"
+	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 	"nhooyr.io/websocket"
 )
 
@@ -661,6 +663,144 @@ func ansysGPTACSSemanticHybridSearch(
 	}
 
 	return respObject.Value
+}
+
+// dataExtractionFilterGithubTreeEntries filters the Github tree entries based on the specified filters
+//
+// Parameters:
+//   - tree: the Github tree
+//   - githubFilteredDirectories: the Github filtered directories
+//   - githubExcludedDirectories: the Github excluded directories
+//   - githubFileExtensions: the Github file extensions
+//
+// Returns:
+//   - []string: the files to extract
+func dataExtractionFilterGithubTreeEntries(tree *github.Tree, githubFilteredDirectories, githubExcludedDirectories, githubFileExtensions []string) (githubFilesToExtract []string) {
+	filteredGithubTreeEntries := []*github.TreeEntry{}
+
+	// Normalize directory paths
+	for i, directory := range githubFilteredDirectories {
+		githubFilteredDirectories[i] = strings.ReplaceAll(directory, "\\", "/")
+	}
+	for i, directory := range githubExcludedDirectories {
+		githubExcludedDirectories[i] = strings.ReplaceAll(directory, "\\", "/")
+	}
+
+	// If filtered directories are specified, only get files from those directories
+	if len(githubFilteredDirectories) > 0 {
+		for _, directory := range githubFilteredDirectories {
+
+			// Check whether excluded directories are in filtered directories
+			excludedDirectoriesInFilteredDirectories := []string{}
+			for _, excludedDirectory := range githubExcludedDirectories {
+				if strings.HasPrefix(excludedDirectory, directory) {
+					excludedDirectoriesInFilteredDirectories = append(excludedDirectoriesInFilteredDirectories, excludedDirectory)
+				}
+			}
+
+			for _, treeEntry := range tree.Entries {
+				if strings.HasPrefix(*treeEntry.Path, directory) {
+					// Make sure that the directory is not in the excluded directories
+					isExcludedDirectory := false
+					for _, excludedDirectory := range excludedDirectoriesInFilteredDirectories {
+						if strings.HasPrefix(*treeEntry.Path, excludedDirectory) {
+							isExcludedDirectory = true
+							break
+						}
+					}
+
+					// If directory is in excluded directories, skip it
+					if isExcludedDirectory {
+						continue
+					}
+
+					// If directory is not in excluded directories, add it to the list of filtered directories
+					filteredGithubTreeEntries = append(filteredGithubTreeEntries, treeEntry)
+				}
+			}
+		}
+	}
+
+	// If no filtered directories are specified, get all files and check for excluded directories
+	if len(githubFilteredDirectories) == 0 && len(githubExcludedDirectories) > 0 {
+		for _, treeEntry := range tree.Entries {
+			// Make sure that the directory is not in the excluded directories
+			isExcludedDirectory := false
+			for _, excludedDirectory := range githubExcludedDirectories {
+				if strings.HasPrefix(*treeEntry.Path, excludedDirectory) {
+					isExcludedDirectory = true
+					break
+				}
+			}
+
+			// If directory is in excluded directories, skip it
+			if isExcludedDirectory {
+				continue
+			}
+
+			// If directory is not in excluded directories, add it to the list of filtered directories
+			filteredGithubTreeEntries = append(filteredGithubTreeEntries, treeEntry)
+		}
+	}
+
+	// If no filtered directories are specified and no excluded directories are specified, get all files
+	if len(githubFilteredDirectories) == 0 && len(githubExcludedDirectories) == 0 {
+		filteredGithubTreeEntries = tree.Entries
+	}
+
+	// Make sure all fileExtensions are lower case
+	for i, fileExtension := range githubFileExtensions {
+		githubFileExtensions[i] = strings.ToLower(fileExtension)
+	}
+
+	// Make sure only files are in list and filter by file extensions
+	for _, entry := range filteredGithubTreeEntries {
+		if *entry.Type == "blob" {
+
+			// Check file extension and add to list if it matches the file extensions in the extraction details
+			if len(githubFileExtensions) > 0 {
+				for _, fileExtension := range githubFileExtensions {
+					if strings.HasSuffix(strings.ToLower(*entry.Path), fileExtension) {
+						githubFilesToExtract = append(githubFilesToExtract, *entry.Path)
+					}
+				}
+			} else {
+				// If no file extensions are specified, add all files to the list
+				githubFilesToExtract = append(githubFilesToExtract, *entry.Path)
+			}
+		}
+	}
+
+	for _, file := range githubFilesToExtract {
+		log.Printf("Github file to extract: %s \n", file)
+	}
+
+	return githubFilesToExtract
+}
+
+// dataExtractNewGithubClient initializes a new GitHub client with the given access token.
+//
+// Parameters:
+//   - githubAccessToken: the GitHub access token
+//
+// Returns:
+//   - *github.Client: the GitHub client
+//   - context.Context: the context
+func dataExtractNewGithubClient(githubAccessToken string) (client *github.Client, ctx context.Context) {
+	ctx = context.Background()
+
+	// Setup OAuth2 token source with the GitHub access token.
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: githubAccessToken},
+	)
+
+	// Create an OAuth2 client with the token source.
+	tc := oauth2.NewClient(ctx, ts)
+
+	// Initialize a new GitHub client with the OAuth2 client.
+	client = github.NewClient(tc)
+
+	return client, ctx
 }
 
 // dataExtractionLocalFilepathExtractWalker is the walker function for the local file extraction.
