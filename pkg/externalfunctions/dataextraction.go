@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -157,10 +158,47 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 	}
 
 	for _, file := range githubFilesToExtract {
-		log.Printf("File to extract: %s \n", file)
+		log.Printf("Github file to extract: %s \n", file)
 	}
 
 	return githubFilesToExtract
+}
+
+// getLocalFilesToExtract gets all files from local that need to be extracted.
+//
+// Parameters:
+//   - localExtractDetails: local extraction details.
+//   - localPath: local path.
+//   - localFileExtensions: local file extensions.
+//   - localFilteredDirectories: local filtered directories.
+//   - localExcludedDirectories: local excluded directories.
+//
+// Returns:
+//   - localFilesToExtract: local files to extract.
+func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions []string,
+	localFilteredDirectories []string, localExcludedDirectories []string) (localFilesToExtract []string) {
+
+	localFiles := &[]string{}
+
+	// Create a walker function that will be called for each file and directory found
+	walkFn := func(localPath string, f os.FileInfo, err error) error {
+		return dataExtractionLocalFilepathExtractWalker(localPath, localFileExtensions, localFilteredDirectories, localExcludedDirectories,
+			localFiles, f, err)
+	}
+
+	// Walk through all files and directories executing the walker function
+	err := filepath.Walk(localPath, walkFn)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error walking through the files: %v", err)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+
+	for _, file := range *localFiles {
+		log.Printf("Local file to extract: %s \n", file)
+	}
+
+	return *localFiles
 }
 
 // DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.

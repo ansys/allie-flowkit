@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -660,6 +661,123 @@ func ansysGPTACSSemanticHybridSearch(
 	}
 
 	return respObject.Value
+}
+
+// dataExtractionLocalFilepathExtractWalker is the walker function for the local file extraction.
+//
+// Parameters:
+//   - localPath: the local path
+//   - localFileExtensions: the local file extensions
+//   - localFilteredDirectories: the local filtered directories
+//   - localExcludedDirectories: the local excluded directories
+//   - filesToExtract: the files to extract
+//   - f: the file info
+//   - err: the error
+//
+// Returns:
+//   - error: error that occured during execution.
+func dataExtractionLocalFilepathExtractWalker(localPath string, localFileExtensions []string,
+	localFilteredDirectories []string, localExcludedDirectories []string, filesToExtract *[]string, f os.FileInfo, err error) error {
+	// Initialize to false the skip flag
+	skip := false
+
+	// Make sure that path does not have \
+	localPath = strings.ReplaceAll(localPath, "\\", "/")
+
+	// If path starts with ./ or .\ remove it
+	localPath = strings.TrimPrefix(localPath, "./")
+	localPath = strings.TrimPrefix(localPath, ".\\")
+
+	// If filtered directories are specified, only get files from those directories
+	if len(localFilteredDirectories) > 0 {
+		isFiltered := false
+		for _, directory := range localFilteredDirectories {
+			// If directory starts with ./ or .\ remove it
+			directory = strings.TrimPrefix(directory, "./")
+			directory = strings.TrimPrefix(directory, ".\\")
+			directory = strings.ReplaceAll(directory, "\\", "/")
+
+			if strings.HasPrefix(localPath, directory) || strings.HasPrefix(directory, localPath) {
+				// Check whether excluded directories are in filtered directories
+				excludedDirectoriesInFilteredDirectories := []string{}
+				for _, excludedDirectory := range localExcludedDirectories {
+					if strings.HasPrefix(excludedDirectory, directory) {
+						excludedDirectoriesInFilteredDirectories = append(excludedDirectoriesInFilteredDirectories, excludedDirectory)
+					}
+				}
+
+				// make sure that the directory is not in the excluded directories
+				isExcludedDirectory := false
+				for _, excludedDirectory := range excludedDirectoriesInFilteredDirectories {
+					excludedDirectory = strings.TrimPrefix(excludedDirectory, "./")
+					excludedDirectory = strings.TrimPrefix(excludedDirectory, ".\\")
+					excludedDirectory = strings.ReplaceAll(excludedDirectory, "\\", "/")
+					if strings.HasPrefix(localPath, excludedDirectory) {
+						isExcludedDirectory = true
+						break
+					}
+				}
+
+				if isExcludedDirectory {
+					skip = true
+					break
+				}
+
+				// If directory is not in excluded directories, and it is a filtered directory or contained in a filtered directory, set isFiltered to true
+				isFiltered = true
+				break
+			}
+		}
+
+		// If path is not in filtered directories, skip it
+		if !isFiltered {
+			skip = true
+		}
+	}
+
+	// If no filtered directories are specified, get all files and check for excluded directories
+	if len(localFilteredDirectories) == 0 && len(localExcludedDirectories) > 0 {
+		for _, excludedDirectory := range localExcludedDirectories {
+			if strings.HasPrefix(localPath, excludedDirectory) {
+				skip = true
+				break
+			}
+		}
+	}
+
+	// Make sure all fileExtensions are lower case
+	for i, fileExtension := range localFileExtensions {
+		localFileExtensions[i] = strings.ToLower(fileExtension)
+	}
+
+	// Differentiate between file and directory
+	switch f.IsDir() {
+	case true:
+		// If a directory, check the skip flag and if true, skip the directory
+		if skip {
+			return filepath.SkipDir
+		}
+
+	case false:
+		// If a file, check file extensions are specified
+		if !skip {
+			if len(localFileExtensions) > 0 {
+				// Check file extension and add to list if it matches the file extensions in the extraction details
+				for _, fileExtension := range localFileExtensions {
+					if strings.HasSuffix(strings.ToLower(localPath), fileExtension) {
+						// Create the document details object
+						*filesToExtract = append(*filesToExtract, localPath)
+						break
+					}
+				}
+			} else {
+				// If no file extensions are specified, add all files to the list
+				*filesToExtract = append(*filesToExtract, localPath)
+			}
+		}
+	}
+
+	return nil
 }
 
 // dataExtractionDocumentLevelHandler handles the data extraction at document level.
