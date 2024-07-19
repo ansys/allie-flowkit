@@ -1240,15 +1240,11 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 //   - rephrasedQuery: the rephrased query
 func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
 	fmt.Println("Performing rephrase request...")
-	// Append messages with conversation entries
+
 	historyMessages := ""
-	for _, entry := range history {
-		switch entry.Role {
-		case "user":
-			historyMessages += "HumanMessage(content): " + entry.Content + "\n"
-		case "assistant":
-			historyMessages += "AIMessage(content): " + entry.Content + "\n"
-		}
+
+	if len(history) >= 1 {
+		historyMessages += "user:" + history[len(history)-2].Content + "\n"
 	}
 
 	// Create map for the data to be used in the template
@@ -1257,10 +1253,12 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	dataMap["chat_history"] = historyMessages
 
 	// Format the template
-	systemTemplate := formatTemplate(template, dataMap)
+	userTemplate := formatTemplate(template, dataMap)
+	fmt.Println("System template:", userTemplate)
 
 	// Perform the general request
-	rephrasedQuery, _ = PerformGeneralRequest(query, nil, false, systemTemplate)
+	rephrasedQuery, _ = PerformGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
+	fmt.Println("Rephrased query:", rephrasedQuery)
 
 	return rephrasedQuery
 }
@@ -1401,6 +1399,8 @@ func AnsysGPTACSSemanticHybridSearchs(
 	indexList []string,
 	filter map[string]string,
 	topK int) (output []ACSSearchResponse) {
+
+	fmt.Println("Query used for ACS:", query)
 
 	output = make([]ACSSearchResponse, 0)
 	for _, indexName := range indexList {
