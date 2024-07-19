@@ -1253,11 +1253,11 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	dataMap["chat_history"] = historyMessages
 
 	// Format the template
-	systemTemplate := formatTemplate(template, dataMap)
-	fmt.Println("System template:", systemTemplate)
+	userTemplate := formatTemplate(template, dataMap)
+	fmt.Println("System template:", userTemplate)
 
 	// Perform the general request
-	rephrasedQuery, _ = PerformGeneralRequest(systemTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
+	rephrasedQuery, _ = PerformGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
 	fmt.Println("Rephrased query:", rephrasedQuery)
 
 	return rephrasedQuery
