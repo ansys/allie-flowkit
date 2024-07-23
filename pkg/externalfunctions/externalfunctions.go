@@ -1245,6 +1245,8 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 
 	if len(history) >= 1 {
 		historyMessages += "user:" + history[len(history)-2].Content + "\n"
+	} else {
+		return query
 	}
 
 	// Create map for the data to be used in the template
@@ -1257,7 +1259,11 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	fmt.Println("System template:", userTemplate)
 
 	// Perform the general request
-	rephrasedQuery, _ = PerformGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
+	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Println("Rephrased query:", rephrasedQuery)
 
 	return rephrasedQuery

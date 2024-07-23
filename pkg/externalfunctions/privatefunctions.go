@@ -661,3 +661,58 @@ func ansysGPTACSSemanticHybridSearch(
 
 	return respObject.Value
 }
+
+// performGeneralRequest performs a general chat completion request to LLM
+//
+// Parameters:
+//   - input: the input string
+//   - history: the conversation history
+//   - isStream: the stream flag
+//   - systemPrompt: the system prompt
+//
+// Returns:
+//   - message: the generated message
+//   - stream: the stream channel
+//   - err: the error
+func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint)
+
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+
+		// Return the stream channel
+		return "", &streamChannel, nil
+	}
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			return "", nil, fmt.Errorf("error in general llm request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil, nil
+}
