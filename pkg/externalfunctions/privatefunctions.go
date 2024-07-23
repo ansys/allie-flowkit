@@ -89,8 +89,8 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerRespon
 //
 // Returns:
 //   - chan HandlerResponse: the response channel
-func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string) chan HandlerResponse {
-	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint)
+func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelId string) chan HandlerResponse {
+	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelId)
 }
 
 // sendChatRequest sends a chat request to LLM
@@ -103,7 +103,7 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //
 // Returns:
 //   - chan HandlerResponse: the response channel
-func sendChatRequest(data string, chatRequestType string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string) chan HandlerResponse {
+func sendChatRequest(data string, chatRequestType string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelId string) chan HandlerResponse {
 	// Initiate the channels
 	requestChannelChat := make(chan []byte, 400)
 	responseChannel := make(chan HandlerResponse) // Create a channel for responses
@@ -113,7 +113,7 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 	go listener(c, responseChannel)
 	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelId)
 
 	return responseChannel // Return the response channel
 }
@@ -126,7 +126,7 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 //
 // Returns:
 //   - chan HandlerResponse: the response channel
-func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerResponse {
+func sendEmbeddingsRequest(data string, llmHandlerEndpoint string, modelId string) chan HandlerResponse {
 	// Initiate the channels
 	requestChannelEmbeddings := make(chan []byte, 400)
 	responseChannel := make(chan HandlerResponse) // Create a channel for responses
@@ -136,7 +136,7 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerR
 	go listener(c, responseChannel)
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel)
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelId)
 
 	return responseChannel // Return the response channel
 }
@@ -306,11 +306,16 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse) {
+func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse, modelId string) {
 	request := HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
 		Data:            data,
+	}
+
+	// check for modelId
+	if modelId != "" {
+		request.ModelId = modelId
 	}
 
 	// If history is not empty, set the IsConversation flag to true
@@ -679,7 +684,7 @@ func performGeneralRequest(input string, history []HistoricMessage, isStream boo
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, "")
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
