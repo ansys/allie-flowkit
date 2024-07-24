@@ -14,7 +14,7 @@ type HandlerRequest struct {
 	MsgContext          string            `json:"msgContext"`             // any added context you might need
 	SystemPrompt        string            `json:"systemPrompt"`           // only relevant if "chatRequestType" is "general"
 	ModelOptions        ModelOptions      `json:"modelOptions,omitempty"` // only relevant if "adapter" is "chat"
-	ModelId             string            `json:"modelId"`                // optinal unique identifier for the model to be used for this request
+	ModelIds            []string          `json:"modelIds"`               // optinal array of unique identifiers for the models to be used for this request
 	ClientGuid          string
 }
 
