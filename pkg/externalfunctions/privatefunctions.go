@@ -1231,9 +1231,9 @@ func dataExtractionPerformSplitterRequest(content []byte, documentType string, c
 		"Content-Type": "application/json",
 	}
 	splitterRequest := DataExtractionSplitterServiceRequest{
-		Text:         content,
-		ChunkSize:    chunkSize,
-		ChunkOverlap: chunkOverlap,
+		DocumentContent: content,
+		ChunkSize:       chunkSize,
+		ChunkOverlap:    chunkOverlap,
 	}
 
 	// Marshal the request

@@ -356,9 +356,9 @@ type DataExtractionLLMInputChannelItem struct {
 }
 
 type DataExtractionSplitterServiceRequest struct {
-	Text         []byte `json:"text"`
-	ChunkSize    int    `json:"chunk_size"`
-	ChunkOverlap int    `json:"chunk_overlap"`
+	DocumentContent []byte `json:"document_content"`
+	ChunkSize       int    `json:"chunk_size"`
+	ChunkOverlap    int    `json:"chunk_overlap"`
 }
 
 type DataExtractionSplitterServiceResponse struct {

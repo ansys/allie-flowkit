@@ -139,7 +139,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 	// Read file
 	contentBytes, err := os.ReadFile(localFilePath)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
 		log.Println(errMessage)
 		panic(errMessage)
 	}
@@ -148,7 +148,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 	hash := sha256.New()
 	_, err = hash.Write(contentBytes)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
 		log.Println(errMessage)
 		panic(errMessage)
 	}
