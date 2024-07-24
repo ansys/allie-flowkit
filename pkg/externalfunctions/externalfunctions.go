@@ -45,6 +45,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTRemoveNoneCitationsFromSearchResponse": AnsysGPTRemoveNoneCitationsFromSearchResponse,
 	"AnsysGPTReorderSearchResponse":                 AnsysGPTReorderSearchResponse,
 	"AnsysGPTGetSystemPrompt":                       AnsysGPTGetSystemPrompt,
+	"PerformGeneralRequestSpecificModel":            PerformGeneralRequestSpecificModel,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -62,7 +63,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -106,7 +107,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint)
+	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint, nil)
 
 	// Process all responses
 	var responseAsStr string
@@ -156,8 +157,7 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint)
-
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
 		// Create a stream channel
@@ -209,7 +209,7 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint)
+	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -1309,7 +1309,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []HistoricMessage, sys
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint)
+	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -1591,4 +1591,59 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 	success = resp.StatusCode >= 200 && resp.StatusCode < 300
 
 	return success, string(body)
+}
+
+// PerformGeneralRequestSpecificModel performs a general request to LLM with a specific model
+//
+// Parameters:
+//   - input: the user input
+//   - history: the conversation history
+//   - isStream: the flag to indicate whether the response should be streamed
+//   - systemPrompt: the system prompt
+//   - modelId: the model ID
+//
+// Returns:
+//   - message: the response message
+//   - stream: the stream channel
+func PerformGeneralRequestSpecificModel(input string, history []HistoricMessage, isStream bool, systemPrompt string, modelIds []string) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds)
+
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+
+		// Return the stream channel
+		return "", &streamChannel
+	}
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil
 }
