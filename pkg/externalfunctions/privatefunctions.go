@@ -581,10 +581,6 @@ func ansysGPTACSSemanticHybridSearch(
 	acsApiKey := config.AllieFlowkitConfig.ACS_API_KEY
 	acsApiVersion := config.AllieFlowkitConfig.ACS_API_VERSION
 
-	// define searchedProperties and returnedProperties
-	searchedEmbeddedFields := "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
-	returnedProperties := "physics, sourceTitle_lvl3, sourceURL_lvl3, sourceTitle_lvl2, weight, sourceURL_lvl2, product, content, typeOFasset, version"
-
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
 
@@ -598,6 +594,9 @@ func ansysGPTACSSemanticHybridSearch(
 	filterQuery := strings.Join(filterData, " or ")
 
 	log.Printf("filter_data is : %s\n", filterQuery)
+
+	// Get the searchedEmbeddedFields and returnedProperties
+	searchedEmbeddedFields, returnedProperties := getFieldsAndReturnProperties(indexName)
 
 	// Create the search request payload
 	searchRequest := ACSSearchRequest{
@@ -654,12 +653,113 @@ func ansysGPTACSSemanticHybridSearch(
 		log.Println(errMessage)
 		panic(errMessage)
 	}
+	fmt.Println(string(body))
 
-	// conver body to []map[string]interface{}
+	// extract and convert the response
+	output = extractAndConvertACSResponse(body, indexName)
+
+	return output
+}
+
+// getFieldsAndReturnProperties returns the searchedEmbeddedFields and returnedProperties based on the index name
+//
+// Parameters:
+//   - indexName: the index name
+//
+// Returns:
+//   - searchedEmbeddedFields: the ACS fields to be searched
+//   - returnedProperties: the properties to be returned
+func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields string, returnedProperties string) {
+	switch indexName {
+	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
+		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "physics, sourceTitle_lvl3, sourceURL_lvl3, sourceTitle_lvl2, weight, sourceURL_lvl2, product, content, typeOFasset, version"
+	case "ansysgpt-alh", "ansysgpt-scbu":
+		searchedEmbeddedFields = "contentVector, sourcetitleSAPVector"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourcetitleSAP, sourceURLSAP, sourcetitleDCB, sourceURLDCB"
+	case "lsdyna-documentation-r14":
+		searchedEmbeddedFields = "contentVector, titleVector"
+		returnedProperties = "title, url, token_size, physics, typeOFasset, content, product"
+	default:
+		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+	return searchedEmbeddedFields, returnedProperties
+}
+
+// extractAndConvertACSResponse extracts and converts the ACS response to ACSSearchResponse
+//
+// Parameters:
+//   - body: the response body
+//   - indexName: the index name
+//
+// Returns:
+//   - output: the search results
+func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSearchResponse) {
 	respObject := ACSSearchResponseStruct{}
-	err = json.Unmarshal(body, &respObject)
-	if err != nil {
-		errMessage := fmt.Sprintf("failed to unmarshal response body from ACS: %v", err)
+	switch indexName {
+
+	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
+		err := json.Unmarshal(body, &respObject)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStruct: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
+
+	case "ansysgpt-alh", "ansysgpt-scbu":
+		respObjectAlh := ACSSearchResponseStructALH{}
+		err := json.Unmarshal(body, &respObjectAlh)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructALH: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
+
+		for _, item := range respObjectAlh.Value {
+			output = append(output, ACSSearchResponse{
+				SourceTitleLvl2:     item.SourcetitleSAP,
+				SourceURLLvl2:       item.SourceURLSAP,
+				SourceTitleLvl3:     item.SourcetitleDCB,
+				SourceURLLvl3:       item.SourceURLDCB,
+				Content:             item.Content,
+				TypeOFasset:         item.TypeOFasset,
+				Physics:             item.Physics,
+				Product:             item.Product,
+				Version:             item.Version,
+				Weight:              item.Weight,
+				TokenSize:           item.TokenSize,
+				SearchScore:         item.SearchScore,
+				SearchRerankerScore: item.SearchRerankerScore,
+			})
+		}
+
+	case "lsdyna-documentation-r14":
+		respObjectLsdyna := ACSSearchResponseStructLSdyna{}
+		err := json.Unmarshal(body, &respObjectLsdyna)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructLSdyna: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
+
+		for _, item := range respObjectLsdyna.Value {
+			output = append(output, ACSSearchResponse{
+				SourceTitleLvl2:     item.Title,
+				SourceURLLvl2:       item.Url,
+				Content:             item.Content,
+				TypeOFasset:         item.TypeOFasset,
+				Physics:             item.Physics,
+				Product:             item.Product,
+				TokenSize:           item.TokenSize,
+				SearchScore:         item.SearchScore,
+				SearchRerankerScore: item.SearchRerankerScore,
+			})
+		}
+
+	default:
+		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
 		log.Println(errMessage)
 		panic(errMessage)
 	}
