@@ -13,8 +13,8 @@ import (
 // The function prints the output of the search.
 //
 // Parameters:
-//   - indexName: the name of the index to search.
-//   - query: the query string to search for.
+//   - indexName: the name of the index to search
+//   - query: the query string to search for
 func TestAnsysGPTACSSearchIndex(indexName string, query string) {
 	embeddedQuery := externalfunctions.PerformVectorEmbeddingRequest(query)
 
