@@ -1190,7 +1190,6 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 
 			if allWordsMatch {
 				fields[field] = fieldValue
-				fmt.Println("Exact match found for", field, ":", fieldValue)
 				break
 			}
 		}
@@ -1221,7 +1220,6 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 		if ok && value == "" {
 			if strings.Contains(strings.ToLower(query), strings.ToLower(defaultField.QueryWord)) {
 				fields[defaultField.FieldName] = defaultField.FieldDefaultValue
-				fmt.Println("Default value found for", defaultField.FieldName, ":", defaultField.FieldDefaultValue)
 			}
 		}
 	}
@@ -1361,17 +1359,17 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 		switch indexGroup {
 		case "Ansys Learning":
 			indexList = append(indexList, "granular-ansysgpt")
-			// indexList = append(indexList, "ansysgpt-alh")
+			indexList = append(indexList, "ansysgpt-alh")
 		case "Ansys Products":
-			// indexList = append(indexList, "lsdyna-documentation-r14")
+			indexList = append(indexList, "lsdyna-documentation-r14")
 			indexList = append(indexList, "ansysgpt-documentation-2023r2")
 			indexList = append(indexList, "scade-documentation-2023r2")
 			indexList = append(indexList, "ansys-dot-com-marketing")
-			// indexList = append(indexList, "ibp-app-brief")
+			indexList = append(indexList, "ibp-app-brief")
 			// indexList = append(indexList, "pyansys_help_documentation")
 			// indexList = append(indexList, "pyansys-examples")
 		case "Ansys Semiconductor":
-			// indexList = append(indexList, "ansysgpt-scbu")
+			indexList = append(indexList, "ansysgpt-scbu")
 		default:
 			log.Printf("Invalid indexGroup: %v\n", indexGroup)
 			return
