@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -48,6 +49,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"DataExtractionGetLocalFileContent":             DataExtractionGetLocalFileContent,
 	"DataExtractionLangchainSplitter":               DataExtractionLangchainSplitter,
 	"DataExtractionGenerateDocumentTree":            DataExtractionGenerateDocumentTree,
+	"PerformGeneralRequestSpecificModel":            PerformGeneralRequestSpecificModel,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -62,7 +64,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -106,7 +108,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint)
+	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint, nil)
 
 	// Process all responses
 	var responseAsStr string
@@ -154,7 +156,7 @@ func PerformSummaryRequest(input string) (summary string) {
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint)
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
 
 	// Process all responses
 	var responseAsStr string
@@ -198,8 +200,7 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint)
-
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
 		// Create a stream channel
@@ -251,7 +252,7 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint)
+	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -1228,7 +1229,6 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 
 			if allWordsMatch {
 				fields[field] = fieldValue
-				fmt.Println("Exact match found for", field, ":", fieldValue)
 				break
 			}
 		}
@@ -1259,7 +1259,6 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 		if ok && value == "" {
 			if strings.Contains(strings.ToLower(query), strings.ToLower(defaultField.QueryWord)) {
 				fields[defaultField.FieldName] = defaultField.FieldDefaultValue
-				fmt.Println("Default value found for", defaultField.FieldName, ":", defaultField.FieldDefaultValue)
 			}
 		}
 	}
@@ -1278,15 +1277,13 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 //   - rephrasedQuery: the rephrased query
 func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
 	fmt.Println("Performing rephrase request...")
-	// Append messages with conversation entries
+
 	historyMessages := ""
-	for _, entry := range history {
-		switch entry.Role {
-		case "user":
-			historyMessages += "HumanMessage(content): " + entry.Content + "\n"
-		case "assistant":
-			historyMessages += "AIMessage(content): " + entry.Content + "\n"
-		}
+
+	if len(history) >= 1 {
+		historyMessages += "user:" + history[len(history)-2].Content + "\n"
+	} else {
+		return query
 	}
 
 	// Create map for the data to be used in the template
@@ -1295,10 +1292,16 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	dataMap["chat_history"] = historyMessages
 
 	// Format the template
-	systemTemplate := formatTemplate(template, dataMap)
+	userTemplate := formatTemplate(template, dataMap)
+	fmt.Println("System template:", userTemplate)
 
 	// Perform the general request
-	rephrasedQuery, _ = PerformGeneralRequest(query, nil, false, systemTemplate)
+	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Rephrased query:", rephrasedQuery)
 
 	return rephrasedQuery
 }
@@ -1343,7 +1346,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []HistoricMessage, sys
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint)
+	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -1395,17 +1398,17 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 		switch indexGroup {
 		case "Ansys Learning":
 			indexList = append(indexList, "granular-ansysgpt")
-			// indexList = append(indexList, "ansysgpt-alh")
+			indexList = append(indexList, "ansysgpt-alh")
 		case "Ansys Products":
-			// indexList = append(indexList, "lsdyna-documentation-r14")
+			indexList = append(indexList, "lsdyna-documentation-r14")
 			indexList = append(indexList, "ansysgpt-documentation-2023r2")
 			indexList = append(indexList, "scade-documentation-2023r2")
 			indexList = append(indexList, "ansys-dot-com-marketing")
-			// indexList = append(indexList, "ibp-app-brief")
+			indexList = append(indexList, "ibp-app-brief")
 			// indexList = append(indexList, "pyansys_help_documentation")
 			// indexList = append(indexList, "pyansys-examples")
 		case "Ansys Semiconductor":
-			// indexList = append(indexList, "ansysgpt-scbu")
+			indexList = append(indexList, "ansysgpt-scbu")
 		default:
 			log.Printf("Invalid indexGroup: %v\n", indexGroup)
 			return
@@ -1439,6 +1442,8 @@ func AnsysGPTACSSemanticHybridSearchs(
 	indexList []string,
 	filter map[string]string,
 	topK int) (output []ACSSearchResponse) {
+
+	fmt.Println("Query used for ACS:", query)
 
 	output = make([]ACSSearchResponse, 0)
 	for _, indexName := range indexList {
@@ -1557,4 +1562,125 @@ func AnsysGPTGetSystemPrompt(rephrasedQuery string) string {
                 References:
                 [1] Title: "ANSYS HFSS: Antenna Synthesis from HFSS Antenna Toolkit - Part 2", URL: https://ansyskm.ansys.com/forums/topic/ansys-hfss-antenna-synthesis-from-hfss-antenna-toolkit-part-2/, Relevance: 3.53/4.0
                 [2] Title: "Cosimulation Using Ansys HFSS and Circuit - Lesson 2 - ANSYS Innovation Courses", URL: https://courses.ansys.com/index.php/courses/cosimulation-using-ansys-hfss/lessons/cosimulation-using-ansys-hfss-and-circuit-lesson-2/, Relevance: 2.54/4.0`
+}
+
+// SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
+//
+// Parameters:
+//   - requestType: the type of the request (GET, POST, PUT, PATCH, DELETE)
+//   - urlString: the URL to send the request to
+//   - headers: the headers to include in the request
+//   - query: the query parameters to include in the request
+//   - jsonBody: the body of the request as a JSON string
+//
+// Returns:
+//   - success: a boolean indicating whether the request was successful
+//   - returnJsonBody: the JSON body of the response as a string
+func SendRestAPICall(requestType string, endpoint string, header map[string]string, query map[string]string, jsonBody string) (success bool, returnJsonBody string) {
+	// verify correct request type
+	if requestType != "GET" && requestType != "POST" && requestType != "PUT" && requestType != "PATCH" && requestType != "DELETE" {
+		panic(fmt.Sprintf("Invalid request type: %v", requestType))
+	}
+
+	// Parse the URL and add query parameters
+	parsedURL, err := url.Parse(endpoint)
+	if err != nil {
+		panic(fmt.Sprintf("Error parsing URL: %v", err))
+	}
+
+	q := parsedURL.Query()
+	for key, value := range query {
+		q.Add(key, value)
+	}
+	parsedURL.RawQuery = q.Encode()
+
+	// Create the HTTP request
+	var req *http.Request
+	if jsonBody != "" {
+		req, err = http.NewRequest(requestType, parsedURL.String(), bytes.NewBuffer([]byte(jsonBody)))
+	} else {
+		req, err = http.NewRequest(requestType, parsedURL.String(), nil)
+	}
+	if err != nil {
+		panic(fmt.Sprintf("Error creating request: %v", err))
+	}
+
+	// Add headers
+	for key, value := range header {
+		req.Header.Add(key, value)
+	}
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(fmt.Sprintf("Error executing request: %v", err))
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		panic(fmt.Sprintf("Error reading response body: %v", err))
+	}
+
+	// Check if the response code is successful (2xx)
+	success = resp.StatusCode >= 200 && resp.StatusCode < 300
+
+	return success, string(body)
+}
+
+// PerformGeneralRequestSpecificModel performs a general request to LLM with a specific model
+//
+// Parameters:
+//   - input: the user input
+//   - history: the conversation history
+//   - isStream: the flag to indicate whether the response should be streamed
+//   - systemPrompt: the system prompt
+//   - modelId: the model ID
+//
+// Returns:
+//   - message: the response message
+//   - stream: the stream channel
+func PerformGeneralRequestSpecificModel(input string, history []HistoricMessage, isStream bool, systemPrompt string, modelIds []string) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds)
+
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+
+		// Return the stream channel
+		return "", &streamChannel
+	}
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil
 }

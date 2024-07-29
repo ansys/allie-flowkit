@@ -16,6 +16,7 @@ type HandlerRequest struct {
 	MsgContext          string            `json:"msgContext"`             // any added context you might need
 	SystemPrompt        string            `json:"systemPrompt"`           // only relevant if "chatRequestType" is "general"
 	ModelOptions        ModelOptions      `json:"modelOptions,omitempty"` // only relevant if "adapter" is "chat"
+	ModelIds            []string          `json:"modelIds"`               // optinal array of unique identifiers for the models to be used for this request
 	ClientGuid          string
 }
 
@@ -283,26 +284,70 @@ type ACSVectorQuery struct {
 	Fields string    `json:"fields"`
 }
 
-// ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search.
+// ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for granular-ansysgpt, ansysgpt-documentation-2023r2, scade-documentation-2023r2, ansys-dot-com-marketing.
 type ACSSearchResponseStruct struct {
 	OdataContext string              `json:"@odata.context"`
 	OdataCount   int                 `json:"@odata.count"`
 	Value        []ACSSearchResponse `json:"value"`
 }
 
-// ACSSearchResponse represents the response structure for the Azure Cognitive Search.
+// ACSSearchResponse represents the response structure for the Azure Cognitive Search for granular-ansysgpt, ansysgpt-documentation-2023r2, scade-documentation-2023r2, ansys-dot-com-marketing.
 type ACSSearchResponse struct {
-	Physics             string  `json:"physics"`
+	SourceTitleLvl2     string  `json:"sourceTitle_lvl2"`
+	SourceURLLvl2       string  `json:"sourceURL_lvl2"`
 	SourceTitleLvl3     string  `json:"sourceTitle_lvl3"`
 	SourceURLLvl3       string  `json:"sourceURL_lvl3"`
-	TokenSize           int     `json:"tokenSize"`
-	SourceTitleLvl2     string  `json:"sourceTitle_lvl2"`
-	Weight              float64 `json:"weight"`
-	SourceURLLvl2       string  `json:"sourceURL_lvl2"`
-	Product             string  `json:"product"`
 	Content             string  `json:"content"`
 	TypeOFasset         string  `json:"typeOFasset"`
+	Physics             string  `json:"physics"`
+	Product             string  `json:"product"`
 	Version             string  `json:"version"`
+	Weight              float64 `json:"weight"`
+	TokenSize           int     `json:"tokenSize"`
+	SearchScore         float64 `json:"@search.score"`
+	SearchRerankerScore float64 `json:"@search.reranker_score"`
+}
+
+// ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for ansysgpt-alh & ansysgpt-scbu.
+type ACSSearchResponseStructALH struct {
+	OdataContext string                 `json:"@odata.context"`
+	OdataCount   int                    `json:"@odata.count"`
+	Value        []ACSSearchResponseALH `json:"value"`
+}
+
+// ACSSearchResponse represents the response structure for the Azure Cognitive Search for ansysgpt-alh & ansysgpt-scbu.
+type ACSSearchResponseALH struct {
+	SourcetitleSAP      string  `json:"sourcetitleSAP"`
+	SourceURLSAP        string  `json:"sourceURLSAP"`
+	SourcetitleDCB      string  `json:"sourcetitleDCB"`
+	SourceURLDCB        string  `json:"sourceURLDCB"`
+	Content             string  `json:"content"`
+	TypeOFasset         string  `json:"typeOFasset"`
+	Physics             string  `json:"physics"`
+	Product             string  `json:"product"`
+	Version             string  `json:"version"`
+	Weight              float64 `json:"weight"`
+	TokenSize           int     `json:"token_size"`
+	SearchScore         float64 `json:"@search.score"`
+	SearchRerankerScore float64 `json:"@search.reranker_score"`
+}
+
+// ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for lsdyna-documentation-r14.
+type ACSSearchResponseStructLSdyna struct {
+	OdataContext string                    `json:"@odata.context"`
+	OdataCount   int                       `json:"@odata.count"`
+	Value        []ACSSearchResponseLSdyna `json:"value"`
+}
+
+// ACSSearchResponse represents the response structure for the Azure Cognitive Search for lsdyna-documentation-r14.
+type ACSSearchResponseLSdyna struct {
+	Title               string  `json:"title"`
+	Url                 string  `json:"url"`
+	Content             string  `json:"content"`
+	TypeOFasset         string  `json:"typeOFasset"`
+	Physics             string  `json:"physics"`
+	Product             string  `json:"product"`
+	TokenSize           int     `json:"token_size"`
 	SearchScore         float64 `json:"@search.score"`
 	SearchRerankerScore float64 `json:"@search.reranker_score"`
 }

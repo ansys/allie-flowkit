@@ -93,8 +93,8 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerRespon
 //
 // Returns:
 //   - chan HandlerResponse: the response channel
-func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string) chan HandlerResponse {
-	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint)
+func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string) chan HandlerResponse {
+	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelIds)
 }
 
 // sendChatRequest sends a chat request to LLM
@@ -107,7 +107,7 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //
 // Returns:
 //   - chan HandlerResponse: the response channel
-func sendChatRequest(data string, chatRequestType string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string) chan HandlerResponse {
+func sendChatRequest(data string, chatRequestType string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string) chan HandlerResponse {
 	// Initiate the channels
 	requestChannelChat := make(chan []byte, 400)
 	responseChannel := make(chan HandlerResponse) // Create a channel for responses
@@ -117,7 +117,7 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 	go listener(c, responseChannel)
 	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds)
 
 	return responseChannel // Return the response channel
 }
@@ -130,7 +130,7 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 //
 // Returns:
 //   - chan HandlerResponse: the response channel
-func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerResponse {
+func sendEmbeddingsRequest(data string, llmHandlerEndpoint string, modelIds []string) chan HandlerResponse {
 	// Initiate the channels
 	requestChannelEmbeddings := make(chan []byte, 400)
 	responseChannel := make(chan HandlerResponse) // Create a channel for responses
@@ -140,7 +140,7 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string) chan HandlerR
 	go listener(c, responseChannel)
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel)
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds)
 	return responseChannel // Return the response channel
 }
 
@@ -309,11 +309,16 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse) {
+func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse, modelIds []string) {
 	request := HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
 		Data:            data,
+	}
+
+	// check for modelId
+	if len(modelIds) > 0 {
+		request.ModelIds = modelIds
 	}
 
 	// If history is not empty, set the IsConversation flag to true
@@ -579,10 +584,6 @@ func ansysGPTACSSemanticHybridSearch(
 	acsApiKey := config.AllieFlowkitConfig.ACS_API_KEY
 	acsApiVersion := config.AllieFlowkitConfig.ACS_API_VERSION
 
-	// define searchedProperties and returnedProperties
-	searchedEmbeddedFields := "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
-	returnedProperties := "physics, sourceTitle_lvl3, sourceURL_lvl3, sourceTitle_lvl2, weight, sourceURL_lvl2, product, content, typeOFasset, version"
-
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
 
@@ -596,6 +597,9 @@ func ansysGPTACSSemanticHybridSearch(
 	filterQuery := strings.Join(filterData, " or ")
 
 	log.Printf("filter_data is : %s\n", filterQuery)
+
+	// Get the searchedEmbeddedFields and returnedProperties
+	searchedEmbeddedFields, returnedProperties := getFieldsAndReturnProperties(indexName)
 
 	// Create the search request payload
 	searchRequest := ACSSearchRequest{
@@ -652,12 +656,113 @@ func ansysGPTACSSemanticHybridSearch(
 		log.Println(errMessage)
 		panic(errMessage)
 	}
+	fmt.Println(string(body))
 
-	// conver body to []map[string]interface{}
+	// extract and convert the response
+	output = extractAndConvertACSResponse(body, indexName)
+
+	return output
+}
+
+// getFieldsAndReturnProperties returns the searchedEmbeddedFields and returnedProperties based on the index name
+//
+// Parameters:
+//   - indexName: the index name
+//
+// Returns:
+//   - searchedEmbeddedFields: the ACS fields to be searched
+//   - returnedProperties: the properties to be returned
+func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields string, returnedProperties string) {
+	switch indexName {
+	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
+		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "physics, sourceTitle_lvl3, sourceURL_lvl3, sourceTitle_lvl2, weight, sourceURL_lvl2, product, content, typeOFasset, version"
+	case "ansysgpt-alh", "ansysgpt-scbu":
+		searchedEmbeddedFields = "contentVector, sourcetitleSAPVector"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourcetitleSAP, sourceURLSAP, sourcetitleDCB, sourceURLDCB"
+	case "lsdyna-documentation-r14":
+		searchedEmbeddedFields = "contentVector, titleVector"
+		returnedProperties = "title, url, token_size, physics, typeOFasset, content, product"
+	default:
+		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
+		log.Println(errMessage)
+		panic(errMessage)
+	}
+	return searchedEmbeddedFields, returnedProperties
+}
+
+// extractAndConvertACSResponse extracts and converts the ACS response to ACSSearchResponse
+//
+// Parameters:
+//   - body: the response body
+//   - indexName: the index name
+//
+// Returns:
+//   - output: the search results
+func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSearchResponse) {
 	respObject := ACSSearchResponseStruct{}
-	err = json.Unmarshal(body, &respObject)
-	if err != nil {
-		errMessage := fmt.Sprintf("failed to unmarshal response body from ACS: %v", err)
+	switch indexName {
+
+	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
+		err := json.Unmarshal(body, &respObject)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStruct: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
+
+	case "ansysgpt-alh", "ansysgpt-scbu":
+		respObjectAlh := ACSSearchResponseStructALH{}
+		err := json.Unmarshal(body, &respObjectAlh)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructALH: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
+
+		for _, item := range respObjectAlh.Value {
+			output = append(output, ACSSearchResponse{
+				SourceTitleLvl2:     item.SourcetitleSAP,
+				SourceURLLvl2:       item.SourceURLSAP,
+				SourceTitleLvl3:     item.SourcetitleDCB,
+				SourceURLLvl3:       item.SourceURLDCB,
+				Content:             item.Content,
+				TypeOFasset:         item.TypeOFasset,
+				Physics:             item.Physics,
+				Product:             item.Product,
+				Version:             item.Version,
+				Weight:              item.Weight,
+				TokenSize:           item.TokenSize,
+				SearchScore:         item.SearchScore,
+				SearchRerankerScore: item.SearchRerankerScore,
+			})
+		}
+
+	case "lsdyna-documentation-r14":
+		respObjectLsdyna := ACSSearchResponseStructLSdyna{}
+		err := json.Unmarshal(body, &respObjectLsdyna)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructLSdyna: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
+
+		for _, item := range respObjectLsdyna.Value {
+			output = append(output, ACSSearchResponse{
+				SourceTitleLvl2:     item.Title,
+				SourceURLLvl2:       item.Url,
+				Content:             item.Content,
+				TypeOFasset:         item.TypeOFasset,
+				Physics:             item.Physics,
+				Product:             item.Product,
+				TokenSize:           item.TokenSize,
+				SearchScore:         item.SearchScore,
+				SearchRerankerScore: item.SearchRerankerScore,
+			})
+		}
+
+	default:
+		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
 		log.Println(errMessage)
 		panic(errMessage)
 	}
@@ -1102,7 +1207,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -1143,7 +1248,7 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint)
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
 
 	// Process all responses
 	var responseAsStr string
@@ -1171,6 +1276,61 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 	return responseAsStr, nil
 }
 
+// performGeneralRequest performs a general chat completion request to LLM
+//
+// Parameters:
+//   - input: the input string
+//   - history: the conversation history
+//   - isStream: the stream flag
+//   - systemPrompt: the system prompt
+//
+// Returns:
+//   - message: the generated message
+//   - stream: the stream channel
+//   - err: the error
+func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
+
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+
+		// Return the stream channel
+		return "", &streamChannel, nil
+	}
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			return "", nil, fmt.Errorf("error in general llm request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil, nil
+}
+
 // llmHandlerPerformKeywordExtractionRequest performs a keyword extraction request to LLM Handler.
 //
 // Parameters:
@@ -1185,7 +1345,7 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint)
+	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint, nil)
 
 	// Process all responses
 	var responseAsStr string
