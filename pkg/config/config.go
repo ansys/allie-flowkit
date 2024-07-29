@@ -27,7 +27,8 @@ type AllieFlowkitConfigStruct struct {
 	ACS_ENDPOINT                string  `yaml:"ACS_ENDPOINT,omitempty"`
 	ACS_API_KEY                 string  `yaml:"ACS_API_KEY,omitempty"`
 	ACS_API_VERSION             string  `yaml:"ACS_API_VERSION,omitempty"`
-	PYTHON_SERVICE_ENDPOINT     string  `yaml:"PYTHON_SERVICE_ENDPOINT,omitempty"`
+	PYFLOWKIT_ENDPOINT          string  `yaml:"PYFLOWKIT_ENDPOINT,omitempty"`
+	PYFLOWKIT_API_KEY           string  `yaml:"PYFLOWKIT_API_KEY,omitempty"`
 }
 
 ///////////////////////////////////////////////////////////////////////////////
