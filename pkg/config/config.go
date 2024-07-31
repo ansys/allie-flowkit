@@ -98,6 +98,13 @@ func (c *AllieFlowkitConfigStruct) ToString() string {
 		fieldValue := v.Field(i)
 		yamlKey := getYamlKeyFromTag(fieldTag)
 
+		// filter optional fields
+		if yamlKey == "ACS_ENDPOINT" || yamlKey == "ACS_API_KEY" || yamlKey == "ACS_API_VERSION" {
+			value := fieldValue.String()
+			info += yamlKey + ": " + value + "\n"
+			continue
+		}
+
 		// Get the field value as a string
 		// Fields are always pointers to the actual value
 		var value string
