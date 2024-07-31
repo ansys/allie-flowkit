@@ -46,6 +46,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTReorderSearchResponse":                 AnsysGPTReorderSearchResponse,
 	"AnsysGPTGetSystemPrompt":                       AnsysGPTGetSystemPrompt,
 	"PerformGeneralRequestSpecificModel":            PerformGeneralRequestSpecificModel,
+	"AssignStringToString":                          AssignStringToString,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -1644,4 +1645,15 @@ func PerformGeneralRequestSpecificModel(input string, history []HistoricMessage,
 
 	// Return the response
 	return responseAsStr, nil
+}
+
+// AssignStringToString assigns a string to another string
+//
+// Parameters:
+//   - inputString: the input string
+//
+// Returns:
+//   - outputString: the output string
+func AssignStringToString(inputString string) (outputString string) {
+	return inputString
 }

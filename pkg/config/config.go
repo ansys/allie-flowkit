@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -82,44 +81,6 @@ func (c *AllieFlowkitConfigStruct) ReadConfigFromFile(file string) (*AllieFlowki
 
 	log.Println("Configuration loaded successfully.")
 	return c, nil
-}
-
-// ToString returns the configuration information in a string.
-//
-// Returns:
-//   - string: the configuration information
-func (c *AllieFlowkitConfigStruct) ToString() string {
-	var info string
-	v := reflect.ValueOf(*c)
-	t := v.Type()
-
-	for i := 0; i < t.NumField(); i++ {
-		fieldTag := t.Field(i).Tag
-		fieldValue := v.Field(i)
-		yamlKey := getYamlKeyFromTag(fieldTag)
-
-		// Get the field value as a string
-		// Fields are always pointers to the actual value
-		var value string
-		if fieldValue.IsNil() {
-			value = "nil"
-		} else {
-			// Check if elem type before converting to string
-			// If elem type is not a string, then we need to convert it to a string
-			if fieldValue.Elem().Kind() == reflect.String {
-				value = fieldValue.Elem().String()
-			} else if fieldValue.Elem().Kind() == reflect.Bool {
-				value = strconv.FormatBool(fieldValue.Elem().Bool())
-			} else {
-				log.Println("Unknown type for field:", yamlKey)
-				continue
-			}
-		}
-
-		info += yamlKey + ": " + value + "\n"
-	}
-
-	return info
 }
 
 ///////////////////////////////////////////////////////////////////////////////
