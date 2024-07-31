@@ -212,31 +212,29 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 			output = append(output, chunk.PageContent)
 		}
 
-	// TODO: Uncomment the following cases when the splitter service is configured.
+	case "py", "ipynb":
+		output, err = dataExtractionPerformSplitterRequest(bytesContent, "py", chunkSize, chunkOverlap)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting python document: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
 
-	// case "py", "ipynb":
-	// 	output, err = dataExtractionPerformSplitterRequest(bytesContent, "py", chunkSize, chunkOverlap)
-	// 	if err != nil {
-	// 		errMessage := fmt.Sprintf("Error splitting python document: %v", err)
-	// 		log.Println(errMessage)
-	// 		panic(errMessage)
-	// 	}
+	case "pdf":
+		output, err = dataExtractionPerformSplitterRequest(bytesContent, "pdf", chunkSize, chunkOverlap)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting pdf document: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
 
-	// case "pdf":
-	// 	output, err = dataExtractionPerformSplitterRequest(bytesContent, "pdf", chunkSize, chunkOverlap)
-	// 	if err != nil {
-	// 		errMessage := fmt.Sprintf("Error splitting pdf document: %v", err)
-	// 		log.Println(errMessage)
-	// 		panic(errMessage)
-	// 	}
-
-	// case "pptx", "ppt":
-	// 	output, err = dataExtractionPerformSplitterRequest(bytesContent, "ppt", chunkSize, chunkOverlap)
-	// 	if err != nil {
-	// 		errMessage := fmt.Sprintf("Error splitting ppt document: %v", err)
-	// 		log.Println(errMessage)
-	// 		panic(errMessage)
-	// 	}
+	case "pptx", "ppt":
+		output, err = dataExtractionPerformSplitterRequest(bytesContent, "ppt", chunkSize, chunkOverlap)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting ppt document: %v", err)
+			log.Println(errMessage)
+			panic(errMessage)
+		}
 
 	default:
 		// Default document type is text.
