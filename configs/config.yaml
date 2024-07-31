@@ -11,3 +11,7 @@ KNOWLEDGE_DB_ENDPOINT: "http://localhost:3500"
 ACS_ENDPOINT: ""
 ACS_API_KEY: ""
 ACS_API_VERSION: ""
+
+# Pyflowkit configuration
+PYFLOWKIT_ENDPOINT: "http://localhost:50052"
+PYFLOWKIT_API_KEY: "flowkit-python-api-key"

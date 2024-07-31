@@ -20,11 +20,19 @@ import (
 	"github.com/tmc/langchaingo/textsplitter"
 )
 
-// GetGithubFilesToExtract gets all files from github that need to be extracted.
+// DataExtractionGetGithubFilesToExtract gets all files from github that need to be extracted.
 //
 // Parameters:
-//   - ctx: logger context.
-//   - waitgroup: waitgroup for the worker.
+//   - githubRepoName: name of the github repository.
+//   - githubRepoOwner: owner of the github repository.
+//   - githubRepoBranch: branch of the github repository.
+//   - githubAccessToken: access token for github.
+//   - githubFileExtensions: github file extensions.
+//   - githubFilteredDirectories: github filtered directories.
+//   - githubExcludedDirectories: github excluded directories.
+//
+// Returns:
+//   - githubFilesToExtract: github files to extract.
 func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, githubAccessToken string, githubFileExtensions []string,
 	githubFilteredDirectories []string, githubExcludedDirectories []string) (githubFilesToExtract []string) {
@@ -56,11 +64,10 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 	return githubFilesToExtract
 }
 
-// getLocalFilesToExtract gets all files from local that need to be extracted.
+// DataExtractionGetLocalFilesToExtract gets all files from local that need to be extracted.
 //
 // Parameters:
-//   - localExtractDetails: local extraction details.
-//   - localPath: local path.
+//   - localPath: path to the local directory.
 //   - localFileExtensions: local file extensions.
 //   - localFilteredDirectories: local filtered directories.
 //   - localExcludedDirectories: local excluded directories.
@@ -72,13 +79,13 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 
 	localFiles := &[]string{}
 
-	// Create a walker function that will be called for each file and directory found
+	// Create a walker function that will be called for each file and directory found.
 	walkFn := func(localPath string, f os.FileInfo, err error) error {
 		return dataExtractionLocalFilepathExtractWalker(localPath, localFileExtensions, localFilteredDirectories, localExcludedDirectories,
 			localFiles, f, err)
 	}
 
-	// Walk through all files and directories executing the walker function
+	// Walk through all files and directories executing the walker function.
 	err := filepath.Walk(localPath, walkFn)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error walking through the files: %v", err)
@@ -107,8 +114,10 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content string) {
 
+	// Create a new GitHub client and context.
 	client, ctx := dataExtractNewGithubClient(githubAccessToken)
 
+	// Retrieve the file content from the GitHub repository.
 	fileContent, _, _, err := client.Repositories.GetContents(ctx, githubRepoOwner, githubRepoName, gihubFilePath, &github.RepositoryContentGetOptions{Ref: githubRepoBranch})
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
@@ -116,6 +125,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 		panic(errMessage)
 	}
 
+	// Extract the content from the file content.
 	content, err = fileContent.GetContent()
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
@@ -123,6 +133,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 		panic(errMessage)
 	}
 
+	// Extract the checksum from the file content.
 	checksum = fileContent.GetSHA()
 
 	return checksum, content
@@ -136,7 +147,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 //   - checksum: checksum of file.
 //   - content: content of file.
 func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, content string) {
-	// Read file
+	// Read file from local path.
 	contentBytes, err := os.ReadFile(localFilePath)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
@@ -144,7 +155,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 		panic(errMessage)
 	}
 
-	// Calculate checksum
+	// Calculate checksum from file content.
 	hash := sha256.New()
 	_, err = hash.Write(contentBytes)
 	if err != nil {
@@ -153,10 +164,10 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 		panic(errMessage)
 	}
 
-	// Convert checksum to a hexadecimal string
+	// Convert checksum to a hexadecimal string.
 	checksum = hex.EncodeToString(hash.Sum(nil))
 
-	// Convert content to a string
+	// Convert content to a string.
 	content = string(contentBytes)
 
 	return checksum, content
@@ -166,6 +177,8 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 // Parameters:
 //   - content: content to split.
 //   - documentType: type of document.
+//   - chunkSize: size of the chunks.
+//   - chunkOverlap: overlap of the chunks.
 //
 // Returns:
 //   - output: chunks as an slice of strings.
@@ -226,7 +239,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 	// 	}
 
 	default:
-		// Default document type is text
+		// Default document type is text.
 		txtLoader := documentloaders.NewText(reader)
 		splittedChunks, err = txtLoader.LoadAndSplit(context.Background(), splitter)
 		if err != nil {
@@ -240,7 +253,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		}
 	}
 
-	// Log number of chunks and chunk size
+	// Log number of chunks created.
 	log.Printf("Splitted document in %v chunks \n", len(output))
 
 	return output
@@ -265,18 +278,18 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 
 	log.Printf("Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
 
-	// Create llm handler input channel and wait group
+	// Create llm handler input channel and wait group.
 	llmHandlerInputChannel := make(chan *DataExtractionLLMInputChannelItem, 40)
 	llmHandlerWaitGroup := sync.WaitGroup{}
 	errorChannel := make(chan error, 1)
 
-	// Start LLM Handler workers
+	// Start LLM Handler workers.
 	for i := 0; i < numLlmWorkers; i++ {
 		llmHandlerWaitGroup.Add(1)
 		go dataExtractionLLMHandlerWorker(&llmHandlerWaitGroup, llmHandlerInputChannel, errorChannel, embeddingsDimensions)
 	}
 
-	// Create root data object
+	// Create root data object.
 	rootData := &DataExtractionDocumentData{
 		Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
 		DocumentId:   documentId,
@@ -288,21 +301,21 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 		Level:        "root",
 	}
 
-	// Assign non zero value to embedding so databae does not ignore the node
+	// Assign non zero value to embedding so databae does not ignore the node.
 	for i := range rootData.Embedding {
 		rootData.Embedding[i] = 0.5
 	}
 
-	// Add root data object to document data
+	// Add root data object to document data.
 	documentData := []*DataExtractionDocumentData{rootData}
 
-	// Create child data objects
+	// Create child data objects.
 	orderedChildDataObjects, err := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, errorChannel, documentChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
 	if err != nil {
 		panic(err.Error())
 	}
 
-	// If summary is disabled -> flat structure, only iterate over chunks
+	// If summary is disabled -> flat structure, only iterate over chunks.
 	if !getSummary {
 		for _, childData := range orderedChildDataObjects {
 			rootData.ChildIds = append(rootData.ChildIds, childData.Guid)
@@ -311,14 +324,14 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 			documentData = append(documentData, childData)
 		}
 
-		// Assign first and last child ids to root data object
+		// Assign first and last child ids to root data object.
 		if len(orderedChildDataObjects) > 0 {
 			rootData.FirstChildId = orderedChildDataObjects[0].Guid
 			rootData.LastChildId = orderedChildDataObjects[len(orderedChildDataObjects)-1].Guid
 		}
 	}
 
-	// If summary is enabled -> create summary and iterate over branches
+	// If summary is enabled -> create summary and iterate over branches.
 	if getSummary {
 		// Prepare leaf data as not part of loop
 		for _, childData := range orderedChildDataObjects {
@@ -328,7 +341,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 		}
 
 		for {
-			// Concatenate all summaries
+			// Concatenate all summaries.
 			branches := []*DataExtractionBranch{}
 			branch := &DataExtractionBranch{
 				Text:             "",
@@ -336,9 +349,9 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 			}
 			branches = append(branches, branch)
 
-			// Create branches from orderedChildDataObjects (based on summary length)
+			// Create branches from orderedChildDataObjects (based on summary length).
 			for _, data := range orderedChildDataObjects {
-				// Check whether summary is longer than allowed chunk length if yes, create new branch
+				// Check whether summary is longer than allowed chunk length if yes, create new branch.
 				branchTokenLength := tokenizer.MustCalToken(branch.Text)
 				chunkSummaryTokenLength := tokenizer.MustCalToken(data.Summary)
 				if branchTokenLength+chunkSummaryTokenLength > chunkSize {
@@ -355,7 +368,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 				branch.ChildDataIds = append(branch.ChildDataIds, data.Guid)
 			}
 
-			// Text chunks are text parts from branches
+			// Text chunks are text parts from branches.
 			textChunks := make([]string, 0, len(branches))
 			for _, branch := range branches {
 				textChunks = append(textChunks, branch.Text)
@@ -366,9 +379,9 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 				panic(err.Error())
 			}
 
-			// Exit if only one -> assign details to root
+			// Exit if only one -> assign details to root.
 			if len(orderedChildDataObjectsFromBranches) == 1 {
-				// If root text has a title, append the child summaries to it
+				// If root text has a title, append the child summaries to it.
 				if rootData.Text != "" {
 					rootData.Text += "\n" + orderedChildDataObjectsFromBranches[0].Text
 				} else {
@@ -380,39 +393,39 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 				rootData.Keywords = orderedChildDataObjectsFromBranches[0].Keywords
 				rootData.ChildIds = branches[0].ChildDataIds
 
-				// Assign parent id to child data objects
+				// Assign parent id to child data objects.
 				for _, childData := range branches[0].ChildDataObjects {
 					childData.ParentId = rootData.Guid
 				}
 
-				// Assign first and last child ids to root data object
+				// Assign first and last child ids to root data object.
 				if len(branches[0].ChildDataIds) > 0 {
 					rootData.FirstChildId = branches[0].ChildDataIds[0]
 					rootData.LastChildId = branches[0].ChildDataIds[len(branches[0].ChildDataIds)-1]
 				}
 
-				// Exit loop because top of the tree has been reached
+				// Exit loop because top of the tree has been reached.
 				break
 			}
 
-			// Assign details to parent data objects
+			// Assign details to parent data objects.
 			for branchIdx, branch := range branches {
 				parentData := orderedChildDataObjectsFromBranches[branchIdx]
 				parentData.ChildIds = branch.ChildDataIds
 				parentData.Level = "internal"
 
-				// Assign first and last child ids to parent data object
+				// Assign first and last child ids to parent data object.
 				if len(branch.ChildDataIds) > 0 {
 					parentData.FirstChildId = branch.ChildDataIds[0]
 					parentData.LastChildId = branch.ChildDataIds[len(branch.ChildDataIds)-1]
 				}
 
-				// Assign parent id to child data objects
+				// Assign parent id to child data objects.
 				for _, childData := range branch.ChildDataObjects {
 					childData.ParentId = parentData.Guid
 				}
 
-				// Add parent data object to document data
+				// Add parent data object to document data.
 				documentData = append(documentData, parentData)
 			}
 
@@ -428,7 +441,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 		returnedDocumentData[i] = *data
 	}
 
-	// Close llm handler input channel and wait for all workers to finish
+	// Close llm handler input channel and wait for all workers to finish.
 	close(llmHandlerInputChannel)
 	llmHandlerWaitGroup.Wait()
 
