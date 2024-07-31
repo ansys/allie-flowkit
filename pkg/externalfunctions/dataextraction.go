@@ -183,7 +183,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 // Returns:
 //   - output: chunks as an slice of strings.
 func DataExtractionLangchainSplitter(content string, documentType string, chunkSize int, chunkOverlap int) (output []string) {
-	output = []string{content}
+	output = []string{}
 	var splittedChunks []schema.Document
 	var err error
 
