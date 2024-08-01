@@ -39,7 +39,7 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 
 	client, ctx := dataExtractNewGithubClient(githubAccessToken)
 
-	// Retrieve the specified branch's SHA (commit hash) from the GitHub repository. This is used to identify the latest state of the branch.
+	// Retrieve the specified branch SHA (commit hash) from the GitHub repository. This is used to identify the latest state of the branch.
 	branch, _, err := client.Repositories.GetBranch(ctx, githubRepoOwner, githubRepoName, githubRepoBranch, 1)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting branch %s: %v", githubRepoBranch, err)
