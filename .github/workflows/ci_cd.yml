@@ -10,7 +10,7 @@ on:
 
 env:
   MAIN_PYTHON_VERSION: '3.12'
-  DOCUMENTATION_CNAME: 'laughing-guide-5m1lvq6.pages.github.io'
+  DOCUMENTATION_CNAME: 'ansys.github.io/allie-flowkit'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
