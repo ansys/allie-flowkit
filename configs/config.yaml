@@ -12,6 +12,6 @@ ACS_ENDPOINT: ""
 ACS_API_KEY: ""
 ACS_API_VERSION: ""
 
-# Pyflowkit configuration
-PYFLOWKIT_ENDPOINT: "http://localhost:50052"
-PYFLOWKIT_API_KEY: "flowkit-python-api-key"
+# FlowKit Python configuration
+FLOWKIT_PYTHON_ENDPOINT: "http://localhost:50052"
+FLOWKIT_PYTHON_API_KEY: "flowkit-python-api-key"

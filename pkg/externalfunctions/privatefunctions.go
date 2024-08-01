@@ -1385,10 +1385,10 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 //   - error: an error if any.
 func dataExtractionPerformSplitterRequest(content []byte, documentType string, chunkSize int, chunkOverlap int) (output []string, err error) {
 	// Define the URL and headers.
-	url := config.AllieFlowkitConfig.PYFLOWKIT_ENDPOINT + "/splitter/" + documentType
+	url := config.AllieFlowkitConfig.FLOWKIT_PYTHON_ENDPOINT + "/splitter/" + documentType
 	headers := map[string]string{
 		"Content-Type": "application/json",
-		"api-key":      config.AllieFlowkitConfig.PYFLOWKIT_API_KEY,
+		"api-key":      config.AllieFlowkitConfig.FLOWKIT_PYTHON_API_KEY,
 	}
 	splitterRequest := DataExtractionSplitterServiceRequest{
 		DocumentContent: content,
