@@ -101,6 +101,7 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 }
 
 // DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.
+//
 // Parameters:
 //   - githubRepoName: name of the github repository.
 //   - githubRepoOwner: owner of the github repository.
@@ -173,7 +174,23 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 	return checksum, content
 }
 
+// DataExtractionGetDocumentType returns the document type of a file.
+//
+// Parameters:
+//   - filePath: path to file.
+//
+// Returns:
+//   - documentType: file extension.
+func DataExtractionGetDocumentType(filePath string) (documentType string) {
+	// Extract the file extension from the file path and remove the leading period.
+	fileExtension := filepath.Ext(filePath)
+	documentType = strings.TrimPrefix(fileExtension, ".")
+
+	return documentType
+}
+
 // DataExtractionLangchainSplitter splits content into chunks using langchain.
+//
 // Parameters:
 //   - content: content to split.
 //   - documentType: type of document.
@@ -258,6 +275,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 }
 
 // DataExtractionGenerateDocumentTree generates a tree structure from the document chunks.
+//
 // Parameters:
 //   - documentName: name of the document.
 //   - documentId: id of the document.
