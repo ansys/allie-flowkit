@@ -127,8 +127,6 @@ jobs:
             replacementBodyContent=$(sed -n '/<body>/,/<\/body>/p' "$replacement_file" | \
             sed '/<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages | Auto-generated docs<\/a><\/div>/,/<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>/d' | \
             sed 's/\//\\\//g')
-            echo "Replacement body content:"
-            echo "$replacementBodyContent"
             # Use awk to replace content between specific HTML tags
             awk -v repl="$replacementBodyContent" '
               /<article class="bd-article" role="main">/,/<\/article>/ {
