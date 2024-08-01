@@ -129,9 +129,13 @@ jobs:
           sed '/<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages | Auto-generated docs<\/a><\/div>/,/<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>/d')
 
           # Read the source file and replace the content between the <article> tags
-          awk -v bodyContent="$bodyContent" '
+          awk '
             BEGIN { output = 1 }
-            /<article class="bd-article" role="main">/ { print; output = 0; print bodyContent; next }
+            /<article class="bd-article" role="main">/ {
+              print; output = 0;
+              while ((getline line < "bodyContent.tmp") > 0) print line;
+              next
+            }
             /<\/article>/ { output = 1 }
             output { print }
           ' "$SOURCE_FILE" > temp.html
