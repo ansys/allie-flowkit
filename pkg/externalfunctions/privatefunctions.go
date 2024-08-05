@@ -653,7 +653,6 @@ func ansysGPTACSSemanticHybridSearch(
 		log.Println(errMessage)
 		panic(errMessage)
 	}
-	fmt.Println(string(body))
 
 	// extract and convert the response
 	output = extractAndConvertACSResponse(body, indexName)
