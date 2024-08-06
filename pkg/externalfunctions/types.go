@@ -305,7 +305,7 @@ type ACSSearchResponse struct {
 	Weight              float64 `json:"weight"`
 	TokenSize           int     `json:"tokenSize"`
 	SearchScore         float64 `json:"@search.score"`
-	SearchRerankerScore float64 `json:"@search.reranker_score"`
+	SearchRerankerScore float64 `json:"@search.rerankerScore"`
 }
 
 // ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for ansysgpt-alh & ansysgpt-scbu.
@@ -329,7 +329,7 @@ type ACSSearchResponseALH struct {
 	Weight              float64 `json:"weight"`
 	TokenSize           int     `json:"token_size"`
 	SearchScore         float64 `json:"@search.score"`
-	SearchRerankerScore float64 `json:"@search.reranker_score"`
+	SearchRerankerScore float64 `json:"@search.rerankerScore"`
 }
 
 // ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for lsdyna-documentation-r14.
@@ -349,7 +349,7 @@ type ACSSearchResponseLSdyna struct {
 	Product             string  `json:"product"`
 	TokenSize           int     `json:"token_size"`
 	SearchScore         float64 `json:"@search.score"`
-	SearchRerankerScore float64 `json:"@search.reranker_score"`
+	SearchRerankerScore float64 `json:"@search.rerankerScore"`
 }
 
 // AnsysGPTCitation represents the citation structure for the Ansys GPT.
