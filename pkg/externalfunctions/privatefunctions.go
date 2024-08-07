@@ -783,7 +783,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 //   - stream: the stream channel
 //
 // Returns:
-//   - message: the generated message
+//   - []string: the generated message
 //   - stream: the stream channel
 //   - err: the error
 //   - message: the generated message
