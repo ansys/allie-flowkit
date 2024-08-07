@@ -124,26 +124,22 @@ jobs:
           rm "$REPLACEMENT_DIRECTORY/index.html"
           # Process each HTML file in the replacement directory
           find "$REPLACEMENT_DIRECTORY" -type f -name "*.html" | while IFS= read -r replacement_file; do
-          # Extract the body content and remove specific div
-          bodyContent=$(sed -n '/<body>/,/<\/body>/p' "$replacement_file" | \
-          sed '/<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages | Auto-generated docs<\/a><\/div>/,/<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>/d')
-
-          # Read the source file and replace the content between the <article> tags
-          awk '
-            BEGIN { output = 1 }
-            /<article class="bd-article" role="main">/ {
-              print; output = 0;
-              while ((getline line < "bodyContent.tmp") > 0) print line;
-              next
-            }
-            /<\/article>/ { output = 1 }
-            output { print }
-          ' "$SOURCE_FILE" > temp.html
-
-          # Move the modified temp file to the original replacement file
-          mv temp.html "$replacement_file"
+            replacementBodyContent=$(sed -n '/<body>/,/<\/body>/p' "$replacement_file" | \
+            sed '/<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages | Auto-generated docs<\/a><\/div>/,/<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>/d' | \
+            sed 's/\//\\\//g')
+            # Use awk to replace content between specific HTML tags
+            awk -v repl="$replacementBodyContent" '
+              /<article class="bd-article" role="main">/,/<\/article>/ {
+                if ($0 ~ /<article class="bd-article" role="main">/) {
+                  print $0
+                  print repl
+                  while ($0 !~ /<\/article>/) getline
+                  next
+                }
+              }
+              { print $0 }
+            ' "$SOURCE_FILE" > "$replacement_file"
           done
-
           # Move the modified files back to the actual directory
           mv "$REPLACEMENT_DIRECTORY"/* "$ACTUAL_DIR"
 
