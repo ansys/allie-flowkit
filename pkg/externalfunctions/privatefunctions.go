@@ -773,10 +773,22 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 //   - history: the conversation history
 //   - isStream: the stream flag
 //   - systemPrompt: the system prompt
+//   - sc: the session context
+//   - llmHandlerEndpoint: the LLM handler endpoint
+//   - modelIds: the model ids
+//   - stream: the stream channel
+//   - err: the error
+//   - message: the generated message
+//   - err: the error
+//   - stream: the stream channel
 //
 // Returns:
 //   - message: the generated message
 //   - stream: the stream channel
+//   - err: the error
+//   - message: the generated message
+//   - stream: the stream channel
+//   - err: the error
 //   - err: the error
 func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
 	// get the LLM handler endpoint
