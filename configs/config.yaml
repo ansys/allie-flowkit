@@ -1,3 +1,5 @@
+# Connection settings
+# ------------------------------
 # Port for the gRPC server
 EXTERNALFUNCTIONS_GRPC_PORT: 50051
 
@@ -15,3 +17,29 @@ ACS_API_VERSION: ""
 # FlowKit Python configuration
 FLOWKIT_PYTHON_ENDPOINT: "http://localhost:50052"
 FLOWKIT_PYTHON_API_KEY: "flowkit-python-api-key"
+
+# Logging settings
+# ------------------------------
+# Logging level; can be "info", "warn", "error", "fatal"
+LOG_LEVEL: info
+# Location of the error file where fatal errors are logged
+ERROR_FILE_LOCATION: error.log
+
+# If true, logs are saved locally
+LOCAL_LOGS: true
+# Location of the local log file
+LOCAL_LOGS_LOCATION: logs.log
+
+# If true, logs are sent to Datadog
+DATADOG_LOGS: false
+# Datadog URL where logs are sent
+LOGGING_URL: https://http-intake.logs.datadoghq.eu/api/v2/logs
+# Datadog API key
+LOGGING_API_KEY: ''
+# Datadog source
+DATADOG_SOURCE: nginx
+
+# If true, metrics are sent to Datadog
+DATADOG_METRICS: false
+# Datadog URL where metrics are sent
+METRICS_URL: ""
