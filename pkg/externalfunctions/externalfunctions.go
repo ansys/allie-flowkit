@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
 	"strings"
 
-	"github.com/ansys/allie-flowkit/pkg/config"
+	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
+	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
@@ -62,7 +63,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 //   - embeddedVector: the embedded vector in float32 format
 func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
@@ -76,7 +77,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 		}
 
 		// Log LLM response
-		log.Println("Received embeddings response.")
+		logging.Log.Debugf(internalstates.Ctx, "Received embeddings response.")
 
 		// Get embedded vector array
 		embedding32 = response.EmbeddedData
@@ -106,7 +107,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 //   - keywords: the keywords extracted from the input string as a slice of strings
 func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (keywords []string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint, nil)
@@ -128,7 +129,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 		}
 	}
 
-	log.Println("Received keywords response.")
+	logging.Log.Debugf(internalstates.Ctx, "Received keywords response.")
 
 	// Close the response channel
 	close(responseChannel)
@@ -137,7 +138,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	err := json.Unmarshal([]byte(responseAsStr), &keywords)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling keywords response from allie-llm: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -154,7 +155,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 //   - summary: the summary extracted from the input string
 func PerformSummaryRequest(input string) (summary string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
@@ -176,7 +177,7 @@ func PerformSummaryRequest(input string) (summary string) {
 		}
 	}
 
-	log.Println("Received summary response.")
+	logging.Log.Debugf(internalstates.Ctx, "Received summary response.")
 
 	// Close the response channel
 	close(responseChannel)
@@ -198,7 +199,7 @@ func PerformSummaryRequest(input string) (summary string) {
 //   - stream: the stream channel
 func PerformGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
@@ -250,7 +251,7 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 //   - stream: the stream channel
 func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream bool, validateCode bool) (message string, stream *chan string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil)
@@ -293,13 +294,13 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 		// Extract the code from the response
 		pythonCode, err := extractPythonCode(responseAsStr)
 		if err != nil {
-			log.Printf("Error extracting Python code: %v", err)
+			logging.Log.Errorf(internalstates.Ctx, "Error extracting Python code: %v", err)
 		} else {
 
 			// Validate the Python code
 			valid, warnings, err := validatePythonCode(pythonCode)
 			if err != nil {
-				log.Printf("Error validating Python code: %v", err)
+				logging.Log.Errorf(internalstates.Ctx, "Error validating Python code: %v", err)
 			} else {
 				if valid {
 					if warnings {
@@ -353,10 +354,10 @@ func BuildLibraryContext(message string, libraryContext string) (messageWithCont
 //   - databaseResponse: an array of the most relevant data
 func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64) (databaseResponse []DbResponse) {
 	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Log the request
-	log.Println("Connecting to the KnowledgeDB.")
+	logging.Log.Debugf(internalstates.Ctx, "Connecting to the KnowledgeDB.")
 
 	// Build filters
 	var filters DbFilters
@@ -393,7 +394,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -404,7 +405,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -416,7 +417,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -425,20 +426,20 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
 	// Log the similarity search response
-	log.Println("Knowledge DB response:", string(body))
-	log.Println("Knowledge DB response received!")
+	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB response: %v", string(body))
+	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -446,11 +447,11 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	var count int = 1
 	for _, element := range response.SimilarityResult {
 		// Log the result
-		log.Printf("Result #%d:", count)
-		log.Println("Similarity score:", element.Score)
-		log.Println("Similarity file id:", element.Data.DocumentId)
-		log.Println("Similarity file name:", element.Data.DocumentName)
-		log.Println("Similarity summary:", element.Data.Summary)
+		logging.Log.Debugf(internalstates.Ctx, "Result #%d:", count)
+		logging.Log.Debugf(internalstates.Ctx, "Similarity score: %v", element.Score)
+		logging.Log.Debugf(internalstates.Ctx, "Similarity file id: %v", element.Data.DocumentId)
+		logging.Log.Debugf(internalstates.Ctx, "Similarity file name: %v", element.Data.DocumentName)
+		logging.Log.Debugf(internalstates.Ctx, "Similarity summary: %v", element.Data.Summary)
 
 		// Add the result to the list
 		mostRelevantData = append(mostRelevantData, element.Data)
@@ -478,7 +479,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 //   - collectionsList: the list of collections
 func GetListCollections() (collectionsList []string) {
 	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Specify the target endpoint.
 	requestURL := knowledgeDbEndpoint + "/list_collections"
@@ -487,7 +488,7 @@ func GetListCollections() (collectionsList []string) {
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating GET /list_collections request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -499,7 +500,7 @@ func GetListCollections() (collectionsList []string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending GET /list_collections request to allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -508,7 +509,7 @@ func GetListCollections() (collectionsList []string) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -517,18 +518,18 @@ func GetListCollections() (collectionsList []string) {
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
 	// Log the result and return the list of collections
 	if !response.Success {
 		errMessage := "Failed to retrieve list of collections from allie-db"
-		log.Println(errMessage)
+		logging.Log.Warn(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	} else {
-		log.Println("List collections response received!")
-		log.Println("Collections:", response.Collections)
+		logging.Log.Debugf(internalstates.Ctx, "List collections response received!")
+		logging.Log.Debugf(internalstates.Ctx, "Collections: %v", response.Collections)
 		return response.Collections
 	}
 }
@@ -555,7 +556,7 @@ func RetrieveDependencies(
 	nodeTypesFilter DbArrayFilter,
 	maxHopsNumber int) (dependenciesIds []string) {
 	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/retrieve_dependencies"
@@ -574,7 +575,7 @@ func RetrieveDependencies(
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -582,7 +583,7 @@ func RetrieveDependencies(
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -594,7 +595,7 @@ func RetrieveDependencies(
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -603,18 +604,18 @@ func RetrieveDependencies(
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
-	log.Println("Knowledge DB RetrieveDependencies response received!")
+	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB RetrieveDependencies response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response retrieveDependenciesOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -632,7 +633,7 @@ func RetrieveDependencies(
 //   - databaseResponse: the Neo4j response
 func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/general_neo4j_query"
@@ -646,7 +647,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -654,7 +655,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -666,7 +667,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -675,18 +676,18 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
-	log.Println("Knowledge DB GeneralNeo4jQuery response received!")
+	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB GeneralNeo4jQuery response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response GeneralNeo4jQueryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -707,7 +708,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 //   - databaseResponse: the query results
 func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters DbFilters) (databaseResponse []DbResponse) {
 	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/query"
@@ -724,7 +725,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -732,7 +733,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /query request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -744,7 +745,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /query request to allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -753,18 +754,18 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /query request from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
-	log.Println("Knowledge DB GeneralQuery response received!")
+	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB GeneralQuery response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response queryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -889,7 +890,7 @@ func SimilaritySearch(
 	getParent bool,
 	getChildren bool) (databaseResponse []DbResponse) {
 	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := *config.AllieFlowkitConfig.KNOWLEDGE_DB_ENDPOINT
+	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Create the URL
 	requestURL := knowledgeDbEndpoint + "/similarity_search"
@@ -912,7 +913,7 @@ func SimilaritySearch(
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -920,7 +921,7 @@ func SimilaritySearch(
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -932,7 +933,7 @@ func SimilaritySearch(
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -941,18 +942,18 @@ func SimilaritySearch(
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
-	log.Println("Knowledge DB SimilaritySearch response received!")
+	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB SimilaritySearch response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -1110,7 +1111,7 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	case system:
 	default:
 		errMessage := fmt.Sprintf("Invalid role used for 'AppendMessageHistory': %v", role)
-		log.Println(errMessage)
+		logging.Log.Warn(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -1344,7 +1345,7 @@ func AnsysGPTBuildFinalQuery(refrasedQuery string, context []ACSSearchResponse) 
 //   - stream: the stream channel
 func AnsysGPTPerformLLMRequest(finalQuery string, history []HistoricMessage, systemPrompt string, isStream bool) (message string, stream *chan string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
@@ -1411,7 +1412,7 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 		case "Ansys Semiconductor":
 			indexList = append(indexList, "ansysgpt-scbu")
 		default:
-			log.Printf("Invalid indexGroup: %v\n", indexGroup)
+			logging.Log.Warnf(internalstates.Ctx, "Invalid indexGroup: %v\n", indexGroup)
 			return
 		}
 	}
@@ -1645,7 +1646,7 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 //   - stream: the stream channel
 func PerformGeneralRequestSpecificModel(input string, history []HistoricMessage, isStream bool, systemPrompt string, modelIds []string) (message string, stream *chan string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds)
