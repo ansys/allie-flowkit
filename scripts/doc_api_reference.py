@@ -45,14 +45,21 @@ for root, dirs, files in os.walk(REPLACEMENT_DIRECTORY):
             match = re.search(r'<body>([\s\S]*?)<\/body>', content)
             if match:
                 replacementBodyContent = match.group(1)
-                replacementBodyContent = re.sub(r'<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages \| Auto-generated docs<\/a><\/div>[\s\S]*?<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>', '', replacementBodyContent)
-                replacementBodyContent = replacementBodyContent.replace('/', r'\/')
+                replacementBodyContent = re.sub(
+                    r'<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages \| Auto-generated docs<\/a><\/div>[\s\S]*?<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>',
+                    '',
+                    replacementBodyContent
+                )
 
                 # Read source file and replace content
                 with open(SOURCE_FILE, 'r') as f:
                     source_content = f.read()
 
-                new_content = re.sub(r'(<article class="bd-article" role="main">)[\s\S]*?(<\/article>)', r'\1' + replacementBodyContent + r'\2', source_content)
+                new_content = re.sub(
+                    r'(<article class="bd-article" role="main">)[\s\S]*?(<\/article>)',
+                    r'\1' + replacementBodyContent + r'\2',
+                    source_content
+                )
 
                 # Write the modified content back to the replacement file
                 with open(replacement_file, 'w') as f:
