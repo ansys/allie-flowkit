@@ -46,7 +46,7 @@ for root, dirs, files in os.walk(REPLACEMENT_DIRECTORY):
             if match:
                 replacementBodyContent = match.group(1)
                 replacementBodyContent = re.sub(r'<div class="top-heading" id="heading-wide"><a href="\/pkg\/github.com\/ansys\/allie-flowkit\/">GoPages \| Auto-generated docs<\/a><\/div>[\s\S]*?<a href="#" id="menu-button"><span id="menu-button-arrow">&#9661;<\/span><\/a>', '', replacementBodyContent)
-                replacementBodyContent = replacementBodyContent.replace('/', '\/')
+                replacementBodyContent = replacementBodyContent.replace('/', r'\/')
 
                 # Read source file and replace content
                 with open(SOURCE_FILE, 'r') as f:
