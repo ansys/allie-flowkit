@@ -12,13 +12,17 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/ansys/allie-flowkit/pkg/config"
+	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 	"nhooyr.io/websocket"
 )
 
@@ -137,7 +141,6 @@ func sendEmbeddingsRequest(data string, llmHandlerEndpoint string, modelIds []st
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
 	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds)
-
 	return responseChannel // Return the response channel
 }
 
@@ -766,49 +769,554 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 	return respObject.Value
 }
 
-// performGeneralRequest performs a general chat completion request to LLM
+// dataExtractionFilterGithubTreeEntries filters the Github tree entries based on the specified filters.
 //
 // Parameters:
-//   - input: the input string
-//   - history: the conversation history
-//   - isStream: the stream flag
-//   - systemPrompt: the system prompt
+//   - tree: the Github tree.
+//   - githubFilteredDirectories: the Github filtered directories.
+//   - githubExcludedDirectories: the Github excluded directories.
+//   - githubFileExtensions: the Github file extensions.
 //
 // Returns:
-//   - message: the generated message
-//   - stream: the stream channel
-//   - err: the error
-func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
+//   - []string: the files to extract.
+func dataExtractionFilterGithubTreeEntries(tree *github.Tree, githubFilteredDirectories, githubExcludedDirectories, githubFileExtensions []string) (githubFilesToExtract []string) {
+	filteredGithubTreeEntries := []*github.TreeEntry{}
+
+	// Normalize directory paths.
+	for i, directory := range githubFilteredDirectories {
+		githubFilteredDirectories[i] = strings.ReplaceAll(directory, "\\", "/")
+	}
+	for i, directory := range githubExcludedDirectories {
+		githubExcludedDirectories[i] = strings.ReplaceAll(directory, "\\", "/")
+	}
+
+	// If filtered directories are specified, only get files from those directories.
+	if len(githubFilteredDirectories) > 0 {
+		for _, directory := range githubFilteredDirectories {
+
+			// Check whether excluded directories are in filtered directories.
+			excludedDirectoriesInFilteredDirectories := []string{}
+			for _, excludedDirectory := range githubExcludedDirectories {
+				if strings.HasPrefix(excludedDirectory, directory) {
+					excludedDirectoriesInFilteredDirectories = append(excludedDirectoriesInFilteredDirectories, excludedDirectory)
+				}
+			}
+
+			for _, treeEntry := range tree.Entries {
+				if strings.HasPrefix(*treeEntry.Path, directory) {
+					// Make sure that the directory is not in the excluded directories.
+					isExcludedDirectory := false
+					for _, excludedDirectory := range excludedDirectoriesInFilteredDirectories {
+						if strings.HasPrefix(*treeEntry.Path, excludedDirectory) {
+							isExcludedDirectory = true
+							break
+						}
+					}
+
+					// If directory is in excluded directories, skip it.
+					if isExcludedDirectory {
+						continue
+					}
+
+					// If directory is not in excluded directories, add it to the list of filtered directories.
+					filteredGithubTreeEntries = append(filteredGithubTreeEntries, treeEntry)
+				}
+			}
+		}
+	}
+
+	// If no filtered directories are specified, get all files and check for excluded directories.
+	if len(githubFilteredDirectories) == 0 && len(githubExcludedDirectories) > 0 {
+		for _, treeEntry := range tree.Entries {
+			// Make sure that the directory is not in the excluded directories.
+			isExcludedDirectory := false
+			for _, excludedDirectory := range githubExcludedDirectories {
+				if strings.HasPrefix(*treeEntry.Path, excludedDirectory) {
+					isExcludedDirectory = true
+					break
+				}
+			}
+
+			// If directory is in excluded directories, skip it.
+			if isExcludedDirectory {
+				continue
+			}
+
+			// If directory is not in excluded directories, add it to the list of filtered directories.
+			filteredGithubTreeEntries = append(filteredGithubTreeEntries, treeEntry)
+		}
+	}
+
+	// If no filtered directories are specified and no excluded directories are specified, get all files.
+	if len(githubFilteredDirectories) == 0 && len(githubExcludedDirectories) == 0 {
+		filteredGithubTreeEntries = tree.Entries
+	}
+
+	// Make sure all fileExtensions are lower case.
+	for i, fileExtension := range githubFileExtensions {
+		githubFileExtensions[i] = strings.ToLower(fileExtension)
+	}
+
+	// Make sure only files are in list and filter by file extensions.
+	for _, entry := range filteredGithubTreeEntries {
+		if *entry.Type == "blob" {
+
+			// Check file extension and add to list if it matches the file extensions in the extraction details.
+			if len(githubFileExtensions) > 0 {
+				for _, fileExtension := range githubFileExtensions {
+					if strings.HasSuffix(strings.ToLower(*entry.Path), fileExtension) {
+						githubFilesToExtract = append(githubFilesToExtract, *entry.Path)
+					}
+				}
+			} else {
+				// If no file extensions are specified, add all files to the list.
+				githubFilesToExtract = append(githubFilesToExtract, *entry.Path)
+			}
+		}
+	}
+
+	for _, file := range githubFilesToExtract {
+		log.Printf("Github file to extract: %s \n", file)
+	}
+
+	return githubFilesToExtract
+}
+
+// dataExtractNewGithubClient initializes a new GitHub client with the given access token.
+//
+// Parameters:
+//   - githubAccessToken: the GitHub access token.
+//
+// Returns:
+//   - *github.Client: the GitHub client.
+//   - context.Context: the context.
+func dataExtractNewGithubClient(githubAccessToken string) (client *github.Client, ctx context.Context) {
+	ctx = context.Background()
+
+	// Setup OAuth2 token source with the GitHub access token.
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: githubAccessToken},
+	)
+
+	// Create an OAuth2 client with the token source.
+	tc := oauth2.NewClient(ctx, ts)
+
+	// Initialize a new GitHub client with the OAuth2 client.
+	client = github.NewClient(tc)
+
+	return client, ctx
+}
+
+// dataExtractionLocalFilepathExtractWalker is the walker function for the local file extraction.
+//
+// Parameters:
+//   - localPath: the local path.
+//   - localFileExtensions: the local file extensions.
+//   - localFilteredDirectories: the local filtered directories.
+//   - localExcludedDirectories: the local excluded directories.
+//   - filesToExtract: the files to extract.
+//   - f: the file info
+//   - err: the error.
+//
+// Returns:
+//   - error: error that occured during execution.
+func dataExtractionLocalFilepathExtractWalker(localPath string, localFileExtensions []string,
+	localFilteredDirectories []string, localExcludedDirectories []string, filesToExtract *[]string, f os.FileInfo, err error) error {
+	// Initialize to false the skip flag.
+	skip := false
+
+	// Make sure that path does not have \.
+	localPath = strings.ReplaceAll(localPath, "\\", "/")
+
+	// If path starts with ./ or .\ remove it.
+	localPath = strings.TrimPrefix(localPath, "./")
+	localPath = strings.TrimPrefix(localPath, ".\\")
+
+	// If filtered directories are specified, only get files from those directories.
+	if len(localFilteredDirectories) > 0 {
+		isFiltered := false
+		for _, directory := range localFilteredDirectories {
+			// If directory starts with ./ or .\ remove it.
+			directory = strings.TrimPrefix(directory, "./")
+			directory = strings.TrimPrefix(directory, ".\\")
+			directory = strings.ReplaceAll(directory, "\\", "/")
+
+			if strings.HasPrefix(localPath, directory) || strings.HasPrefix(directory, localPath) {
+				// Check whether excluded directories are in filtered directories.
+				excludedDirectoriesInFilteredDirectories := []string{}
+				for _, excludedDirectory := range localExcludedDirectories {
+					if strings.HasPrefix(excludedDirectory, directory) {
+						excludedDirectoriesInFilteredDirectories = append(excludedDirectoriesInFilteredDirectories, excludedDirectory)
+					}
+				}
+
+				// make sure that the directory is not in the excluded directories.
+				isExcludedDirectory := false
+				for _, excludedDirectory := range excludedDirectoriesInFilteredDirectories {
+					excludedDirectory = strings.TrimPrefix(excludedDirectory, "./")
+					excludedDirectory = strings.TrimPrefix(excludedDirectory, ".\\")
+					excludedDirectory = strings.ReplaceAll(excludedDirectory, "\\", "/")
+					if strings.HasPrefix(localPath, excludedDirectory) {
+						isExcludedDirectory = true
+						break
+					}
+				}
+
+				if isExcludedDirectory {
+					skip = true
+					break
+				}
+
+				// If directory is not in excluded directories, and it is a filtered directory or contained in a filtered directory, set isFiltered to true.
+				isFiltered = true
+				break
+			}
+		}
+
+		// If path is not in filtered directories, skip it.
+		if !isFiltered {
+			skip = true
+		}
+	}
+
+	// If no filtered directories are specified, get all files and check for excluded directories.
+	if len(localFilteredDirectories) == 0 && len(localExcludedDirectories) > 0 {
+		for _, excludedDirectory := range localExcludedDirectories {
+			if strings.HasPrefix(localPath, excludedDirectory) {
+				skip = true
+				break
+			}
+		}
+	}
+
+	// Make sure all fileExtensions are lower case.
+	for i, fileExtension := range localFileExtensions {
+		localFileExtensions[i] = strings.ToLower(fileExtension)
+	}
+
+	// Differentiate between file and directory.
+	switch f.IsDir() {
+	case true:
+		// If a directory, check the skip flag and if true, skip the directory.
+		if skip {
+			return filepath.SkipDir
+		}
+
+	case false:
+		// If a file, check file extensions are specified.
+		if !skip {
+			if len(localFileExtensions) > 0 {
+				// Check file extension and add to list if it matches the file extensions in the extraction details.
+				for _, fileExtension := range localFileExtensions {
+					if strings.HasSuffix(strings.ToLower(localPath), fileExtension) {
+						// Create the document details object
+						*filesToExtract = append(*filesToExtract, localPath)
+						break
+					}
+				}
+			} else {
+				// If no file extensions are specified, add all files to the list.
+				*filesToExtract = append(*filesToExtract, localPath)
+			}
+		}
+	}
+
+	return nil
+}
+
+// dataExtractionDocumentLevelHandler handles the data extraction at document level.
+//
+// Parameters:
+//   - inputChannel: the input channel.
+//   - chunks: the document chunks.
+//   - documentId: the document ID.
+//   - documentPath: the document path.
+//   - getSummary: the flag to indicate whether to get the summary.
+//   - getKeywords: the flag to indicate whether to get the keywords.
+//   - numKeywords: the number of keywords.
+//
+// Returns:
+//   - orderedChildDataObjects: the ordered child data objects.
+func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, chunks []string, documentId string, documentPath string, getSummary bool,
+	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*DataExtractionDocumentData, err error) {
+	instructionSequenceWaitGroup := &sync.WaitGroup{}
+	orderedChildData := make([]*DataExtractionDocumentData, 0, len(chunks))
+
+	for idx, chunk := range chunks {
+		// Create data child object.
+		childData := &DataExtractionDocumentData{
+			Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			DocumentId:   documentId,
+			DocumentName: documentPath,
+			Text:         chunk,
+		}
+
+		// Assing previous and next sibling ids if necessary.
+		if idx > 0 {
+			orderedChildData[idx-1].NextSiblingId = childData.Guid
+			childData.PreviousSiblingId = orderedChildData[idx-1].Guid
+		}
+
+		orderedChildData = append(orderedChildData, childData)
+
+		if len(childData.Text) > 0 {
+			// Create embedding for child.
+			embeddingChannelItem := dataExtractionNewLlmInputChannelItem(childData, instructionSequenceWaitGroup, "embeddings", "", 0, &sync.Mutex{})
+			instructionSequenceWaitGroup.Add(1)
+
+			// Send embedding request to llm input channel.
+			inputChannel <- embeddingChannelItem
+
+			// Create summary for child if enabled.
+			if getSummary {
+				summaryChannelItem := dataExtractionNewLlmInputChannelItem(childData, instructionSequenceWaitGroup, "chat", "summary", 0, &sync.Mutex{})
+				instructionSequenceWaitGroup.Add(1)
+
+				// Send summary request to llm input channel.
+				inputChannel <- summaryChannelItem
+			}
+
+			// Create keywords for child if enabled.
+			if getKeywords {
+				keywordsChannelItem := dataExtractionNewLlmInputChannelItem(childData, instructionSequenceWaitGroup, "chat", "keywords", numKeywords, &sync.Mutex{})
+				instructionSequenceWaitGroup.Add(1)
+
+				// Send keywords request to llm input channel.
+				inputChannel <- keywordsChannelItem
+			}
+		}
+	}
+
+	// Separate goroutine to wait on the wait group and signal completion.
+	doneChan := make(chan struct{})
+	go func() {
+		instructionSequenceWaitGroup.Wait()
+		close(doneChan)
+	}()
+
+	// Main goroutine to listen on the error channel and done channel.
+	for {
+		select {
+		case err := <-errorChannel:
+			return nil, err
+
+		case <-doneChan:
+			return orderedChildData, nil
+		}
+	}
+}
+
+// dataExtractionNewLlmInputChannelItem creates a new llm input channel item.
+//
+// Parameters:
+//   - data: data.
+//   - instructionSequenceWaitGroup: instruction sequence wait group.
+//   - adapter: adapter.
+//   - chatRequestType: chat request type.
+//   - maxNumberOfKeywords: max number of keywords.
+//   - lock: lock.
+//
+// Returns:
+//   - llmInputChannelItem: llm input channel item.
+func dataExtractionNewLlmInputChannelItem(data *DataExtractionDocumentData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem {
+	return &DataExtractionLLMInputChannelItem{
+		Data:                         data,
+		InstructionSequenceWaitGroup: instructionSequenceWaitGroup,
+		Adapter:                      adapter,
+		ChatRequestType:              chatRequestType,
+		MaxNumberOfKeywords:          maxNumberOfKeywords,
+		Lock:                         lock,
+	}
+}
+
+// dataExtractionLLMHandlerWorker is a worker function for the LLM Handler requests during data extraction.
+//
+// Parameters:
+//   - waitgroup: the wait group
+//   - inputChannel: the input channel
+//   - errorChannel: the error channel
+//   - embeddingsDimensions: the embeddings dimensions
+//
+// Returns:
+//   - error: an error if any
+func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, embeddingsDimensions int) {
+	defer waitgroup.Done()
+	// Listen to Input Channel
+	for instruction := range inputChannel {
+		// Check if text field for chunk is empty.
+		if instruction.Data.Text == "" {
+			log.Printf("Text field is empty for document %v \n", instruction.Data.DocumentName)
+
+			//If adapter type is embedding, set embedding to empty slice of dimension embeddingsDimensions.
+			if instruction.Adapter == "embeddings" {
+				instruction.Lock.Lock()
+				instruction.Data.Embedding = make([]float32, embeddingsDimensions)
+				instruction.Lock.Unlock()
+			}
+
+			// Lower instruction sequence waitgroup counter and update processed instructions counter.
+			instruction.InstructionSequenceWaitGroup.Done()
+			continue
+		}
+
+		// If text field is not empty perform request to LLM Handler depending on adapter type.
+		instruction.Lock.Lock()
+		switch instruction.Adapter {
+		case "embeddings":
+			res, err := llmHandlerPerformVectorEmbeddingRequest(instruction.Data.Text)
+			if err != nil {
+				errorChannel <- err
+			}
+			instruction.Data.Embedding = res
+		case "chat":
+			if instruction.ChatRequestType == "summary" {
+				res, err := llmHandlerPerformSummaryRequest(instruction.Data.Text)
+				if err != nil {
+					errorChannel <- err
+				}
+				instruction.Data.Summary = res
+			} else if instruction.ChatRequestType == "keywords" {
+				res, err := llmHandlerPerformKeywordExtractionRequest(instruction.Data.Text, instruction.MaxNumberOfKeywords)
+				if err != nil {
+					errorChannel <- err
+				}
+				instruction.Data.Keywords = res
+			}
+		}
+		instruction.Lock.Unlock()
+
+		// Lower instruction sequence waitgroup counter
+		instruction.InstructionSequenceWaitGroup.Done()
+	}
+
+	log.Println("LLM Handler Worker stopped.")
+}
+
+// llmHandlerPerformVectorEmbeddingRequest performs a vector embedding request to LLM Handler.
+//
+// Parameters:
+//   - input: the input string.
+//
+// Returns:
+//   - embeddedVector: the embedded vector.
+//   - error: an error if any.
+func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []float32, err error) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
-	// Set up WebSocket connection with LLM and send chat request
+	// Set up WebSocket connection with LLM and send embeddings request.
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+
+	// Process the first response and close the channel.
+	var embedding32 []float32
+	for response := range responseChannel {
+		// Check if the response is an error.
+		if response.Type == "error" {
+			return nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Get embedded vector array.
+		embedding32 = response.EmbeddedData
+
+		// Mark that the first response has been received.
+		firstResponseReceived := true
+
+		// Exit the loop after processing the first response.
+		if firstResponseReceived {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	return embedding32, nil
+}
+
+// llmHandlerPerformSummaryRequest performs a summary request to LLM Handler.
+//
+// Parameters:
+//   - input: the input string.
+//
+// Returns:
+//   - summary: the summary.
+//   - error: an error if any.
+func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request.
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
+
+	// Process all responses.
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error.
+		if response.Type == "error" {
+			return "", fmt.Errorf("error in summary request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Accumulate the responses.
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop.
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	log.Println("Received summary response.")
+
+	// Close the response channel.
+	close(responseChannel)
+
+	// Return the response.
+	return responseAsStr, nil
+}
+
+// performGeneralRequest performs a general chat completion request to LLM.
+//
+// Parameters:
+//   - input: the input string.
+//   - history: the conversation history.
+//   - isStream: the stream flag.
+//   - systemPrompt: the system prompt.
+//
+// Returns:
+//   - message: the generated message.
+//   - stream: the stream channel.
+//   - err: the error.
+func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
+	// get the LLM handler endpoint.
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request.
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
 
-	// If isStream is true, create a stream channel and return asap
+	// If isStream is true, create a stream channel and return asap.
 	if isStream {
 		// Create a stream channel
 		streamChannel := make(chan string, 400)
 
-		// Start a goroutine to transfer the data from the response channel to the stream channel
+		// Start a goroutine to transfer the data from the response channel to the stream channel.
 		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
 
-		// Return the stream channel
+		// Return the stream channel.
 		return "", &streamChannel, nil
 	}
 
-	// else Process all responses
+	// Process all responses.
 	var responseAsStr string
 	for response := range responseChannel {
-		// Check if the response is an error
+		// Check if the response is an error.
 		if response.Type == "error" {
 			return "", nil, fmt.Errorf("error in general llm request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
 		}
 
-		// Accumulate the responses
+		// Accumulate the responses.
 		responseAsStr += *(response.ChatData)
 
-		// If we are at the last message, break the loop
+		// If we are at the last message, break the loop.
 		if *(response.IsLast) {
 			break
 		}
@@ -819,4 +1327,144 @@ func performGeneralRequest(input string, history []HistoricMessage, isStream boo
 
 	// Return the response
 	return responseAsStr, nil, nil
+}
+
+// llmHandlerPerformKeywordExtractionRequest performs a keyword extraction request to LLM Handler.
+//
+// Parameters:
+//   - input: the input string.
+//   - numKeywords: the number of keywords.
+//
+// Returns:
+//   - keywords: the keywords.
+//   - error: an error if any.
+func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32) (keywords []string, err error) {
+	// get the LLM handler endpoint.
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request.
+	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint, nil)
+
+	// Process all responses.
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error.
+		if response.Type == "error" {
+			return nil, fmt.Errorf("error in keyword extraction request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Accumulate the responses.
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop.
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	log.Println("Received keywords response.")
+
+	// Close the response channel.
+	close(responseChannel)
+
+	// Return the response.
+	return strings.Split(responseAsStr, ","), nil
+}
+
+// dataExtractionPerformSplitterRequest performs a data extraction splitter request to the Python service.
+//
+// Parameters:
+//   - content: the content.
+//   - documentType: the document type.
+//   - chunkSize: the chunk size.
+//   - chunkOverlap: the chunk overlap.
+//
+// Returns:
+//   - output: the output.
+//   - error: an error if any.
+func dataExtractionPerformSplitterRequest(content []byte, documentType string, chunkSize int, chunkOverlap int) (output []string, err error) {
+	// Define the URL and headers.
+	url := config.AllieFlowkitConfig.FLOWKIT_PYTHON_ENDPOINT + "/splitter/" + documentType
+	headers := map[string]string{
+		"Content-Type": "application/json",
+		"api-key":      config.AllieFlowkitConfig.FLOWKIT_PYTHON_API_KEY,
+	}
+	splitterRequest := DataExtractionSplitterServiceRequest{
+		DocumentContent: content,
+		ChunkSize:       chunkSize,
+		ChunkOverlap:    chunkOverlap,
+	}
+
+	// Marshal the request.
+	body, err := json.Marshal(splitterRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	// Send the request.
+	response, err := httpRequest("POST", url, headers, body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Unmarshall response to  DataExtractionSplitterServiceResponse.
+	splitterResponse := DataExtractionSplitterServiceResponse{}
+	err = json.Unmarshal(response, &splitterResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the chunks.
+	output = splitterResponse.Chunks
+
+	return output, nil
+}
+
+// httpRequest is a general function for making HTTP requests.
+//
+// Parameters:
+//   - method: HTTP method.
+//   - url: URL to make the request to.
+//   - headers: headers to include in the request.
+//   - body: body of the request.
+//
+// Returns:
+//   - response body.
+//   - error.
+func httpRequest(method string, url string, headers map[string]string, body []byte) ([]byte, error) {
+	// Create a new request using http.
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	// Add headers.
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	// Create a new HTTP client and set timeout.
+	client := &http.Client{
+		Timeout: time.Second * 30,
+	}
+
+	// Send the request.
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read the response body.
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if the status code is not 200 OK.
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return respBody, fmt.Errorf("HTTP request failed with status code %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return respBody, nil
 }

@@ -45,6 +45,10 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTRemoveNoneCitationsFromSearchResponse": AnsysGPTRemoveNoneCitationsFromSearchResponse,
 	"AnsysGPTReorderSearchResponse":                 AnsysGPTReorderSearchResponse,
 	"AnsysGPTGetSystemPrompt":                       AnsysGPTGetSystemPrompt,
+	"DataExtractionDownloadGithubFileContent":       DataExtractionDownloadGithubFileContent,
+	"DataExtractionGetLocalFileContent":             DataExtractionGetLocalFileContent,
+	"DataExtractionLangchainSplitter":               DataExtractionLangchainSplitter,
+	"DataExtractionGenerateDocumentTree":            DataExtractionGenerateDocumentTree,
 	"PerformGeneralRequestSpecificModel":            PerformGeneralRequestSpecificModel,
 	"AssignStringToString":                          AssignStringToString,
 }
@@ -57,9 +61,6 @@ var ExternalFunctionsMap = map[string]interface{}{
 // Returns:
 //   - embeddedVector: the embedded vector in float32 format
 func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
-	// Log the request
-	log.Println("Performing vector embedding request for demand:", input)
-
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
 
@@ -95,7 +96,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	return embedding32
 }
 
-// PerformSummaryRequest performs a keywords summary request to LLM
+// PerformKeywordExtractionRequest performs a keywords extraction request to LLM
 //
 // Parameters:
 //   - input: the input string
@@ -127,6 +128,8 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 		}
 	}
 
+	log.Println("Received keywords response.")
+
 	// Close the response channel
 	close(responseChannel)
 
@@ -140,6 +143,46 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 
 	// Return the response
 	return keywords
+}
+
+// PerformSummaryRequest performs a summary request to LLM
+//
+// Parameters:
+//   - input: the input string
+//
+// Returns:
+//   - summary: the summary extracted from the input string
+func PerformSummaryRequest(input string) (summary string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
+
+	// Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	log.Println("Received summary response.")
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr
 }
 
 // PerformGeneralRequest performs a general chat completion request to LLM
@@ -250,17 +293,13 @@ func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream boo
 		// Extract the code from the response
 		pythonCode, err := extractPythonCode(responseAsStr)
 		if err != nil {
-			errMessage := fmt.Sprintf("Error extracting Python code: %v", err)
-			log.Println(errMessage)
-			panic(errMessage)
+			log.Printf("Error extracting Python code: %v", err)
 		} else {
 
 			// Validate the Python code
 			valid, warnings, err := validatePythonCode(pythonCode)
 			if err != nil {
-				errMessage := fmt.Sprintf("Error validating Python code: %v", err)
-				log.Println(errMessage)
-				panic(errMessage)
+				log.Printf("Error validating Python code: %v", err)
 			} else {
 				if valid {
 					if warnings {

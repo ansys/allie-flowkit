@@ -14,6 +14,9 @@ import (
 //go:embed pkg/externalfunctions/externalfunctions.go
 var externalFunctionsFile string
 
+//go:embed pkg/externalfunctions/dataextraction.go
+var dataExtractionFile string
+
 func main() {
 	// Read configuration file...
 	// 1st option: read from environment variable
@@ -36,6 +39,10 @@ func main() {
 
 	// Load function definitions
 	err = functiondefinitions.ExtractFunctionDefinitionsFromPackage(externalFunctionsFile)
+	if err != nil {
+		log.Fatalf("Error extracting function definitions from package: %v", err)
+	}
+	err = functiondefinitions.ExtractFunctionDefinitionsFromPackage(dataExtractionFile)
 	if err != nil {
 		log.Fatalf("Error extracting function definitions from package: %v", err)
 	}

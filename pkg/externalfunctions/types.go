@@ -1,5 +1,7 @@
 package externalfunctions
 
+import "sync"
+
 // HandlerRequest represents the client request for a specific chat or embeddings operation.
 type HandlerRequest struct {
 	Adapter             string            `json:"adapter"` // "chat", "embeddings"
@@ -355,4 +357,55 @@ type AnsysGPTCitation struct {
 	Title     string  `json:"Title"`
 	URL       string  `json:"URL"`
 	Relevance float64 `json:"Relevance"`
+}
+
+// DataExtractionDocumentData represents the document data structure for the data extraction.
+type DataExtractionDocumentData struct {
+	DocumentName      string    `json:"documentName"`
+	DocumentId        string    `json:"documentId"`
+	Guid              string    `json:"guid"`
+	Level             string    `json:"level"`
+	ChildIds          []string  `json:"childIds"`
+	ParentId          string    `json:"parentId"`
+	PreviousSiblingId string    `json:"previousSiblingId"`
+	NextSiblingId     string    `json:"nextSiblingId"`
+	LastChildId       string    `json:"lastChildId"`
+	FirstChildId      string    `json:"firstChildId"`
+	Text              string    `json:"text"`
+	Keywords          []string  `json:"keywords"`
+	Summary           string    `json:"summary"`
+	Embedding         []float32 `json:"embedding"`
+}
+
+// DataExtractionBranch represents the branch structure for the data extraction.
+type DataExtractionBranch struct {
+	Text             string
+	ChildDataObjects []*DataExtractionDocumentData
+	ChildDataIds     []string
+}
+
+// DataExtractionLLMInputChannelItem represents the input channel item for the data extraction llm handler workers.
+type DataExtractionLLMInputChannelItem struct {
+	Data                *DataExtractionDocumentData
+	Adapter             string
+	ChatRequestType     string
+	MaxNumberOfKeywords uint32
+
+	InstructionSequenceWaitGroup *sync.WaitGroup
+	Lock                         *sync.Mutex
+
+	EmbeddingVector []float32
+	Summary         string
+	Keywords        []string
+	CollectionName  string
+}
+
+type DataExtractionSplitterServiceRequest struct {
+	DocumentContent []byte `json:"document_content"`
+	ChunkSize       int    `json:"chunk_size"`
+	ChunkOverlap    int    `json:"chunk_overlap"`
+}
+
+type DataExtractionSplitterServiceResponse struct {
+	Chunks []string `json:"chunks"`
 }
