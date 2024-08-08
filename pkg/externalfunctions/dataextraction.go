@@ -6,12 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/pandodao/tokenizer-go"
@@ -43,7 +44,7 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 	branch, _, err := client.Repositories.GetBranch(ctx, githubRepoOwner, githubRepoName, githubRepoBranch, 1)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting branch %s: %v", githubRepoBranch, err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -54,7 +55,7 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 	tree, _, err := client.Git.GetTree(ctx, githubRepoOwner, githubRepoName, sha, true)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting tree: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -89,12 +90,12 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 	err := filepath.Walk(localPath, walkFn)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error walking through the files: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
 	for _, file := range *localFiles {
-		log.Printf("Local file to extract: %s \n", file)
+		logging.Log.Debugf(internalstates.Ctx, "Local file to extract: %s \n", file)
 	}
 
 	return *localFiles
@@ -122,7 +123,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 	fileContent, _, _, err := client.Repositories.GetContents(ctx, githubRepoOwner, githubRepoName, gihubFilePath, &github.RepositoryContentGetOptions{Ref: githubRepoBranch})
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -130,7 +131,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 	content, err = fileContent.GetContent()
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -152,7 +153,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 	contentBytes, err := os.ReadFile(localFilePath)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -161,7 +162,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 	_, err = hash.Write(contentBytes)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -221,7 +222,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		splittedChunks, err = htmlLoader.LoadAndSplit(context.Background(), splitter)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -233,7 +234,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		output, err = dataExtractionPerformSplitterRequest(bytesContent, "py", chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting python document: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -241,7 +242,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		output, err = dataExtractionPerformSplitterRequest(bytesContent, "pdf", chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting pdf document: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -249,7 +250,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		output, err = dataExtractionPerformSplitterRequest(bytesContent, "ppt", chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting ppt document: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -259,7 +260,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 		splittedChunks, err = txtLoader.LoadAndSplit(context.Background(), splitter)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -269,7 +270,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 	}
 
 	// Log number of chunks created.
-	log.Printf("Splitted document in %v chunks \n", len(output))
+	logging.Log.Debugf(internalstates.Ctx, "Splitted document in %v chunks \n", len(output))
 
 	return output
 }
@@ -292,7 +293,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 func DataExtractionGenerateDocumentTree(documentName string, documentId string, documentChunks []string,
 	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []DataExtractionDocumentData) {
 
-	log.Printf("Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
+	logging.Log.Debugf(internalstates.Ctx, "Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
 
 	// Create llm handler input channel and wait group.
 	llmHandlerInputChannel := make(chan *DataExtractionLLMInputChannelItem, 40)
@@ -449,7 +450,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 		}
 	}
 
-	log.Printf("Finished processing document: %s \n", documentName)
+	logging.Log.Debugf(internalstates.Ctx, "Finished processing document: %s \n", documentName)
 
 	// Copy document data to returned document data
 	returnedDocumentData = make([]DataExtractionDocumentData, len(documentData))

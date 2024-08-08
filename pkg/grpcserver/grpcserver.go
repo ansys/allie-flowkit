@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"reflect"
 	"strconv"
 
 	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
 	"github.com/ansys/allie-sharedtypes/pkg/allieflowkitgrpc"
+	"github.com/ansys/allie-sharedtypes/pkg/logging"
 
-	"github.com/ansys/allie-flowkit/pkg/config"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"google.golang.org/grpc"
 )
 
@@ -26,15 +26,15 @@ type server struct {
 // The server listens on the port specified in the configuration file
 // The server implements the ExternalFunctionsServer interface
 func StartServer() {
-	lis, err := net.Listen("tcp", ":"+*config.AllieFlowkitConfig.EXTERNALFUNCTIONS_GRPC_PORT)
+	lis, err := net.Listen("tcp", ":"+config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logging.Log.Fatalf(internalstates.Ctx, "failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
 	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
-	log.Printf("gRPC server listening at %v", lis.Addr())
+	logging.Log.Infof(internalstates.Ctx, "gRPC server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logging.Log.Fatalf(internalstates.Ctx, "failed to serve: %v", err)
 	}
 }
 
@@ -667,7 +667,7 @@ func convertOptionSetValues(functionName string, inputName string, inputValue in
 	defer func() {
 		r := recover()
 		if r != nil {
-			log.Printf("Panic occured in convertOptionSetValues: %v", r)
+			logging.Log.Errorf(internalstates.Ctx, "Panic occured in convertOptionSetValues: %v", r)
 		}
 	}()
 

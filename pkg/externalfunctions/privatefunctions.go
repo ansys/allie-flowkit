@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -19,7 +18,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ansys/allie-flowkit/pkg/config"
+	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
+	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -55,13 +56,13 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerRespon
 				// Extract the code from the response
 				pythonCode, err := extractPythonCode(responseAsStr)
 				if err != nil {
-					log.Printf("Error extracting Python code: %v\n", err)
+					logging.Log.Errorf(internalstates.Ctx, "Error extracting Python code: %v\n", err)
 				} else {
 
 					// Validate the Python code
 					valid, warnings, err := validatePythonCode(pythonCode)
 					if err != nil {
-						log.Printf("Error validating Python code: %v\n", err)
+						logging.Log.Errorf(internalstates.Ctx, "Error validating Python code: %v\n", err)
 					} else {
 						if valid {
 							if warnings {
@@ -154,7 +155,7 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 	c, _, err := websocket.Dial(context.Background(), url, nil)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to connect to allie-llm: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -162,7 +163,7 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 	err = c.Write(context.Background(), websocket.MessageText, []byte("testkey"))
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to send authentication message to allie-llm: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -188,7 +189,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		typ, message, err := c.Read(context.Background())
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to read message from allie-llm: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			response := HandlerResponse{
 				Type: "error",
 				Error: &ErrorResponse{
@@ -208,11 +209,11 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 				// Check if it is the authentication message
 				msgAsStr := string(message)
 				if msgAsStr == "authentication successful" {
-					log.Println("Authentication to LLM was successful.")
+					logging.Log.Debugf(internalstates.Ctx, "Authentication to LLM was successful.")
 					continue
 				} else {
 					errMessage := fmt.Sprintf("failed to unmarshal message from allie-llm: %v", err)
-					log.Println(errMessage)
+					logging.Log.Error(internalstates.Ctx, errMessage)
 					response := HandlerResponse{
 						Type: "error",
 						Error: &ErrorResponse{
@@ -227,7 +228,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 
 			if response.Type == "error" {
 				errMessage := fmt.Sprintf("error in request %v: %v (%v)\n", response.InstructionGuid, response.Error.Code, response.Error.Message)
-				log.Println(errMessage)
+				logging.Log.Error(internalstates.Ctx, errMessage)
 				response := HandlerResponse{
 					Type: "error",
 					Error: &ErrorResponse{
@@ -245,20 +246,20 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 						stopListener = false
 					} else {
 						// If it is the last message, stop listening
-						log.Println("Chat response completely received from allie-llm.")
+						logging.Log.Debugf(internalstates.Ctx, "Chat response completely received from allie-llm.")
 					}
 				case "embeddings":
-					log.Println("Embeddings received from allie-llm.")
+					logging.Log.Debugf(internalstates.Ctx, "Embeddings received from allie-llm.")
 				case "info":
-					log.Printf("Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
+					logging.Log.Infof(internalstates.Ctx, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
 				default:
-					log.Println("Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
+					logging.Log.Warn(internalstates.Ctx, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
 				// Send the response to the channel
 				responseChannel <- response
 			}
 		default:
-			log.Printf("Response with unsupported message type '%v'received from allie-llm. Ignoring...\n", typ)
+			logging.Log.Warnf(internalstates.Ctx, "Response with unsupported message type '%v'received from allie-llm. Ignoring...\n", typ)
 		}
 
 		// If stopListener is true, stop the listener
@@ -267,7 +268,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		// - the embeddings response is received
 		// - an unsupported adapter type is received
 		if stopListener {
-			log.Println("Stopping listener for allie-llm request.")
+			logging.Log.Debugf(internalstates.Ctx, "Stopping listener for allie-llm request.")
 			return
 		}
 	}
@@ -285,7 +286,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 		err := c.Write(context.Background(), websocket.MessageBinary, requestJSON)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to write message to allie-llm: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			response := HandlerResponse{
 				Type: "error",
 				Error: &ErrorResponse{
@@ -331,7 +332,7 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 	if adapter == "chat" {
 		if chatRequestType == "" {
 			errMessage := "Property 'ChatRequestType' is required for 'Adapter' type 'chat' requests to allie-llm."
-			log.Println(errMessage)
+			logging.Log.Warn(internalstates.Ctx, errMessage)
 			response := HandlerResponse{
 				Type: "error",
 				Error: &ErrorResponse{
@@ -346,7 +347,7 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 
 		if dataStream == "" {
 			errMessage := "Property 'DataStream' is required for for 'Adapter' type 'chat' requests to allie-llm."
-			log.Println(errMessage)
+			logging.Log.Warn(internalstates.Ctx, errMessage)
 			response := HandlerResponse{
 				Type: "error",
 				Error: &ErrorResponse{
@@ -378,7 +379,7 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to marshal request to allie-llm: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		response := HandlerResponse{
 			Type: "error",
 			Error: &ErrorResponse{
@@ -403,7 +404,7 @@ func shutdownHandler(c *websocket.Conn) {
 	signal.Notify(signalCh, syscall.SIGINT)
 
 	sig := <-signalCh
-	log.Printf("Closing client. Received closing signal: %v\n", sig)
+	logging.Log.Debugf(internalstates.Ctx, "Closing client. Received closing signal: %v\n", sig)
 
 	// close connection
 	c.Close(websocket.StatusNormalClosure, "Normal Closure")
@@ -531,7 +532,7 @@ func validatePythonCode(pythonCode string) (bool, bool, error) {
 		// Check for potential warnings in output
 		outputAsStr := string(output)
 		if !strings.Contains(outputAsStr, "0 warnings") {
-			log.Println("Potential errors in Python code...")
+			logging.Log.Warn(internalstates.Ctx, "Potential errors in Python code...")
 			return true, true, nil
 		} else {
 			return true, false, nil
@@ -580,9 +581,9 @@ func ansysGPTACSSemanticHybridSearch(
 	topK int) (output []ACSSearchResponse) {
 
 	// get credentials
-	acsEndpoint := config.AllieFlowkitConfig.ACS_ENDPOINT
-	acsApiKey := config.AllieFlowkitConfig.ACS_API_KEY
-	acsApiVersion := config.AllieFlowkitConfig.ACS_API_VERSION
+	acsEndpoint := config.GlobalConfig.ACS_ENDPOINT
+	acsApiKey := config.GlobalConfig.ACS_API_KEY
+	acsApiVersion := config.GlobalConfig.ACS_API_VERSION
 
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
@@ -596,7 +597,7 @@ func ansysGPTACSSemanticHybridSearch(
 	}
 	filterQuery := strings.Join(filterData, " or ")
 
-	log.Printf("filter_data is : %s\n", filterQuery)
+	logging.Log.Debugf(internalstates.Ctx, "filter_data is : %s\n", filterQuery)
 
 	// Get the searchedEmbeddedFields and returnedProperties
 	searchedEmbeddedFields, returnedProperties := getFieldsAndReturnProperties(indexName)
@@ -624,7 +625,7 @@ func ansysGPTACSSemanticHybridSearch(
 	requestBody, err := json.Marshal(searchRequest)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to marshal search request to ACS: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -632,7 +633,7 @@ func ansysGPTACSSemanticHybridSearch(
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to create POST request for ACS: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -644,7 +645,7 @@ func ansysGPTACSSemanticHybridSearch(
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to send POST request to ACS: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -653,7 +654,7 @@ func ansysGPTACSSemanticHybridSearch(
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to read response body from ACS: %v", err)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -684,7 +685,7 @@ func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields stri
 		returnedProperties = "title, url, token_size, physics, typeOFasset, content, product"
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 	return searchedEmbeddedFields, returnedProperties
@@ -706,7 +707,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 		err := json.Unmarshal(body, &respObject)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStruct: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -715,7 +716,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 		err := json.Unmarshal(body, &respObjectAlh)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructALH: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -742,7 +743,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 		err := json.Unmarshal(body, &respObjectLsdyna)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructLSdyna: %v", err)
-			log.Println(errMessage)
+			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
@@ -762,7 +763,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
-		log.Println(errMessage)
+		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
@@ -876,7 +877,7 @@ func dataExtractionFilterGithubTreeEntries(tree *github.Tree, githubFilteredDire
 	}
 
 	for _, file := range githubFilesToExtract {
-		log.Printf("Github file to extract: %s \n", file)
+		logging.Log.Debugf(internalstates.Ctx, "Github file to extract: %s \n", file)
 	}
 
 	return githubFilesToExtract
@@ -916,7 +917,6 @@ func dataExtractNewGithubClient(githubAccessToken string) (client *github.Client
 //   - localExcludedDirectories: the local excluded directories.
 //   - filesToExtract: the files to extract.
 //   - f: the file info
-//   - err: the error.
 //
 // Returns:
 //   - error: error that occured during execution.
@@ -1145,7 +1145,7 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 	for instruction := range inputChannel {
 		// Check if text field for chunk is empty.
 		if instruction.Data.Text == "" {
-			log.Printf("Text field is empty for document %v \n", instruction.Data.DocumentName)
+			logging.Log.Warnf(internalstates.Ctx, "Text field is empty for document %v \n", instruction.Data.DocumentName)
 
 			//If adapter type is embedding, set embedding to empty slice of dimension embeddingsDimensions.
 			if instruction.Adapter == "embeddings" {
@@ -1189,7 +1189,7 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 		instruction.InstructionSequenceWaitGroup.Done()
 	}
 
-	log.Println("LLM Handler Worker stopped.")
+	logging.Log.Debugf(internalstates.Ctx, "LLM Handler Worker stopped.")
 }
 
 // llmHandlerPerformVectorEmbeddingRequest performs a vector embedding request to LLM Handler.
@@ -1202,7 +1202,7 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 //   - error: an error if any.
 func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []float32, err error) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request.
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
@@ -1243,7 +1243,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 //   - error: an error if any.
 func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
 	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
@@ -1265,7 +1265,7 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 		}
 	}
 
-	log.Println("Received summary response.")
+	logging.Log.Debugf(internalstates.Ctx, "Received summary response.")
 
 	// Close the response channel.
 	close(responseChannel)
@@ -1288,7 +1288,7 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 //   - err: the error.
 func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
 	// get the LLM handler endpoint.
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
@@ -1340,7 +1340,7 @@ func performGeneralRequest(input string, history []HistoricMessage, isStream boo
 //   - error: an error if any.
 func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32) (keywords []string, err error) {
 	// get the LLM handler endpoint.
-	llmHandlerEndpoint := *config.AllieFlowkitConfig.LLM_HANDLER_ENDPOINT
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
 	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint, nil)
@@ -1362,7 +1362,7 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 		}
 	}
 
-	log.Println("Received keywords response.")
+	logging.Log.Debugf(internalstates.Ctx, "Received keywords response.")
 
 	// Close the response channel.
 	close(responseChannel)
@@ -1384,10 +1384,10 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 //   - error: an error if any.
 func dataExtractionPerformSplitterRequest(content []byte, documentType string, chunkSize int, chunkOverlap int) (output []string, err error) {
 	// Define the URL and headers.
-	url := config.AllieFlowkitConfig.FLOWKIT_PYTHON_ENDPOINT + "/splitter/" + documentType
+	url := config.GlobalConfig.FLOWKIT_PYTHON_ENDPOINT + "/splitter/" + documentType
 	headers := map[string]string{
 		"Content-Type": "application/json",
-		"api-key":      config.AllieFlowkitConfig.FLOWKIT_PYTHON_API_KEY,
+		"api-key":      config.GlobalConfig.FLOWKIT_PYTHON_API_KEY,
 	}
 	splitterRequest := DataExtractionSplitterServiceRequest{
 		DocumentContent: content,
