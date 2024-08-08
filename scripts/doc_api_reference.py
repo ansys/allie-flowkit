@@ -70,4 +70,3 @@ for root, dirs, files in os.walk(REPLACEMENT_DIRECTORY):
 # Move the modified files back to the actual directory
 for filename in os.listdir(REPLACEMENT_DIRECTORY):
     shutil.move(os.path.join(REPLACEMENT_DIRECTORY, filename), ACTUAL_DIR)
-
