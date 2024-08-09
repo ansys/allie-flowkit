@@ -48,6 +48,7 @@ for root, dirs, files in os.walk(REPLACEMENT_DIRECTORY):
     for file in files:
         if file.endswith(".html"):
             replacement_file = os.path.join(root, file)
+            print(f'Processing {replacement_file}')
             with open(replacement_file, 'r') as f:
                 content = f.read()
 
@@ -83,4 +84,5 @@ for root, dirs, files in os.walk(REPLACEMENT_DIRECTORY):
 
 # Move the modified files back to the actual directory
 for filename in os.listdir(REPLACEMENT_DIRECTORY):
+    print(f'Moving {filename} to {ACTUAL_DIR}')
     shutil.move(os.path.join(REPLACEMENT_DIRECTORY, filename), ACTUAL_DIR)
