@@ -111,7 +111,6 @@ jobs:
 
       - name: Download and execute Python script
         run: |
-          curl -o doc_api_reference.py https://raw.githubusercontent.com/ansys/allie-sharedtypes/main/pkg/scripts/doc_api_reference.py
           python doc_api_reference.py ansys allie-flowkit
 
       - name: Upload artifact
