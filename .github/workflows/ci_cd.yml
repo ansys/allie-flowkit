@@ -103,6 +103,8 @@ jobs:
           go install github.com/johnstarich/go/gopages@latest
           gopages -internal -source-link "https://github.com/ansys/allie-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
           ls -R dist/pkg/github.com/ansys/allie-flowkit/pkg
+          echo "GoPages build complete, existing files in repo"
+          ls -R pkg
 
       - name: Download HTML documentation artifacts
         uses: actions/download-artifact@v4
