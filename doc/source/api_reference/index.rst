@@ -6,8 +6,6 @@ API reference
 +---------------------------------------------------------+
 | Module                                                  |
 +=========================================================+
-| `config <config/index.html>`_                           |
-+---------------------------------------------------------+
 | `externalfunctions <externalfunctions/index.html>`_     |
 +---------------------------------------------------------+
 | `functiondefinitions <functiondefinitions/index.html>`_ |
