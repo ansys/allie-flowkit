@@ -34,6 +34,18 @@ for filename in os.listdir(REPLACEMENT_DIRECTORY):
     except Exception as e:
         print(f'Failed to delete {file_path}. Reason: {e}')
 
+# List all files recursively in the source directory
+for root, dirs, files in os.walk(SOURCE_DIRECTORY):
+    for file in files:
+        file_path = os.path.join(root, file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
+
 # Move the source_directory content to the replacement_directory
 for filename in os.listdir(SOURCE_DIRECTORY):
     shutil.move(os.path.join(SOURCE_DIRECTORY, filename), REPLACEMENT_DIRECTORY)
