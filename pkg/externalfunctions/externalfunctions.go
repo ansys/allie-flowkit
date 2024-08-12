@@ -1482,10 +1482,11 @@ func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []ACSSea
 	return reducedSemanticSearchOutput
 }
 
-// AnsysGPTReorderSearchResponse reorders the search response
+// AnsysGPTReorderSearchResponseAndReturnOnlyTopK reorders the search response
 //
 // Parameters:
 //   - semanticSearchOutput: the search response
+//   - topK: the number of results to be returned
 //
 // Returns:
 //   - reorderedSemanticSearchOutput: the reordered search response
