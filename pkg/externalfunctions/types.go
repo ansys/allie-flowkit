@@ -6,7 +6,9 @@ import "sync"
 type HandlerRequest struct {
 	Adapter             string            `json:"adapter"` // "chat", "embeddings"
 	InstructionGuid     string            `json:"instructionGuid"`
+	ModelIds            []string          `json:"modelIds"` // optional model ids to define a set of specific models to be used for this request
 	Data                string            `json:"data"`
+	Images              []string          `json:"images"`                 // List of images in base64 format
 	ChatRequestType     string            `json:"chatRequestType"`        // "summary", "code", "keywords", "general"; only relevant if "adapter" is "chat"
 	DataStream          bool              `json:"dataStream"`             // only relevant if "adapter" is "chat"
 	MaxNumberOfKeywords uint32            `json:"maxNumberOfKeywords"`    // only relevant if "chatRequestType" is "keywords"
@@ -16,8 +18,6 @@ type HandlerRequest struct {
 	MsgContext          string            `json:"msgContext"`             // any added context you might need
 	SystemPrompt        string            `json:"systemPrompt"`           // only relevant if "chatRequestType" is "general"
 	ModelOptions        ModelOptions      `json:"modelOptions,omitempty"` // only relevant if "adapter" is "chat"
-	ModelIds            []string          `json:"modelIds"`               // optinal array of unique identifiers for the models to be used for this request
-	ClientGuid          string
 }
 
 // HandlerResponse represents the LLM Handler response for a specific request.
@@ -51,8 +51,9 @@ type TransferDetails struct {
 
 // HistoricMessage represents a past chat messages.
 type HistoricMessage struct {
-	Role    string `json:"role"` // "user", "assistant", "system"
-	Content string `json:"content"`
+	Role    string   `json:"role"`
+	Content string   `json:"content"`
+	Images  []string `json:"images"` // image in base64 format
 }
 
 // OpenAIOption represents an option for an OpenAI API call.
