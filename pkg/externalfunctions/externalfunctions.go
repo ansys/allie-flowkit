@@ -18,40 +18,40 @@ import (
 )
 
 var ExternalFunctionsMap = map[string]interface{}{
-	"PerformVectorEmbeddingRequest":                 PerformVectorEmbeddingRequest,
-	"PerformKeywordExtractionRequest":               PerformKeywordExtractionRequest,
-	"PerformGeneralRequest":                         PerformGeneralRequest,
-	"PerformCodeLLMRequest":                         PerformCodeLLMRequest,
-	"BuildLibraryContext":                           BuildLibraryContext,
-	"SendVectorsToKnowledgeDB":                      SendVectorsToKnowledgeDB,
-	"GetListCollections":                            GetListCollections,
-	"RetrieveDependencies":                          RetrieveDependencies,
-	"GeneralNeo4jQuery":                             GeneralNeo4jQuery,
-	"GeneralQuery":                                  GeneralQuery,
-	"BuildFinalQueryForGeneralLLMRequest":           BuildFinalQueryForGeneralLLMRequest,
-	"BuildFinalQueryForCodeLLMRequest":              BuildFinalQueryForCodeLLMRequest,
-	"SimilaritySearch":                              SimilaritySearch,
-	"CreateKeywordsDbFilter":                        CreateKeywordsDbFilter,
-	"CreateTagsDbFilter":                            CreateTagsDbFilter,
-	"CreateMetadataDbFilter":                        CreateMetadataDbFilter,
-	"CreateDbFilter":                                CreateDbFilter,
-	"AppendMessageHistory":                          AppendMessageHistory,
-	"AnsysGPTCheckProhibitedWords":                  AnsysGPTCheckProhibitedWords,
-	"AnsysGPTExtractFieldsFromQuery":                AnsysGPTExtractFieldsFromQuery,
-	"AnsysGPTPerformLLMRephraseRequest":             AnsysGPTPerformLLMRephraseRequest,
-	"AnsysGPTBuildFinalQuery":                       AnsysGPTBuildFinalQuery,
-	"AnsysGPTPerformLLMRequest":                     AnsysGPTPerformLLMRequest,
-	"AnsysGPTReturnIndexList":                       AnsysGPTReturnIndexList,
-	"AnsysGPTACSSemanticHybridSearchs":              AnsysGPTACSSemanticHybridSearchs,
-	"AnsysGPTRemoveNoneCitationsFromSearchResponse": AnsysGPTRemoveNoneCitationsFromSearchResponse,
-	"AnsysGPTReorderSearchResponse":                 AnsysGPTReorderSearchResponse,
-	"AnsysGPTGetSystemPrompt":                       AnsysGPTGetSystemPrompt,
-	"DataExtractionDownloadGithubFileContent":       DataExtractionDownloadGithubFileContent,
-	"DataExtractionGetLocalFileContent":             DataExtractionGetLocalFileContent,
-	"DataExtractionLangchainSplitter":               DataExtractionLangchainSplitter,
-	"DataExtractionGenerateDocumentTree":            DataExtractionGenerateDocumentTree,
-	"PerformGeneralRequestSpecificModel":            PerformGeneralRequestSpecificModel,
-	"AssignStringToString":                          AssignStringToString,
+	"PerformVectorEmbeddingRequest":                  PerformVectorEmbeddingRequest,
+	"PerformKeywordExtractionRequest":                PerformKeywordExtractionRequest,
+	"PerformGeneralRequest":                          PerformGeneralRequest,
+	"PerformCodeLLMRequest":                          PerformCodeLLMRequest,
+	"BuildLibraryContext":                            BuildLibraryContext,
+	"SendVectorsToKnowledgeDB":                       SendVectorsToKnowledgeDB,
+	"GetListCollections":                             GetListCollections,
+	"RetrieveDependencies":                           RetrieveDependencies,
+	"GeneralNeo4jQuery":                              GeneralNeo4jQuery,
+	"GeneralQuery":                                   GeneralQuery,
+	"BuildFinalQueryForGeneralLLMRequest":            BuildFinalQueryForGeneralLLMRequest,
+	"BuildFinalQueryForCodeLLMRequest":               BuildFinalQueryForCodeLLMRequest,
+	"SimilaritySearch":                               SimilaritySearch,
+	"CreateKeywordsDbFilter":                         CreateKeywordsDbFilter,
+	"CreateTagsDbFilter":                             CreateTagsDbFilter,
+	"CreateMetadataDbFilter":                         CreateMetadataDbFilter,
+	"CreateDbFilter":                                 CreateDbFilter,
+	"AppendMessageHistory":                           AppendMessageHistory,
+	"AnsysGPTCheckProhibitedWords":                   AnsysGPTCheckProhibitedWords,
+	"AnsysGPTExtractFieldsFromQuery":                 AnsysGPTExtractFieldsFromQuery,
+	"AnsysGPTPerformLLMRephraseRequest":              AnsysGPTPerformLLMRephraseRequest,
+	"AnsysGPTBuildFinalQuery":                        AnsysGPTBuildFinalQuery,
+	"AnsysGPTPerformLLMRequest":                      AnsysGPTPerformLLMRequest,
+	"AnsysGPTReturnIndexList":                        AnsysGPTReturnIndexList,
+	"AnsysGPTACSSemanticHybridSearchs":               AnsysGPTACSSemanticHybridSearchs,
+	"AnsysGPTRemoveNoneCitationsFromSearchResponse":  AnsysGPTRemoveNoneCitationsFromSearchResponse,
+	"AnsysGPTReorderSearchResponseAndReturnOnlyTopK": AnsysGPTReorderSearchResponseAndReturnOnlyTopK,
+	"AnsysGPTGetSystemPrompt":                        AnsysGPTGetSystemPrompt,
+	"DataExtractionDownloadGithubFileContent":        DataExtractionDownloadGithubFileContent,
+	"DataExtractionGetLocalFileContent":              DataExtractionGetLocalFileContent,
+	"DataExtractionLangchainSplitter":                DataExtractionLangchainSplitter,
+	"DataExtractionGenerateDocumentTree":             DataExtractionGenerateDocumentTree,
+	"PerformGeneralRequestSpecificModel":             PerformGeneralRequestSpecificModel,
+	"AssignStringToString":                           AssignStringToString,
 }
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -1482,18 +1482,24 @@ func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []ACSSea
 	return reducedSemanticSearchOutput
 }
 
-// AnsysGPTReorderSearchResponse reorders the search response
+// AnsysGPTReorderSearchResponseAndReturnOnlyTopK reorders the search response
 //
 // Parameters:
 //   - semanticSearchOutput: the search response
+//   - topK: the number of results to be returned
 //
 // Returns:
 //   - reorderedSemanticSearchOutput: the reordered search response
-func AnsysGPTReorderSearchResponse(semanticSearchOutput []ACSSearchResponse) (reorderedSemanticSearchOutput []ACSSearchResponse) {
+func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []ACSSearchResponse, topK int) (reorderedSemanticSearchOutput []ACSSearchResponse) {
 	// Sorting by Weight * SearchRerankerScore in descending order
 	sort.Slice(semanticSearchOutput, func(i, j int) bool {
 		return semanticSearchOutput[i].Weight*semanticSearchOutput[i].SearchRerankerScore > semanticSearchOutput[j].Weight*semanticSearchOutput[j].SearchRerankerScore
 	})
+
+	// Return only topK results
+	if len(semanticSearchOutput) > topK {
+		return semanticSearchOutput[:topK]
+	}
 
 	return semanticSearchOutput
 }
