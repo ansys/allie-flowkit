@@ -27,3 +27,4 @@ dist
 .venv
 doc/_build
 /config.yaml
+error.log
