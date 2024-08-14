@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 )
 
 // TestAnsysGPTACSSearchIndex tests the AnsysGPTACSSemanticHybridSearch function.
@@ -18,7 +19,7 @@ import (
 func TestAnsysGPTACSSearchIndex(indexName string, query string) {
 	embeddedQuery := externalfunctions.PerformVectorEmbeddingRequest(query)
 
-	defaultFields := []externalfunctions.AnsysGPTDefaultFields{
+	defaultFields := []sharedtypes.AnsysGPTDefaultFields{
 		{QueryWord: "course", FieldName: "type_of_asset", FieldDefaultValue: "aic"},
 		{QueryWord: "apdl", FieldName: "product", FieldDefaultValue: "mechanical apdl"},
 		{QueryWord: "lsdyna", FieldName: "product", FieldDefaultValue: "ls-dyna"},

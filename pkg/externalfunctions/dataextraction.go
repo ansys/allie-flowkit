@@ -13,6 +13,7 @@ import (
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/pandodao/tokenizer-go"
@@ -291,7 +292,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 // Returns:
 //   - documentData: tree structure of the document.
 func DataExtractionGenerateDocumentTree(documentName string, documentId string, documentChunks []string,
-	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []DataExtractionDocumentData) {
+	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []sharedtypes.DataExtractionDocumentData) {
 
 	logging.Log.Debugf(internalstates.Ctx, "Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
 
@@ -307,7 +308,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	}
 
 	// Create root data object.
-	rootData := &DataExtractionDocumentData{
+	rootData := &sharedtypes.DataExtractionDocumentData{
 		Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
 		DocumentId:   documentId,
 		DocumentName: documentName,
@@ -324,7 +325,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	}
 
 	// Add root data object to document data.
-	documentData := []*DataExtractionDocumentData{rootData}
+	documentData := []*sharedtypes.DataExtractionDocumentData{rootData}
 
 	// Create child data objects.
 	orderedChildDataObjects, err := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, errorChannel, documentChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
@@ -362,7 +363,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 			branches := []*DataExtractionBranch{}
 			branch := &DataExtractionBranch{
 				Text:             "",
-				ChildDataObjects: []*DataExtractionDocumentData{},
+				ChildDataObjects: []*sharedtypes.DataExtractionDocumentData{},
 			}
 			branches = append(branches, branch)
 
@@ -374,7 +375,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 				if branchTokenLength+chunkSummaryTokenLength > chunkSize {
 					branch = &DataExtractionBranch{
 						Text:             "",
-						ChildDataObjects: []*DataExtractionDocumentData{},
+						ChildDataObjects: []*sharedtypes.DataExtractionDocumentData{},
 						ChildDataIds:     []string{},
 					}
 					branches = append(branches, branch)
@@ -453,7 +454,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	logging.Log.Debugf(internalstates.Ctx, "Finished processing document: %s \n", documentName)
 
 	// Copy document data to returned document data
-	returnedDocumentData = make([]DataExtractionDocumentData, len(documentData))
+	returnedDocumentData = make([]sharedtypes.DataExtractionDocumentData, len(documentData))
 	for i, data := range documentData {
 		returnedDocumentData[i] = *data
 	}

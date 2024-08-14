@@ -21,6 +21,7 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -33,7 +34,7 @@ import (
 //   - responseChannel: the response channel
 //   - streamChannel: the stream channel
 //   - validateCode: the flag to indicate whether the code should be validated
-func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerResponse, streamChannel *chan string, validateCode bool) {
+func transferDatafromResponseToStreamChannel(responseChannel *chan sharedtypes.HandlerResponse, streamChannel *chan string, validateCode bool) {
 	responseAsStr := ""
 	for response := range *responseChannel {
 		// Check if the response is an error
@@ -93,8 +94,8 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan HandlerRespon
 //   - sc: the session context
 //
 // Returns:
-//   - chan HandlerResponse: the response channel
-func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string) chan HandlerResponse {
+//   - chan sharedtypes.HandlerResponse: the response channel
+func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
 	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelIds)
 }
 
@@ -107,11 +108,11 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //   - sc: the session context
 //
 // Returns:
-//   - chan HandlerResponse: the response channel
-func sendChatRequest(data string, chatRequestType string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string) chan HandlerResponse {
+//   - chan sharedtypes.HandlerResponse: the response channel
+func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelChat := make(chan []byte, 400)
-	responseChannel := make(chan HandlerResponse) // Create a channel for responses
+	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
 
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
@@ -130,11 +131,11 @@ func sendChatRequest(data string, chatRequestType string, history []HistoricMess
 //   - sc: the session context
 //
 // Returns:
-//   - chan HandlerResponse: the response channel
-func sendEmbeddingsRequest(data string, llmHandlerEndpoint string, modelIds []string) chan HandlerResponse {
+//   - chan sharedtypes.HandlerResponse: the response channel
+func sendEmbeddingsRequest(data string, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelEmbeddings := make(chan []byte, 400)
-	responseChannel := make(chan HandlerResponse) // Create a channel for responses
+	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
 
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
@@ -175,7 +176,7 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 // Parameters:
 //   - c: the websocket connection
 //   - responseChannel: the response channel
-func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
+func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerResponse) {
 
 	// Close the connection when the function returns
 	defer c.Close(websocket.StatusNormalClosure, "")
@@ -190,9 +191,9 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to read message from allie-llm: %v", err)
 			logging.Log.Error(internalstates.Ctx, errMessage)
-			response := HandlerResponse{
+			response := sharedtypes.HandlerResponse{
 				Type: "error",
-				Error: &ErrorResponse{
+				Error: &sharedtypes.ErrorResponse{
 					Code:    4,
 					Message: errMessage,
 				},
@@ -202,7 +203,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 		}
 		switch typ {
 		case websocket.MessageText, websocket.MessageBinary:
-			var response HandlerResponse
+			var response sharedtypes.HandlerResponse
 
 			err = json.Unmarshal(message, &response)
 			if err != nil {
@@ -214,9 +215,9 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 				} else {
 					errMessage := fmt.Sprintf("failed to unmarshal message from allie-llm: %v", err)
 					logging.Log.Error(internalstates.Ctx, errMessage)
-					response := HandlerResponse{
+					response := sharedtypes.HandlerResponse{
 						Type: "error",
-						Error: &ErrorResponse{
+						Error: &sharedtypes.ErrorResponse{
 							Code:    4,
 							Message: errMessage,
 						},
@@ -229,9 +230,9 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 			if response.Type == "error" {
 				errMessage := fmt.Sprintf("error in request %v: %v (%v)\n", response.InstructionGuid, response.Error.Code, response.Error.Message)
 				logging.Log.Error(internalstates.Ctx, errMessage)
-				response := HandlerResponse{
+				response := sharedtypes.HandlerResponse{
 					Type: "error",
-					Error: &ErrorResponse{
+					Error: &sharedtypes.ErrorResponse{
 						Code:    4,
 						Message: errMessage,
 					},
@@ -279,7 +280,7 @@ func listener(c *websocket.Conn, responseChannel chan HandlerResponse) {
 // Parameters:
 //   - c: the websocket connection
 //   - RequestChannel: the request channel
-func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan HandlerResponse) {
+func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan sharedtypes.HandlerResponse) {
 	for {
 		requestJSON := <-RequestChannel
 
@@ -287,9 +288,9 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to write message to allie-llm: %v", err)
 			logging.Log.Error(internalstates.Ctx, errMessage)
-			response := HandlerResponse{
+			response := sharedtypes.HandlerResponse{
 				Type: "error",
-				Error: &ErrorResponse{
+				Error: &sharedtypes.ErrorResponse{
 					Code:    4,
 					Message: errMessage,
 				},
@@ -310,8 +311,8 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan HandlerResponse, modelIds []string) {
-	request := HandlerRequest{
+func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string) {
+	request := sharedtypes.HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
 		Data:            data,
@@ -333,9 +334,9 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 		if chatRequestType == "" {
 			errMessage := "Property 'ChatRequestType' is required for 'Adapter' type 'chat' requests to allie-llm."
 			logging.Log.Warn(internalstates.Ctx, errMessage)
-			response := HandlerResponse{
+			response := sharedtypes.HandlerResponse{
 				Type: "error",
-				Error: &ErrorResponse{
+				Error: &sharedtypes.ErrorResponse{
 					Code:    4,
 					Message: errMessage,
 				},
@@ -348,9 +349,9 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 		if dataStream == "" {
 			errMessage := "Property 'DataStream' is required for for 'Adapter' type 'chat' requests to allie-llm."
 			logging.Log.Warn(internalstates.Ctx, errMessage)
-			response := HandlerResponse{
+			response := sharedtypes.HandlerResponse{
 				Type: "error",
-				Error: &ErrorResponse{
+				Error: &sharedtypes.ErrorResponse{
 					Code:    4,
 					Message: errMessage,
 				},
@@ -380,9 +381,9 @@ func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRe
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to marshal request to allie-llm: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
-		response := HandlerResponse{
+		response := sharedtypes.HandlerResponse{
 			Type: "error",
-			Error: &ErrorResponse{
+			Error: &sharedtypes.ErrorResponse{
 				Code:    4,
 				Message: errMessage,
 			},
@@ -422,8 +423,8 @@ func shutdownHandler(c *websocket.Conn) {
 //
 // Returns:
 //   - databaseFilter: the array filter
-func createDbArrayFilter(filterData []string, needAll bool) (databaseFilter DbArrayFilter) {
-	return DbArrayFilter{
+func createDbArrayFilter(filterData []string, needAll bool) (databaseFilter sharedtypes.DbArrayFilter) {
+	return sharedtypes.DbArrayFilter{
 		NeedAll:    needAll,
 		FilterData: filterData,
 	}
@@ -441,8 +442,8 @@ func createDbArrayFilter(filterData []string, needAll bool) (databaseFilter DbAr
 //
 // Returns:
 //   - databaseFilter: the JSON filter
-func createDbJsonFilter(fieldName string, fieldType string, filterData []string, needAll bool) (databaseFilter DbJsonFilter) {
-	return DbJsonFilter{
+func createDbJsonFilter(fieldName string, fieldType string, filterData []string, needAll bool) (databaseFilter sharedtypes.DbJsonFilter) {
+	return sharedtypes.DbJsonFilter{
 		FieldName:  fieldName,
 		FieldType:  fieldType,
 		FilterData: filterData,
@@ -578,7 +579,7 @@ func ansysGPTACSSemanticHybridSearch(
 	embeddedQuery []float32,
 	indexName string,
 	filter map[string]string,
-	topK int) (output []ACSSearchResponse) {
+	topK int) (output []sharedtypes.ACSSearchResponse) {
 
 	// get credentials
 	acsEndpoint := config.GlobalConfig.ACS_ENDPOINT
@@ -660,6 +661,9 @@ func ansysGPTACSSemanticHybridSearch(
 
 	// extract and convert the response
 	output = extractAndConvertACSResponse(body, indexName)
+	for _, item := range output {
+		logging.Log.Debugf(internalstates.Ctx, "ACS topic returned for index %v: %v\n", indexName, item.SourceTitleLvl2)
+	}
 
 	return output
 }
@@ -699,7 +703,7 @@ func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields stri
 //
 // Returns:
 //   - output: the search results
-func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSearchResponse) {
+func extractAndConvertACSResponse(body []byte, indexName string) (output []sharedtypes.ACSSearchResponse) {
 	respObject := ACSSearchResponseStruct{}
 	switch indexName {
 
@@ -721,7 +725,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 		}
 
 		for _, item := range respObjectAlh.Value {
-			output = append(output, ACSSearchResponse{
+			output = append(output, sharedtypes.ACSSearchResponse{
 				SourceTitleLvl2:     item.SourcetitleSAP,
 				SourceURLLvl2:       item.SourceURLSAP,
 				SourceTitleLvl3:     item.SourcetitleDCB,
@@ -748,7 +752,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []ACSSe
 		}
 
 		for _, item := range respObjectLsdyna.Value {
-			output = append(output, ACSSearchResponse{
+			output = append(output, sharedtypes.ACSSearchResponse{
 				SourceTitleLvl2:     item.Title,
 				SourceURLLvl2:       item.Url,
 				Content:             item.Content,
@@ -1038,13 +1042,13 @@ func dataExtractionLocalFilepathExtractWalker(localPath string, localFileExtensi
 // Returns:
 //   - orderedChildDataObjects: the ordered child data objects.
 func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, chunks []string, documentId string, documentPath string, getSummary bool,
-	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*DataExtractionDocumentData, err error) {
+	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*sharedtypes.DataExtractionDocumentData, err error) {
 	instructionSequenceWaitGroup := &sync.WaitGroup{}
-	orderedChildData := make([]*DataExtractionDocumentData, 0, len(chunks))
+	orderedChildData := make([]*sharedtypes.DataExtractionDocumentData, 0, len(chunks))
 
 	for idx, chunk := range chunks {
 		// Create data child object.
-		childData := &DataExtractionDocumentData{
+		childData := &sharedtypes.DataExtractionDocumentData{
 			Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
 			DocumentId:   documentId,
 			DocumentName: documentPath,
@@ -1118,7 +1122,7 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 //
 // Returns:
 //   - llmInputChannelItem: llm input channel item.
-func dataExtractionNewLlmInputChannelItem(data *DataExtractionDocumentData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem {
+func dataExtractionNewLlmInputChannelItem(data *sharedtypes.DataExtractionDocumentData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem {
 	return &DataExtractionLLMInputChannelItem{
 		Data:                         data,
 		InstructionSequenceWaitGroup: instructionSequenceWaitGroup,
@@ -1286,7 +1290,7 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 //   - message: the generated message.
 //   - stream: the stream channel.
 //   - err: the error.
-func performGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
+func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
 	// get the LLM handler endpoint.
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 

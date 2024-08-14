@@ -6,6 +6,7 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	"regexp"
 	"strings"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
@@ -228,5 +229,13 @@ func typeExprToString(expr ast.Expr) string {
 		// In case of an error (which should be rare), fallback to a simple representation.
 		return "unknown"
 	}
-	return buf.String()
+	// Get the raw string representation of the type
+	typeStr := buf.String()
+
+	// Remove package prefixes using regular expressions
+	// This regex matches package paths followed by a dot (e.g., "sharedtypes.")
+	packagePattern := regexp.MustCompile(`\b[a-zA-Z_]\w*\.`)
+	cleanedTypeStr := packagePattern.ReplaceAllString(typeStr, "")
+
+	return cleanedTypeStr
 }

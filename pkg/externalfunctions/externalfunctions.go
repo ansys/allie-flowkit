@@ -14,6 +14,7 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
@@ -197,7 +198,7 @@ func PerformSummaryRequest(input string) (summary string) {
 // Returns:
 //   - message: the generated message
 //   - stream: the stream channel
-func PerformGeneralRequest(input string, history []HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string) {
+func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
@@ -249,7 +250,7 @@ func PerformGeneralRequest(input string, history []HistoricMessage, isStream boo
 // Returns:
 //   - message: the generated code
 //   - stream: the stream channel
-func PerformCodeLLMRequest(input string, history []HistoricMessage, isStream bool, validateCode bool) (message string, stream *chan string) {
+func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, validateCode bool) (message string, stream *chan string) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
@@ -352,7 +353,7 @@ func BuildLibraryContext(message string, libraryContext string) (messageWithCont
 //
 // Returns:
 //   - databaseResponse: an array of the most relevant data
-func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64) (databaseResponse []DbResponse) {
+func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64) (databaseResponse []sharedtypes.DbResponse) {
 	// get the KnowledgeDB endpoint
 	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
@@ -360,11 +361,11 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	logging.Log.Debugf(internalstates.Ctx, "Connecting to the KnowledgeDB.")
 
 	// Build filters
-	var filters DbFilters
+	var filters sharedtypes.DbFilters
 
 	// -- Add the keywords filter if needed
 	if keywordsSearch {
-		filters.KeywordsFilter = DbArrayFilter{
+		filters.KeywordsFilter = sharedtypes.DbArrayFilter{
 			NeedAll:    false,
 			FilterData: keywords,
 		}
@@ -443,7 +444,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 		panic(errMessage)
 	}
 
-	var mostRelevantData []DbResponse
+	var mostRelevantData []sharedtypes.DbResponse
 	var count int = 1
 	for _, element := range response.SimilarityResult {
 		// Log the result
@@ -514,7 +515,7 @@ func GetListCollections() (collectionsList []string) {
 	}
 
 	// Unmarshal the response body to the appropriate struct.
-	var response DBListCollectionsOutput
+	var response sharedtypes.DBListCollectionsOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
@@ -553,7 +554,7 @@ func RetrieveDependencies(
 	relationshipName string,
 	relationshipDirection string,
 	sourceDocumentId string,
-	nodeTypesFilter DbArrayFilter,
+	nodeTypesFilter sharedtypes.DbArrayFilter,
 	maxHopsNumber int) (dependenciesIds []string) {
 	// get the KnowledgeDB endpoint
 	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
@@ -631,7 +632,7 @@ func RetrieveDependencies(
 //
 // Returns:
 //   - databaseResponse: the Neo4j response
-func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
+func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse) {
 	// get the KnowledgeDB endpoint
 	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
@@ -639,7 +640,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	requestURL := knowledgeDbEndpoint + "/general_neo4j_query"
 
 	// Create the retrieveDependenciesInput object
-	requestInput := GeneralNeo4jQueryInput{
+	requestInput := sharedtypes.GeneralNeo4jQueryInput{
 		Query: query,
 	}
 
@@ -683,7 +684,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB GeneralNeo4jQuery response received!")
 
 	// Unmarshal the response body to the appropriate struct.
-	var response GeneralNeo4jQueryOutput
+	var response sharedtypes.GeneralNeo4jQueryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
@@ -706,7 +707,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse neo4jResponse) {
 //
 // Returns:
 //   - databaseResponse: the query results
-func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters DbFilters) (databaseResponse []DbResponse) {
+func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters sharedtypes.DbFilters) (databaseResponse []sharedtypes.DbResponse) {
 	// get the KnowledgeDB endpoint
 	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
@@ -782,7 +783,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 //
 // Returns:
 //   - finalQuery: the final query
-func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []DbResponse) (finalQuery string) {
+func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []sharedtypes.DbResponse) (finalQuery string) {
 
 	// If there is no response from the KnowledgeDB, return the original request
 	if len(knowledgedbResponse) == 0 {
@@ -810,7 +811,7 @@ func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []D
 //
 // Returns:
 //   - finalQuery: the final query
-func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []DbResponse) (finalQuery string) {
+func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []sharedtypes.DbResponse) (finalQuery string) {
 	// Build the final query using the KnowledgeDB response and the original request
 	// We have to use the text from the DB response and the original request.
 	//
@@ -883,12 +884,12 @@ func SimilaritySearch(
 	embeddedVector []float32,
 	maxRetrievalCount int,
 	outputFields []string,
-	filters DbFilters,
+	filters sharedtypes.DbFilters,
 	minScore float64,
 	getLeafNodes bool,
 	getSiblings bool,
 	getParent bool,
-	getChildren bool) (databaseResponse []DbResponse) {
+	getChildren bool) (databaseResponse []sharedtypes.DbResponse) {
 	// get the KnowledgeDB endpoint
 	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
@@ -957,7 +958,7 @@ func SimilaritySearch(
 		panic(errMessage)
 	}
 
-	var similarityResults []DbResponse
+	var similarityResults []sharedtypes.DbResponse
 	for _, element := range response.SimilarityResult {
 		similarityResults = append(similarityResults, element.Data)
 	}
@@ -975,8 +976,8 @@ func SimilaritySearch(
 //
 // Returns:
 //   - databaseFilter: the keywords filter
-func CreateKeywordsDbFilter(keywords []string, needAll bool) (databaseFilter DbArrayFilter) {
-	var keywordsFilters DbArrayFilter
+func CreateKeywordsDbFilter(keywords []string, needAll bool) (databaseFilter sharedtypes.DbArrayFilter) {
+	var keywordsFilters sharedtypes.DbArrayFilter
 
 	// -- Add the keywords filter if needed
 	if len(keywords) > 0 {
@@ -996,8 +997,8 @@ func CreateKeywordsDbFilter(keywords []string, needAll bool) (databaseFilter DbA
 //
 // Returns:
 //   - databaseFilter: the tags filter
-func CreateTagsDbFilter(tags []string, needAll bool) (databaseFilter DbArrayFilter) {
-	var tagsFilters DbArrayFilter
+func CreateTagsDbFilter(tags []string, needAll bool) (databaseFilter sharedtypes.DbArrayFilter) {
+	var tagsFilters sharedtypes.DbArrayFilter
 
 	// -- Add the tags filter if needed
 	if len(tags) > 0 {
@@ -1019,7 +1020,7 @@ func CreateTagsDbFilter(tags []string, needAll bool) (databaseFilter DbArrayFilt
 //
 // Returns:
 //   - databaseFilter: the metadata filter
-func CreateMetadataDbFilter(fieldName string, fieldType string, filterData []string, needAll bool) (databaseFilter DbJsonFilter) {
+func CreateMetadataDbFilter(fieldName string, fieldType string, filterData []string, needAll bool) (databaseFilter sharedtypes.DbJsonFilter) {
 	return createDbJsonFilter(fieldName, fieldType, filterData, needAll)
 }
 
@@ -1043,10 +1044,10 @@ func CreateDbFilter(
 	documentId []string,
 	documentName []string,
 	level []string,
-	tags DbArrayFilter,
-	keywords DbArrayFilter,
-	metadata []DbJsonFilter) (databaseFilter DbFilters) {
-	var filters DbFilters
+	tags sharedtypes.DbArrayFilter,
+	keywords sharedtypes.DbArrayFilter,
+	metadata []sharedtypes.DbJsonFilter) (databaseFilter sharedtypes.DbFilters) {
+	var filters sharedtypes.DbFilters
 
 	// -- Add the guid filter if needed
 	if len(guid) > 0 {
@@ -1104,7 +1105,7 @@ const (
 //
 // Returns:
 //   - updatedHistory: the updated conversation history
-func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, history []HistoricMessage) (updatedHistory []HistoricMessage) {
+func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, history []sharedtypes.HistoricMessage) (updatedHistory []sharedtypes.HistoricMessage) {
 	switch role {
 	case user:
 	case assistant:
@@ -1121,7 +1122,7 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	}
 
 	// Create a new HistoricMessage
-	newMessageHistory := HistoricMessage{
+	newMessageHistory := sharedtypes.HistoricMessage{
 		Role:    string(role),
 		Content: newMessage,
 	}
@@ -1202,7 +1203,7 @@ func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorR
 //
 // Returns:
 //   - fields: the extracted fields
-func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]string, defaultFields []AnsysGPTDefaultFields) (fields map[string]string) {
+func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]string, defaultFields []sharedtypes.AnsysGPTDefaultFields) (fields map[string]string) {
 	// Initialize the fields map
 	fields = make(map[string]string)
 
@@ -1277,8 +1278,8 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 //
 // Returns:
 //   - rephrasedQuery: the rephrased query
-func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []HistoricMessage) (rephrasedQuery string) {
-	fmt.Println("Performing rephrase request...")
+func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []sharedtypes.HistoricMessage) (rephrasedQuery string) {
+	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
 
 	historyMessages := ""
 
@@ -1295,7 +1296,7 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 
 	// Format the template
 	userTemplate := formatTemplate(template, dataMap)
-	fmt.Println("System template:", userTemplate)
+	logging.Log.Debugf(internalstates.Ctx, "User template: %v", userTemplate)
 
 	// Perform the general request
 	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
@@ -1303,7 +1304,7 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 		panic(err)
 	}
 
-	fmt.Println("Rephrased query:", rephrasedQuery)
+	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
 
 	return rephrasedQuery
 }
@@ -1316,7 +1317,8 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 //
 // Returns:
 //   - finalQuery: the final query
-func AnsysGPTBuildFinalQuery(refrasedQuery string, context []ACSSearchResponse) (finalQuery string, errorResponse string, displayFixedMessageToUser bool) {
+func AnsysGPTBuildFinalQuery(refrasedQuery string, context []sharedtypes.ACSSearchResponse) (finalQuery string, errorResponse string, displayFixedMessageToUser bool) {
+	logging.Log.Debugf(internalstates.Ctx, "Building final query for Ansys GPT with context of length: %v", len(context))
 
 	// check if there is no context
 	if len(context) == 0 {
@@ -1343,7 +1345,7 @@ func AnsysGPTBuildFinalQuery(refrasedQuery string, context []ACSSearchResponse) 
 //
 // Returns:
 //   - stream: the stream channel
-func AnsysGPTPerformLLMRequest(finalQuery string, history []HistoricMessage, systemPrompt string, isStream bool) (message string, stream *chan string) {
+func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.HistoricMessage, systemPrompt string, isStream bool) (message string, stream *chan string) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
@@ -1443,11 +1445,9 @@ func AnsysGPTACSSemanticHybridSearchs(
 	embeddedQuery []float32,
 	indexList []string,
 	filter map[string]string,
-	topK int) (output []ACSSearchResponse) {
+	topK int) (output []sharedtypes.ACSSearchResponse) {
 
-	fmt.Println("Query used for ACS:", query)
-
-	output = make([]ACSSearchResponse, 0)
+	output = make([]sharedtypes.ACSSearchResponse, 0)
 	for _, indexName := range indexList {
 		partOutput := ansysGPTACSSemanticHybridSearch(query, embeddedQuery, indexName, filter, topK)
 		output = append(output, partOutput...)
@@ -1464,9 +1464,9 @@ func AnsysGPTACSSemanticHybridSearchs(
 //
 // Returns:
 //   - reducedSemanticSearchOutput: the reduced search response
-func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []ACSSearchResponse, citations []AnsysGPTCitation) (reducedSemanticSearchOutput []ACSSearchResponse) {
+func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []sharedtypes.ACSSearchResponse, citations []sharedtypes.AnsysGPTCitation) (reducedSemanticSearchOutput []sharedtypes.ACSSearchResponse) {
 	// iterate throught search response and keep matches to citations
-	reducedSemanticSearchOutput = make([]ACSSearchResponse, len(citations))
+	reducedSemanticSearchOutput = make([]sharedtypes.ACSSearchResponse, len(citations))
 	for _, value := range semanticSearchOutput {
 		for _, citation := range citations {
 			if value.SourceURLLvl2 == citation.Title {
@@ -1490,7 +1490,8 @@ func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []ACSSea
 //
 // Returns:
 //   - reorderedSemanticSearchOutput: the reordered search response
-func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []ACSSearchResponse, topK int) (reorderedSemanticSearchOutput []ACSSearchResponse) {
+func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []sharedtypes.ACSSearchResponse, topK int) (reorderedSemanticSearchOutput []sharedtypes.ACSSearchResponse) {
+	logging.Log.Debugf(internalstates.Ctx, "Reordering search response of length %v based on reranker_score and returning only top %v results", len(semanticSearchOutput), topK)
 	// Sorting by Weight * SearchRerankerScore in descending order
 	sort.Slice(semanticSearchOutput, func(i, j int) bool {
 		return semanticSearchOutput[i].Weight*semanticSearchOutput[i].SearchRerankerScore > semanticSearchOutput[j].Weight*semanticSearchOutput[j].SearchRerankerScore
@@ -1650,7 +1651,7 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 // Returns:
 //   - message: the response message
 //   - stream: the stream channel
-func PerformGeneralRequestSpecificModel(input string, history []HistoricMessage, isStream bool, systemPrompt string, modelIds []string) (message string, stream *chan string) {
+func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string, modelIds []string) (message string, stream *chan string) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
