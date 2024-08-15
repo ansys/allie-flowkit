@@ -132,7 +132,7 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
-func sendEmbeddingsRequest(data string, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
+func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelEmbeddings := make(chan []byte, 400)
 	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
@@ -159,6 +159,8 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
+	// Disable the read limit
+	c.SetReadLimit(-1)
 
 	// Send "testkey" for authentication
 	err = c.Write(context.Background(), websocket.MessageText, []byte("testkey"))
@@ -311,7 +313,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data string, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string) {
+func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string) {
 	request := sharedtypes.HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
@@ -1219,8 +1221,19 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 			return nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
 		}
 
-		// Get embedded vector array.
-		embedding32 = response.EmbeddedData
+		// Get embedded vector array
+		interfaceArray, ok := response.EmbeddedData.([]interface{})
+		if !ok {
+			errMessage := "error converting embedded data to interface array"
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+		embedding32, err = convertToFloat32Slice(interfaceArray)
+		if err != nil {
+			errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
 
 		// Mark that the first response has been received.
 		firstResponseReceived := true
@@ -1471,4 +1484,29 @@ func httpRequest(method string, url string, headers map[string]string, body []by
 	}
 
 	return respBody, nil
+}
+
+// convertToFloat32Slice converts an interface slice to a float32 slice.
+//
+// Parameters:
+//   - interfaceSlice: the interface slice.
+//
+// Returns:
+//   - float32Slice: the float32 slice.
+//   - error: an error if any.
+func convertToFloat32Slice(interfaceSlice []interface{}) ([]float32, error) {
+	float32Slice := make([]float32, 0, len(interfaceSlice))
+	for _, v := range interfaceSlice {
+		// Type assertion to float32
+		f, ok := v.(float64)
+		if !ok {
+			// Type assertion failed, return an error
+			return nil, fmt.Errorf("value %v is not of type float64", v)
+		}
+		// convert the float64 to float32
+		f32 := float32(f)
+		// Append the float32 value to the slice
+		float32Slice = append(float32Slice, f32)
+	}
+	return float32Slice, nil
 }

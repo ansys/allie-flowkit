@@ -20,6 +20,7 @@ import (
 
 var ExternalFunctionsMap = map[string]interface{}{
 	"PerformVectorEmbeddingRequest":                  PerformVectorEmbeddingRequest,
+	"PerformBatchEmbeddingRequest":                   PerformBatchEmbeddingRequest,
 	"PerformKeywordExtractionRequest":                PerformKeywordExtractionRequest,
 	"PerformGeneralRequest":                          PerformGeneralRequest,
 	"PerformCodeLLMRequest":                          PerformCodeLLMRequest,
@@ -71,6 +72,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 
 	// Process the first response and close the channel
 	var embedding32 []float32
+	var err error
 	for response := range responseChannel {
 		// Check if the response is an error
 		if response.Type == "error" {
@@ -81,7 +83,18 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 		logging.Log.Debugf(internalstates.Ctx, "Received embeddings response.")
 
 		// Get embedded vector array
-		embedding32 = response.EmbeddedData
+		interfaceArray, ok := response.EmbeddedData.([]interface{})
+		if !ok {
+			errMessage := "error converting embedded data to interface array"
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+		embedding32, err = convertToFloat32Slice(interfaceArray)
+		if err != nil {
+			errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
 
 		// Mark that the first response has been received
 		firstResponseReceived := true
@@ -96,6 +109,70 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	close(responseChannel)
 
 	return embedding32
+}
+
+// PerformBatchEmbeddingRequest performs a batch vector embedding request to LLM
+//
+// Parameters:
+//   - input: the input strings
+//
+// Returns:
+//   - embeddedVectors: the embedded vectors in float32 format
+func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send embeddings request
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+
+	// Process the first response and close the channel
+	embedding32Array := make([][]float32, len(input))
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Log LLM response
+		logging.Log.Debugf(internalstates.Ctx, "Received embeddings response.")
+
+		// Get embedded vector array
+		interfaceArray, ok := response.EmbeddedData.([]interface{})
+		if !ok {
+			errMessage := "error converting embedded data to interface array"
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		for i, interfaceArrayElement := range interfaceArray {
+			lowerInterfaceArray, ok := interfaceArrayElement.([]interface{})
+			if !ok {
+				errMessage := "error converting embedded data to interface array"
+				logging.Log.Error(internalstates.Ctx, errMessage)
+				panic(errMessage)
+			}
+			embedding32, err := convertToFloat32Slice(lowerInterfaceArray)
+			if err != nil {
+				errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
+				logging.Log.Error(internalstates.Ctx, errMessage)
+				panic(errMessage)
+			}
+			embedding32Array[i] = embedding32
+		}
+
+		// Mark that the first response has been received
+		firstResponseReceived := true
+
+		// Exit the loop after processing the first response
+		if firstResponseReceived {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	return embedding32Array
 }
 
 // PerformKeywordExtractionRequest performs a keywords extraction request to LLM
