@@ -6,6 +6,12 @@ github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsVi
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
 github.com/ansys/allie-sharedtypes v0.0.0-20240812094219-40fbcf4ac8e6 h1:tRW+dWw2adVhCBcxmFKfSFLU/HhbhE+8Zy0eQGOCFUg=
 github.com/ansys/allie-sharedtypes v0.0.0-20240812094219-40fbcf4ac8e6/go.mod h1:gJ7bJy8Le637ocpE8VFzqnrng7jRR6GcpDE1WKD2Qvc=
+github.com/ansys/allie-sharedtypes v0.0.0-20240814072121-9e32b08baa71 h1:QJaH2qxb8kD1PtOgEjF9pmzdZ1FKrKuvcJY7p+ITu6Q=
+github.com/ansys/allie-sharedtypes v0.0.0-20240814072121-9e32b08baa71/go.mod h1:gJ7bJy8Le637ocpE8VFzqnrng7jRR6GcpDE1WKD2Qvc=
+github.com/ansys/allie-sharedtypes v0.0.0-20240814160332-985624be332b h1:+QBpPtqxf6uJl1f4xXr7RwmwRz0WPOpspIHBJ+1tjm8=
+github.com/ansys/allie-sharedtypes v0.0.0-20240814160332-985624be332b/go.mod h1:gJ7bJy8Le637ocpE8VFzqnrng7jRR6GcpDE1WKD2Qvc=
+github.com/ansys/allie-sharedtypes v0.0.0-20240815073059-65780fa06e32 h1:XcfSWybytKMLQ40A15CaBehAT1zjak6UXDG+AQSfpfk=
+github.com/ansys/allie-sharedtypes v0.0.0-20240815073059-65780fa06e32/go.mod h1:gJ7bJy8Le637ocpE8VFzqnrng7jRR6GcpDE1WKD2Qvc=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=

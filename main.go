@@ -63,9 +63,6 @@ func main() {
 	// Initialize internal states
 	internalstates.InitializeInternalStates()
 
-	// log config
-	logging.Log.Debugf(internalstates.Ctx, "Config: %v", config.GetGlobalConfigAsJSON())
-
 	// Load function definitions
 	err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(externalFunctionsFile)
 	if err != nil {
