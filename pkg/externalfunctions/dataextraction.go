@@ -63,6 +63,11 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 	// Extract the files that need to be extracted from the tree.
 	githubFilesToExtract = dataExtractionFilterGithubTreeEntries(tree, githubFilteredDirectories, githubExcludedDirectories, githubFileExtensions)
 
+	// Log the files that need to be extracted.
+	for _, file := range githubFilesToExtract {
+		logging.Log.Debugf(internalstates.Ctx, "Github file to extract: %s \n", file)
+	}
+
 	return githubFilesToExtract
 }
 
@@ -78,6 +83,12 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 //   - localFilesToExtract: local files to extract.
 func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions []string,
 	localFilteredDirectories []string, localExcludedDirectories []string) (localFilesToExtract []string) {
+	// Check if the local path exists.
+	if _, err := os.Stat(localPath); os.IsNotExist(err) {
+		errMessage := fmt.Sprintf("Local path does not exist: %s", localPath)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
 
 	localFiles := &[]string{}
 
@@ -95,6 +106,7 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 		panic(errMessage)
 	}
 
+	// Log the files that need to be extracted.
 	for _, file := range *localFiles {
 		logging.Log.Debugf(internalstates.Ctx, "Local file to extract: %s \n", file)
 	}
@@ -172,6 +184,8 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 
 	// Convert content to a string.
 	content = string(contentBytes)
+
+	logging.Log.Debugf(internalstates.Ctx, "Got content from local file: %s", localFilePath)
 
 	return checksum, content
 }
