@@ -14,6 +14,10 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 // server is used to implement grpc_definition.ExternalFunctionsServer.
@@ -25,15 +29,67 @@ type server struct {
 // The server listens on the port specified in the configuration file
 // The server implements the ExternalFunctionsServer interface
 func StartServer() {
+	// Create listener on the specified port
 	lis, err := net.Listen("tcp", ":"+config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
 	if err != nil {
 		logging.Log.Fatalf(internalstates.Ctx, "failed to listen: %v", err)
 	}
-	s := grpc.NewServer()
+
+	// Check if SSL is enabled and load the server's certificate and private key
+	var opts []grpc.ServerOption
+	if config.GlobalConfig.USE_SSL {
+		creds, err := credentials.NewServerTLSFromFile(
+			config.GlobalConfig.SSL_CERT_PUBLIC_KEY_FILE,
+			config.GlobalConfig.SSL_CERT_PRIVATE_KEY_FILE,
+		)
+		if err != nil {
+			logging.Log.Fatalf(internalstates.Ctx, "failed to load SSL certificates: %v", err)
+		}
+		opts = append(opts, grpc.Creds(creds))
+	}
+
+	// Add API key authentication interceptor if an API key is provided
+	if config.GlobalConfig.FLOWKIT_API_KEY != "" {
+		opts = append(opts, grpc.UnaryInterceptor(apiKeyAuthInterceptor(config.GlobalConfig.FLOWKIT_API_KEY)))
+	}
+
+	// Create the gRPC server with the options
+	s := grpc.NewServer(opts...)
 	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
 	logging.Log.Infof(internalstates.Ctx, "gRPC server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		logging.Log.Fatalf(internalstates.Ctx, "failed to serve: %v", err)
+	}
+}
+
+// apiKeyAuthInterceptor is a gRPC server interceptor that checks for a valid API key in the metadata of the request
+// The API key is passed as a string parameter
+//
+// Parameters:
+// - apiKey: a string containing the API key
+//
+// Returns:
+// - grpc.UnaryServerInterceptor: a gRPC server interceptor
+func apiKeyAuthInterceptor(apiKey string) grpc.UnaryServerInterceptor {
+	return func(
+		ctx context.Context,
+		req interface{},
+		info *grpc.UnaryServerInfo,
+		handler grpc.UnaryHandler,
+	) (interface{}, error) {
+		// Extract API key from metadata
+		md, ok := metadata.FromIncomingContext(ctx)
+		if !ok {
+			return nil, status.Errorf(codes.Unauthenticated, "missing metadata")
+		}
+
+		receivedApiKeys := md["x-api-key"]
+		if len(receivedApiKeys) == 0 || receivedApiKeys[0] != apiKey {
+			return nil, status.Errorf(codes.Unauthenticated, "invalid API key")
+		}
+
+		// Continue handling the request
+		return handler(ctx, req)
 	}
 }
 
