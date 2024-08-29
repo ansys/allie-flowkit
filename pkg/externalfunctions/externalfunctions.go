@@ -50,6 +50,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTGetSystemPrompt":                        AnsysGPTGetSystemPrompt,
 	"DataExtractionGetGithubFilesToExtract":          DataExtractionGetGithubFilesToExtract,
 	"DataExtractionGetLocalFilesToExtract":           DataExtractionGetLocalFilesToExtract,
+	"DataExtractionAppendStringSlices":               DataExtractionAppendStringSlices,
 	"DataExtractionDownloadGithubFileContent":        DataExtractionDownloadGithubFileContent,
 	"DataExtractionGetLocalFileContent":              DataExtractionGetLocalFileContent,
 	"DataExtractionGetDocumentType":                  DataExtractionGetDocumentType,

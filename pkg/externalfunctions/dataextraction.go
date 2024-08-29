@@ -114,6 +114,26 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 	return *localFiles
 }
 
+// DataExtractionAppendStringSlices creates a new slice by appending all elements of the provided slices.
+//
+// Parameters:
+//   - slice1, slice2, slice3, slice4, slice5: slices to append.
+//
+// Returns:
+//   - result: a new slice with all elements appended.
+func DataExtractionAppendStringSlices(slice1, slice2, slice3, slice4, slice5 []string) []string {
+	var result []string
+
+	// Append all elements from each slice to the result slice
+	result = append(result, slice1...)
+	result = append(result, slice2...)
+	result = append(result, slice3...)
+	result = append(result, slice4...)
+	result = append(result, slice5...)
+
+	return result
+}
+
 // DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.
 //
 // Parameters:
@@ -135,7 +155,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 	// Retrieve the file content from the GitHub repository.
 	fileContent, _, _, err := client.Repositories.GetContents(ctx, githubRepoOwner, githubRepoName, gihubFilePath, &github.RepositoryContentGetOptions{Ref: githubRepoBranch})
 	if err != nil {
-		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
@@ -143,13 +163,15 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 	// Extract the content from the file content.
 	content, err = fileContent.GetContent()
 	if err != nil {
-		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
 	// Extract the checksum from the file content.
 	checksum = fileContent.GetSHA()
+
+	logging.Log.Debugf(internalstates.Ctx, "Got content from github file: %s", gihubFilePath)
 
 	return checksum, content
 }

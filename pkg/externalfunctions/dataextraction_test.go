@@ -66,3 +66,31 @@ func TestDataExtractionGetLocalFileContent(t *testing.T) {
 		t.Errorf("expected content %v, got %v", content, actualContent)
 	}
 }
+
+func TestDataExtractionAppendStringSlices(t *testing.T) {
+	tests := []struct {
+		slice1   []string
+		slice2   []string
+		slice3   []string
+		slice4   []string
+		slice5   []string
+		expected []string
+	}{
+		{[]string{"a", "b", "c"}, []string{"d", "e", "f"}, []string{}, []string{}, []string{}, []string{"a", "b", "c", "d", "e", "f"}},
+		{[]string{"a", "b", "c"}, []string{}, []string{}, []string{}, []string{}, []string{"a", "b", "c"}},
+		{[]string{}, []string{"d", "e", "f"}, []string{}, []string{}, []string{}, []string{"d", "e", "f"}},
+		{[]string{}, []string{}, []string{}, []string{}, []string{}, []string{}},
+	}
+
+	for _, test := range tests {
+		actual := DataExtractionAppendStringSlices(test.slice1, test.slice2, test.slice3, test.slice4, test.slice5)
+		if len(actual) != len(test.expected) {
+			t.Errorf("expected length %d, got %d", len(test.expected), len(actual))
+		}
+		for i := range actual {
+			if actual[i] != test.expected[i] {
+				t.Errorf("expected %v, got %v", test.expected, actual)
+			}
+		}
+	}
+}
