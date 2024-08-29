@@ -6,6 +6,8 @@ github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsVi
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
 github.com/ansys/allie-sharedtypes v0.0.0-20240826135412-729787a5fd8d h1:1GDv45U/XpOoTH9W17g5iunZiLGP4+jw2NmpE4FVHdI=
 github.com/ansys/allie-sharedtypes v0.0.0-20240826135412-729787a5fd8d/go.mod h1:gJ7bJy8Le637ocpE8VFzqnrng7jRR6GcpDE1WKD2Qvc=
+github.com/ansys/allie-sharedtypes v0.0.0-20240829114552-b7d2abb70603 h1:jUgdK3xAb/M7Xu7LUDQsu4qw2xeNDUHgi5POV2ONGE8=
+github.com/ansys/allie-sharedtypes v0.0.0-20240829114552-b7d2abb70603/go.mod h1:gJ7bJy8Le637ocpE8VFzqnrng7jRR6GcpDE1WKD2Qvc=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
