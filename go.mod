@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.22.5
 
 require (
-	github.com/ansys/allie-sharedtypes v0.0.0-20240829101658-a7b6e98b095d
+	github.com/ansys/allie-sharedtypes v0.0.0-20240829114552-b7d2abb70603
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/pandodao/tokenizer-go v0.2.0

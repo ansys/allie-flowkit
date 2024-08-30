@@ -2,6 +2,7 @@
 # ------------------------------
 # Port for the gRPC server
 EXTERNALFUNCTIONS_GRPC_PORT: 50051
+FLOWKIT_API_KEY: ""
 
 # LLM handler configuration: host and port
 LLM_HANDLER_ENDPOINT: "ws://localhost:8000"
@@ -17,6 +18,11 @@ ACS_API_VERSION: ""
 # FlowKit Python configuration
 FLOWKIT_PYTHON_ENDPOINT: "http://localhost:50052"
 FLOWKIT_PYTHON_API_KEY: "flowkit-python-api-key"
+
+# SSL configuration
+USE_SSL: false
+SSL_CERT_PUBLIC_KEY_FILE: ""
+SSL_CERT_PRIVATE_KEY_FILE: ""
 
 # Logging settings
 # ------------------------------
