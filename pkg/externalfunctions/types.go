@@ -151,13 +151,13 @@ type ACSSearchResponseLSdyna struct {
 // DataExtractionBranch represents the branch structure for the data extraction.
 type DataExtractionBranch struct {
 	Text             string
-	ChildDataObjects []*sharedtypes.DataExtractionDocumentData
+	ChildDataObjects []*sharedtypes.DbData
 	ChildDataIds     []string
 }
 
 // DataExtractionLLMInputChannelItem represents the input channel item for the data extraction llm handler workers.
 type DataExtractionLLMInputChannelItem struct {
-	Data                *sharedtypes.DataExtractionDocumentData
+	Data                *sharedtypes.DbData
 	Adapter             string
 	ChatRequestType     string
 	MaxNumberOfKeywords uint32

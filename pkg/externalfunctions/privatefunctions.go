@@ -1044,13 +1044,13 @@ func dataExtractionLocalFilepathExtractWalker(localPath string, localFileExtensi
 // Returns:
 //   - orderedChildDataObjects: the ordered child data objects.
 func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, chunks []string, documentId string, documentPath string, getSummary bool,
-	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*sharedtypes.DataExtractionDocumentData, err error) {
+	getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*sharedtypes.DbData, err error) {
 	instructionSequenceWaitGroup := &sync.WaitGroup{}
-	orderedChildData := make([]*sharedtypes.DataExtractionDocumentData, 0, len(chunks))
+	orderedChildData := make([]*sharedtypes.DbData, 0, len(chunks))
 
 	for idx, chunk := range chunks {
 		// Create data child object.
-		childData := &sharedtypes.DataExtractionDocumentData{
+		childData := &sharedtypes.DbData{
 			Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
 			DocumentId:   documentId,
 			DocumentName: documentPath,
@@ -1124,7 +1124,7 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 //
 // Returns:
 //   - llmInputChannelItem: llm input channel item.
-func dataExtractionNewLlmInputChannelItem(data *sharedtypes.DataExtractionDocumentData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem {
+func dataExtractionNewLlmInputChannelItem(data *sharedtypes.DbData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem {
 	return &DataExtractionLLMInputChannelItem{
 		Data:                         data,
 		InstructionSequenceWaitGroup: instructionSequenceWaitGroup,
@@ -1509,4 +1509,60 @@ func convertToFloat32Slice(interfaceSlice []interface{}) ([]float32, error) {
 		float32Slice = append(float32Slice, f32)
 	}
 	return float32Slice, nil
+}
+
+// createPayloadAndSendHttpRequest creates a JSON payload and sends an HTTP POST request.
+//
+// Parameters:
+//   - url: the URL to send the request to.
+//   - requestObject: the object to send in the request body.
+//   - responsePtr: a pointer to the object to store the response in.
+//
+// Returns:
+//   - error: the error returned by the function.
+func createPayloadAndSendHttpRequest(url string, requestObject interface{}, responsePtr interface{}) (funcError error, statusCode int) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Panic in CreatePayloadAndSendHttpRequest: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Define the JSON payload.
+	jsonPayload, err := json.Marshal(requestObject)
+	if err != nil {
+		return fmt.Errorf("error marshalling JSON payload: %v", err), 0
+	}
+
+	// Create a new HTTP POST request.
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return err, 0
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	// Send the HTTP POST request.
+	resp, err := client.Do(req)
+	if err != nil {
+		return err, resp.StatusCode
+	}
+	defer resp.Body.Close()
+
+	// Decode the JSON response body into the 'data' struct.
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(responsePtr); err != nil {
+		return err, 0
+	}
+
+	// Check the response status code.
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf(resp.Status), resp.StatusCode
+	}
+
+	return nil, 0
 }

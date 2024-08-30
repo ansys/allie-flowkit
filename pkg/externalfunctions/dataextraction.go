@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
@@ -328,7 +329,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 // Returns:
 //   - documentData: tree structure of the document.
 func DataExtractionGenerateDocumentTree(documentName string, documentId string, documentChunks []string,
-	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []sharedtypes.DataExtractionDocumentData) {
+	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []sharedtypes.DbData) {
 
 	logging.Log.Debugf(internalstates.Ctx, "Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
 
@@ -344,7 +345,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	}
 
 	// Create root data object.
-	rootData := &sharedtypes.DataExtractionDocumentData{
+	rootData := &sharedtypes.DbData{
 		Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
 		DocumentId:   documentId,
 		DocumentName: documentName,
@@ -361,7 +362,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	}
 
 	// Add root data object to document data.
-	documentData := []*sharedtypes.DataExtractionDocumentData{rootData}
+	documentData := []*sharedtypes.DbData{rootData}
 
 	// Create child data objects.
 	orderedChildDataObjects, err := dataExtractionDocumentLevelHandler(llmHandlerInputChannel, errorChannel, documentChunks, documentId, documentName, getSummary, getKeywords, uint32(numKeywords))
@@ -399,7 +400,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 			branches := []*DataExtractionBranch{}
 			branch := &DataExtractionBranch{
 				Text:             "",
-				ChildDataObjects: []*sharedtypes.DataExtractionDocumentData{},
+				ChildDataObjects: []*sharedtypes.DbData{},
 			}
 			branches = append(branches, branch)
 
@@ -411,7 +412,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 				if branchTokenLength+chunkSummaryTokenLength > chunkSize {
 					branch = &DataExtractionBranch{
 						Text:             "",
-						ChildDataObjects: []*sharedtypes.DataExtractionDocumentData{},
+						ChildDataObjects: []*sharedtypes.DbData{},
 						ChildDataIds:     []string{},
 					}
 					branches = append(branches, branch)
@@ -490,7 +491,7 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	logging.Log.Debugf(internalstates.Ctx, "Finished processing document: %s \n", documentName)
 
 	// Copy document data to returned document data
-	returnedDocumentData = make([]sharedtypes.DataExtractionDocumentData, len(documentData))
+	returnedDocumentData = make([]sharedtypes.DbData, len(documentData))
 	for i, data := range documentData {
 		returnedDocumentData[i] = *data
 	}
@@ -500,4 +501,64 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	llmHandlerWaitGroup.Wait()
 
 	return returnedDocumentData
+}
+
+// DataExtractionAddDataRequest sends a request to the add_data endpoint.
+//
+// Parameters:
+//   - collectionName: name of the collection the request is sent to.
+//   - data: the data to add.
+func DataExtractionAddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
+	// Create the AddDataInput object
+	requestObject := sharedtypes.DbAddDataInput{
+		CollectionName: collectionName,
+		Data:           documentData,
+	}
+
+	// Create the URL
+	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "add_data")
+
+	// Send the HTTP POST request
+	var response sharedtypes.DbAddDataOutput
+	err, _ := createPayloadAndSendHttpRequest(url, requestObject, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Error sending request to add_data endpoint: %v", err)
+		logging.Log.Error(internalstates.Ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	logging.Log.Debugf(internalstates.Ctx, "Added data to collection: %s \n", collectionName)
+
+	return
+}
+
+// DataExtractionCreateCollectionRequest sends a request to the collection endpoint.
+//
+// Parameters:
+//   - collectionName: the name of the collection to create.
+func DataExtractionCreateCollectionRequest(collectionName string) {
+	// Create the CreateCollectionInput object
+	requestObject := sharedtypes.DbCreateCollectionInput{
+		CollectionName: collectionName,
+	}
+
+	// Create the URL
+	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "create_collection")
+
+	// Send the HTTP POST request
+	var response sharedtypes.DbCreateCollectionOutput
+	err, statusCode := createPayloadAndSendHttpRequest(url, requestObject, &response)
+	if err != nil {
+		if statusCode == 409 {
+			logging.Log.Warn(internalstates.Ctx, "Collection already exists")
+		} else {
+			errorMessage := fmt.Sprintf("Error sending request to create_collection endpoint: %v", err)
+			logging.Log.Error(internalstates.Ctx, errorMessage)
+			panic(errorMessage)
+		}
+	}
+
+	logging.Log.Debugf(internalstates.Ctx, "Created collection: %s \n", collectionName)
+
+	return
 }

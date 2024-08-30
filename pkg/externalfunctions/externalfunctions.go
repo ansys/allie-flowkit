@@ -56,6 +56,8 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"DataExtractionGetDocumentType":                  DataExtractionGetDocumentType,
 	"DataExtractionLangchainSplitter":                DataExtractionLangchainSplitter,
 	"DataExtractionGenerateDocumentTree":             DataExtractionGenerateDocumentTree,
+	"DataExtractionAddDataRequest":                   DataExtractionAddDataRequest,
+	"DataExtractionCreateCollectionRequest":          DataExtractionCreateCollectionRequest,
 	"PerformGeneralRequestSpecificModel":             PerformGeneralRequestSpecificModel,
 	"AssignStringToString":                           AssignStringToString,
 }
