@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"os"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -19,19 +18,8 @@ var externalFunctionsFile string
 var dataExtractionFile string
 
 func init() {
-	// Get config file location
-	// 1st option: read from environment variable
-	configFile := os.Getenv("ALLIE_CONFIG_PATH")
-	if configFile == "" {
-		// 2nd option: read from default location... root directory
-		configFile = "config.yaml"
-	}
-
-	// get config properties from CLI
-	config.CreateUpdateConfigFileFromCLI(configFile)
-
 	// initialize config
-	config.InitGlobalConfigFromFile(configFile, []string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
+	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
 		"VERSION":             "1.0",
 		"STAGE":               "PROD",
 		"ERROR_FILE_LOCATION": "error.log",
