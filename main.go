@@ -20,6 +20,7 @@ var dataExtractionFile string
 func init() {
 	// initialize config
 	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
+		"SERVICE_NAME":        "allie-flowkit",
 		"VERSION":             "1.0",
 		"STAGE":               "PROD",
 		"ERROR_FILE_LOCATION": "error.log",
@@ -29,22 +30,7 @@ func init() {
 	})
 
 	// initialize logging
-	logging.InitLogger()
-	logging.InitConfig(logging.Config{
-		ErrorFileLocation: config.GlobalConfig.ERROR_FILE_LOCATION,
-		LogLevel:          config.GlobalConfig.LOG_LEVEL,
-		LocalLogs:         config.GlobalConfig.LOCAL_LOGS,
-		LocalLogsLocation: config.GlobalConfig.LOCAL_LOGS_LOCATION,
-		DatadogLogs:       config.GlobalConfig.DATADOG_LOGS,
-		DatadogSource:     config.GlobalConfig.DATADOG_SOURCE,
-		DatadogStage:      config.GlobalConfig.STAGE,
-		DatadogVersion:    config.GlobalConfig.VERSION,
-		DatadogService:    config.GlobalConfig.SERVICE_NAME,
-		DatadogAPIKey:     config.GlobalConfig.LOGGING_API_KEY,
-		DatadogLogsURL:    config.GlobalConfig.LOGGING_URL,
-		DatadogMetrics:    config.GlobalConfig.DATADOG_METRICS,
-		DatadogMetricsURL: config.GlobalConfig.METRICS_URL,
-	})
+	logging.InitLogger(config.GlobalConfig)
 }
 
 func main() {

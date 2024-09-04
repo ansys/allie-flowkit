@@ -18,6 +18,8 @@ github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsVi
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
 github.com/ansys/allie-sharedtypes v0.0.0-20240902100814-0bdc50fadbec h1:l2fkYSi8tU83QoCD/bgaVoOlOU09zMMhxSx5HPDDGJA=
 github.com/ansys/allie-sharedtypes v0.0.0-20240902100814-0bdc50fadbec/go.mod h1:tp0CyD2VVrFzR6BzgcXAShhSGEcFWGr/+EMvyb1JJqM=
+github.com/ansys/allie-sharedtypes v0.0.0-20240904075127-5291d92348f7 h1:gCamyW5nSvIyevlpuT/PHpY9yNcKTJWHJGmMOR+jD1g=
+github.com/ansys/allie-sharedtypes v0.0.0-20240904075127-5291d92348f7/go.mod h1:tp0CyD2VVrFzR6BzgcXAShhSGEcFWGr/+EMvyb1JJqM=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
