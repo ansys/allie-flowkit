@@ -20,6 +20,7 @@ var dataExtractionFile string
 func init() {
 	// initialize config
 	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
+		"SERVICE_NAME":        "allie-flowkit",
 		"VERSION":             "1.0",
 		"STAGE":               "PROD",
 		"ERROR_FILE_LOCATION": "error.log",
