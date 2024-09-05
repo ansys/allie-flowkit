@@ -7,6 +7,7 @@ on:
       - "*"
     branches:
       - main
+      - vupadhya/mendallie
 
 env:
   MAIN_PYTHON_VERSION: '3.12'
@@ -132,3 +133,12 @@ jobs:
           cname: ${{ env.DOCUMENTATION_CNAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
           doc-artifact-name: documentation-html-with-api
+#####################################
+# 1. job: Mend Security Testing
+#####################################
+#####################################
+  mend-security:
+    uses: ./.github/workflows/mend.yaml
+    with:
+      package_type: "go"
+    secrets: inherit
