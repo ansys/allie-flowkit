@@ -1,0 +1,96 @@
+name: Mend Scans
+
+on:
+  workflow_call:
+      inputs:
+        package_type:
+            type: string
+            required: true
+            default: 'poetry' # Supported values: [npm, poetry, pip, poetry+npm,go]
+
+jobs:
+  mendscan-sca:
+    env:
+      WS_APIKEY: '${{secrets.MEND_API_KEY}}'
+      WS_USERKEY: '${{ secrets.MEND_USER_KEY }}'
+      WS_WSS_URL: 'https://app.whitesourcesoftware.com/agent'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: '11'
+        distribution: 'adopt'
+### Build Steps
+
+    ## Python
+    - name: Setup Python
+      if: ${{ contains(inputs.package_type, 'pip') }} || ${{ contains(inputs.package_type, 'poetry') }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install poetry
+      if: ${{ contains(inputs.package_type, 'poetry') }}
+      shell: bash
+      run: |
+        python -m pip install poetry
+        export INSTALL_COMMAND="poetry install"
+
+    ## NPM
+    - name: Setup Node
+      if: ${{ contains(inputs.package_type, 'npm') }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: '20'
+    - name: Setup Go
+      if: ${{ contains(inputs.package_type, 'go') }}
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: 'go.mod'
+        cache-dependency-path: 'go.sum'
+###
+    - name: Mend Unified Agent Scan
+      env:
+        WS_PRODUCTNAME: 'AnsysAllie'
+        WS_PROJECTNAME: ${{github.event.repository.name}}
+        WS_GENERATEPROJECTDETAILSJSON: true
+        WS_GENERATESCANREPORT: true
+        WS_FILESYSTEMSCAN: true
+        WS_CHECKPOLICIES: true
+        WS_FORCECHECKALLDEPENDENCIES: true
+        WS_SCANREPORTFILENAMEFORMAT: static
+        WS_FORCEUPDATE_FAILBUILDONPOLICYVIOLATION : TRUE
+        WS_GO_MODULES_RESOLVEDEPENDENCIES: TRUE
+      run: |
+        echo Downloading Mend Unified Agent
+        curl -LJO https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar
+        if [[ "$(curl -sL https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar.sha256)" != "$(sha256sum wss-unified-agent.jar)" ]] ; then
+          echo "Integrity Check Failed"
+        else
+          echo "Integrity Check Passed"
+          echo Starting Unified Agent Scan
+          java -jar wss-unified-agent.jar -loglevel debug
+        fi
+    - name: Write Mend output file to logs
+      shell: bash
+      run: |
+        echo "Mend Unified Agent Scan Report"
+        cat ./whitesource/scan_report.json
+    - name: 'Upload WhiteSource folder'
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mend
+        path: whitesource
+        retention-days: 14
+
+    - name: 'Upload Mend folder if failure'
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: Mend
+        path: whitesource
+        retention-days: 14
