@@ -28,7 +28,7 @@ import (
 //
 // Returns:
 //   - error: an error if the file cannot be parsed.
-func ExtractFunctionDefinitionsFromPackage(content string) error {
+func ExtractFunctionDefinitionsFromPackage(content string, category string) error {
 	fset := token.NewFileSet() // positions are relative to fset
 
 	// Parse the file given by filePath
@@ -96,6 +96,7 @@ func ExtractFunctionDefinitionsFromPackage(content string) error {
 				funcDef := &allieflowkitgrpc.FunctionDefinition{
 					Name:        fn.Name.Name,
 					Description: fn.Doc.Text(),
+					Category:    category,
 					Input:       []*allieflowkitgrpc.FunctionInputDefinition{},
 					Output:      []*allieflowkitgrpc.FunctionOutputDefinition{},
 				}

@@ -50,18 +50,17 @@ func main() {
 	internalstates.InitializeInternalStates()
 
 	// Create file list
-	files := []string{
-		externalFunctionsFile,
-		dataExtractionFile,
-		genericFile,
-		knowledgeDBFile,
-		llmHandlerFile,
-		ansysGPTFile,
+	files := map[string]string{
+		"data_extraction": dataExtractionFile,
+		"generic":         genericFile,
+		"knowledge_db":    knowledgeDBFile,
+		"llm_handler":     llmHandlerFile,
+		"ansys_gpt":       ansysGPTFile,
 	}
 
 	// Load function definitions
-	for _, file := range files {
-		err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(file)
+	for category, file := range files {
+		err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(file, category)
 		if err != nil {
 			logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
 		}
