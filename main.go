@@ -38,11 +38,7 @@ func main() {
 	internalstates.InitializeInternalStates()
 
 	// Load function definitions
-	err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(externalFunctionsFile)
-	if err != nil {
-		logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
-	}
-	err = functiondefinitions.ExtractFunctionDefinitionsFromPackage(dataExtractionFile)
+	err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(dataExtractionFile, "data_extraction")
 	if err != nil {
 		logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
 	}

@@ -41,6 +41,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTCheckProhibitedWords":                   AnsysGPTCheckProhibitedWords,
 	"AnsysGPTExtractFieldsFromQuery":                 AnsysGPTExtractFieldsFromQuery,
 	"AnsysGPTPerformLLMRephraseRequest":              AnsysGPTPerformLLMRephraseRequest,
+	"AnsysGPTPerformLLMRephraseRequestOld":           AnsysGPTPerformLLMRephraseRequestOld,
 	"AnsysGPTBuildFinalQuery":                        AnsysGPTBuildFinalQuery,
 	"AnsysGPTPerformLLMRequest":                      AnsysGPTPerformLLMRequest,
 	"AnsysGPTReturnIndexList":                        AnsysGPTReturnIndexList,
@@ -59,6 +60,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"DataExtractionAddDataRequest":                   DataExtractionAddDataRequest,
 	"DataExtractionCreateCollectionRequest":          DataExtractionCreateCollectionRequest,
 	"PerformGeneralRequestSpecificModel":             PerformGeneralRequestSpecificModel,
+	"SendRestAPICall":                                SendRestAPICall,
 	"AssignStringToString":                           AssignStringToString,
 }
 
@@ -1392,6 +1394,48 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	return rephrasedQuery
 }
 
+// AnsysGPTPerformLLMRephraseRequest performs a rephrase request to LLM
+//
+// Parameters:
+//   - template: the template for the rephrase request
+//   - query: the user query
+//   - history: the conversation history
+//
+// Returns:
+//   - rephrasedQuery: the rephrased query
+func AnsysGPTPerformLLMRephraseRequestOld(template string, query string, history []sharedtypes.HistoricMessage) (rephrasedQuery string) {
+	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
+
+	historyMessages := ""
+	for _, entry := range history {
+		switch entry.Role {
+		case "user":
+			historyMessages += "HumanMessage(content):" + entry.Content + "\n"
+		case "assistant":
+			historyMessages += "AIMessage(content):" + entry.Content + "\n"
+		}
+	}
+
+	// Create map for the data to be used in the template
+	dataMap := make(map[string]string)
+	dataMap["query"] = query
+	dataMap["chat_history"] = historyMessages
+
+	// Format the template
+	systemTemplate := formatTemplate(template, dataMap)
+	logging.Log.Debugf(internalstates.Ctx, "System template: %v", systemTemplate)
+
+	// Perform the general request
+	rephrasedQuery, _, err := performGeneralRequest(query, nil, false, systemTemplate)
+	if err != nil {
+		panic(err)
+	}
+
+	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
+
+	return rephrasedQuery
+}
+
 // AnsysGPTBuildFinalQuery builds the final query for Ansys GPT
 //
 // Parameters:
@@ -1491,11 +1535,11 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 			indexList = append(indexList, "ansysgpt-documentation-2023r2")
 			indexList = append(indexList, "scade-documentation-2023r2")
 			indexList = append(indexList, "ansys-dot-com-marketing")
-			indexList = append(indexList, "ibp-app-brief")
+			// indexList = append(indexList, "ibp-app-brief")
 			// indexList = append(indexList, "pyansys_help_documentation")
 			// indexList = append(indexList, "pyansys-examples")
 		case "Ansys Semiconductor":
-			indexList = append(indexList, "ansysgpt-scbu")
+			// indexList = append(indexList, "ansysgpt-scbu")
 		default:
 			logging.Log.Warnf(internalstates.Ctx, "Invalid indexGroup: %v\n", indexGroup)
 			return
