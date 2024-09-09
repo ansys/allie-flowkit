@@ -12,6 +12,9 @@ import (
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
 //
+// Tags:
+//   - @displayName: Embeddings
+//
 // Parameters:
 //   - input: the input string
 //
@@ -66,6 +69,9 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 }
 
 // PerformBatchEmbeddingRequest performs a batch vector embedding request to LLM
+//
+// Tags:
+//   - @displayName: Batch Embeddings
 //
 // Parameters:
 //   - input: the input strings
@@ -131,6 +137,9 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 
 // PerformKeywordExtractionRequest performs a keywords extraction request to LLM
 //
+// Tags:
+//   - @displayName: Keyword Extraction
+//
 // Parameters:
 //   - input: the input string
 //   - maxKeywordsSearch: the maximum number of keywords to search for
@@ -180,6 +189,9 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 
 // PerformSummaryRequest performs a summary request to LLM
 //
+// Tags:
+//   - @displayName: Summary
+//
 // Parameters:
 //   - input: the input string
 //
@@ -219,6 +231,9 @@ func PerformSummaryRequest(input string) (summary string) {
 }
 
 // PerformGeneralRequest performs a general chat completion request to LLM
+//
+// Tags:
+//   - @displayName: General LLM Request
 //
 // Parameters:
 //   - input: the input string
@@ -272,6 +287,9 @@ func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 }
 
 // PerformGeneralRequestSpecificModel performs a general request to LLM with a specific model
+//
+// Tags:
+//   - @displayName: General LLM Request (Specific Models)
 //
 // Parameters:
 //   - input: the user input
@@ -327,6 +345,9 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 }
 
 // PerformCodeLLMRequest performs a code generation request to LLM
+//
+// Tags:
+//   - @displayName: Code LLM Request
 //
 // Parameters:
 //   - input: the input string
@@ -408,6 +429,9 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 
 // BuildLibraryContext builds the context string for the query
 //
+// Tags:
+//   - @displayName: Library Context
+//
 // Parameters:
 //   - message: the message string
 //   - libraryContext: the library context string
@@ -424,6 +448,9 @@ func BuildLibraryContext(message string, libraryContext string) (messageWithCont
 // BuildFinalQueryForGeneralLLMRequest builds the final query for a general
 // request to LLM. The final query is a markdown string that contains the
 // original request and the examples from the KnowledgeDB.
+//
+// Tags:
+//   - @displayName: Final Query (General LLM Request)
 //
 // Parameters:
 //   - request: the original request
@@ -452,6 +479,9 @@ func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []s
 // BuildFinalQueryForCodeLLMRequest builds the final query for a code generation
 // request to LLM. The final query is a markdown string that contains the
 // original request and the code examples from the KnowledgeDB.
+//
+// Tags:
+//   - @displayName: Final Query (Code LLM Request)
 //
 // Parameters:
 //   - request: the original request
@@ -518,6 +548,9 @@ const (
 )
 
 // AppendMessageHistory appends a new message to the conversation history
+//
+// Tags:
+//   - @displayName: Append Message History
 //
 // Parameters:
 //   - newMessage: the new message

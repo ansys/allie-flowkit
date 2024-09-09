@@ -2,6 +2,7 @@ package functiondefinitions
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -93,9 +94,14 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 		if fn, isFn := decl.(*ast.FuncDecl); isFn {
 			// Check if the function is exported
 			if fn.Name.IsExported() {
+				// Extract docstring text
+				description := fn.Doc.Text()
+				displayName := extractTagValue(description, "@displayName")
+
 				funcDef := &allieflowkitgrpc.FunctionDefinition{
 					Name:        fn.Name.Name,
-					Description: fn.Doc.Text(),
+					DisplayName: displayNameOrDefault(displayName, fn.Name.Name),
+					Description: description,
 					Category:    category,
 					Input:       []*allieflowkitgrpc.FunctionInputDefinition{},
 					Output:      []*allieflowkitgrpc.FunctionOutputDefinition{},
@@ -239,4 +245,42 @@ func typeExprToString(expr ast.Expr) string {
 	cleanedTypeStr := packagePattern.ReplaceAllString(typeStr, "")
 
 	return cleanedTypeStr
+}
+
+// extractTagValue extracts the value of a tag from a docstring.
+// The tag value is expected to be in the format "- tag: value".
+//
+// Parameters:
+//   - docText: the docstring text to extract the tag value from.
+//   - tag: the tag to extract the value of.
+//
+// Returns:
+//   - string: the value of the tag, or an empty string if the tag is not found.
+func extractTagValue(docText, tag string) string {
+	// Define a regex to extract the value of the tag in the new format
+	re := regexp.MustCompile(fmt.Sprintf(`- %s:\s*(.+)`, tag))
+	matches := re.FindStringSubmatch(docText)
+
+	// If a match is found, return the tag value
+	if len(matches) > 1 {
+		return strings.TrimSpace(matches[1])
+	}
+
+	// If no match, return an empty string
+	return ""
+}
+
+// displayNameOrDefault returns the displayName if it is not empty, otherwise it returns the defaultName.
+//
+// Parameters:
+//   - displayName: the display name to check.
+//   - defaultName: the default name to use if the display name is empty.
+//
+// Returns:
+//   - string: the display name if it is not empty, otherwise the default name.
+func displayNameOrDefault(displayName, defaultName string) string {
+	if displayName != "" {
+		return displayName
+	}
+	return defaultName
 }

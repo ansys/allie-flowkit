@@ -10,6 +10,9 @@ import (
 
 // SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
 //
+// Tags:
+//   - @displayName: REST Call
+//
 // Parameters:
 //   - requestType: the type of the request (GET, POST, PUT, PATCH, DELETE)
 //   - urlString: the URL to send the request to
@@ -75,6 +78,9 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 }
 
 // AssignStringToString assigns a string to another string
+//
+// Tags:
+//   - @displayName: Assign String to String
 //
 // Parameters:
 //   - inputString: the input string

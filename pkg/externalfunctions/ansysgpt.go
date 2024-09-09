@@ -15,6 +15,9 @@ import (
 
 // AnsysGPTCheckProhibitedWords checks the user query for prohibited words
 //
+// Tags:
+//   - @displayName: Check Prohibited Words
+//
 // Parameters:
 //   - query: the user query
 //   - prohibitedWords: the list of prohibited words
@@ -75,6 +78,9 @@ func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorR
 }
 
 // AnsysGPTExtractFieldsFromQuery extracts the fields from the user query
+//
+// Tags:
+//   - @displayName: Extract Fields
 //
 // Parameters:
 //   - query: the user query
@@ -151,6 +157,9 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 
 // AnsysGPTPerformLLMRephraseRequest performs a rephrase request to LLM
 //
+// Tags:
+//   - @displayName: Rephrase Request
+//
 // Parameters:
 //   - template: the template for the rephrase request
 //   - query: the user query
@@ -190,6 +199,9 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 }
 
 // AnsysGPTPerformLLMRephraseRequestOld performs a rephrase request to LLM
+//
+// Tags:
+//   - @displayName: Rephrase Request Old
 //
 // Parameters:
 //   - template: the template for the rephrase request
@@ -233,6 +245,9 @@ func AnsysGPTPerformLLMRephraseRequestOld(template string, query string, history
 
 // AnsysGPTBuildFinalQuery builds the final query for Ansys GPT
 //
+// Tags:
+//   - @displayName: Build Final Query
+//
 // Parameters:
 //   - refrasedQuery: the refrased query
 //   - context: the context
@@ -259,6 +274,9 @@ func AnsysGPTBuildFinalQuery(refrasedQuery string, context []sharedtypes.ACSSear
 }
 
 // AnsysGPTPerformLLMRequest performs a request to Ansys GPT
+//
+// Tags:
+//   - @displayName: LLM Request
 //
 // Parameters:
 //   - finalQuery: the final query
@@ -312,6 +330,9 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.Historic
 
 // AnsysGPTReturnIndexList returns the index list for Ansys GPT
 //
+// Tags:
+//   - @displayName: List Indexes
+//
 // Parameters:
 //   - indexGroups: the index groups
 //
@@ -345,6 +366,9 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 }
 
 // AnsysGPTACSSemanticHybridSearchs performs a semantic hybrid search in ACS
+//
+// Tags:
+//   - @displayName: ACS Semantic Hybrid Search
 //
 // Parameters:
 //   - query: the query string
@@ -380,6 +404,9 @@ func AnsysGPTACSSemanticHybridSearchs(
 
 // AnsysGPTRemoveNoneCitationsFromSearchResponse removes none citations from search response
 //
+// Tags:
+//   - @displayName: Remove None Citations
+//
 // Parameters:
 //   - semanticSearchOutput: the search response
 //   - citations: the citations
@@ -406,6 +433,9 @@ func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []shared
 
 // AnsysGPTReorderSearchResponseAndReturnOnlyTopK reorders the search response
 //
+// Tags:
+//   - @displayName: Reorder Search Response
+//
 // Parameters:
 //   - semanticSearchOutput: the search response
 //   - topK: the number of results to be returned
@@ -428,6 +458,12 @@ func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []share
 }
 
 // AnsysGPTGetSystemPrompt returns the system prompt for Ansys GPT
+//
+// Tags:
+//   - @displayName: Get System Prompt
+//
+// Parameters:
+//   - rephrasedQuery: the rephrased query
 //
 // Returns:
 //   - systemPrompt: the system prompt

@@ -21,6 +21,9 @@ import (
 //
 // The function returns the most relevant data.
 //
+// Tags:
+//   - @displayName: Similarity Search
+//
 // Parameters:
 //   - vector: the vector to be sent to the KnowledgeDB
 //   - keywords: the keywords to be used to filter the results
@@ -149,6 +152,9 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 
 // GetListCollections retrieves the list of collections from the KnowledgeDB.
 //
+// Tags:
+//   - @displayName: List Collections
+//
 // The function returns the list of collections.
 //
 // Parameters:
@@ -216,6 +222,9 @@ func GetListCollections() (collectionsList []string) {
 // RetrieveDependencies retrieves the dependencies of the specified source node.
 //
 // The function returns the list of dependencies.
+//
+// Tags:
+//   - @displayName: Retrieve Dependencies
 //
 // Parameters:
 //   - collectionName: the name of the collection to which the data objects will be added.
@@ -305,6 +314,9 @@ func RetrieveDependencies(
 //
 // The function returns the neo4j response.
 //
+// Tags:
+//   - @displayName: General Neo4J Query
+//
 // Parameters:
 //   - query: the Neo4j query to be executed.
 //
@@ -376,6 +388,9 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 // GeneralQuery performs a general query in the KnowledgeDB.
 //
 // The function returns the query results.
+//
+// Tags:
+//   - @displayName: Query
 //
 // Parameters:
 //   - collectionName: the name of the collection to which the data objects will be added.
@@ -454,6 +469,9 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 // SimilaritySearch performs a similarity search in the KnowledgeDB.
 //
 // The function returns the similarity search results.
+//
+// Tags:
+//   - @displayName: Similarity Search (Filtered)
 //
 // Parameters:
 //   - collectionName: the name of the collection to which the data objects will be added.
@@ -560,6 +578,9 @@ func SimilaritySearch(
 //
 // The function returns the keywords filter.
 //
+// Tags:
+//   - @displayName: Keywords Filter
+//
 // Parameters:
 //   - keywords: the keywords to be used for the filter
 //   - needAll: flag to indicate whether all keywords are needed
@@ -580,6 +601,9 @@ func CreateKeywordsDbFilter(keywords []string, needAll bool) (databaseFilter sha
 // CreateTagsDbFilter creates a tags filter for the KnowledgeDB.
 //
 // The function returns the tags filter.
+//
+// Tags:
+//   - @displayName: Tags Filter
 //
 // Parameters:
 //   - tags: the tags to be used for the filter
@@ -602,6 +626,9 @@ func CreateTagsDbFilter(tags []string, needAll bool) (databaseFilter sharedtypes
 //
 // The function returns the metadata filter.
 //
+// Tags:
+//   - @displayName: Metadata Filter
+//
 // Parameters:
 //   - fieldName: the name of the field
 //   - fieldType: the type of the field
@@ -617,6 +644,9 @@ func CreateMetadataDbFilter(fieldName string, fieldType string, filterData []str
 // CreateDbFilter creates a filter for the KnowledgeDB.
 //
 // The function returns the filter.
+//
+// Tags:
+//   - @displayName: Create Filter
 //
 // Parameters:
 //   - guid: the guid filter
@@ -675,4 +705,70 @@ func CreateDbFilter(
 	}
 
 	return filters
+}
+
+// DataExtractionAddDataRequest sends a request to the add_data endpoint.
+//
+// Tags:
+//   - @displayName: Add Data
+//
+// Parameters:
+//   - collectionName: name of the collection the request is sent to.
+//   - data: the data to add.
+func DataExtractionAddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
+	// Create the AddDataInput object
+	requestObject := sharedtypes.DbAddDataInput{
+		CollectionName: collectionName,
+		Data:           documentData,
+	}
+
+	// Create the URL
+	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "add_data")
+
+	// Send the HTTP POST request
+	var response sharedtypes.DbAddDataOutput
+	err, _ := createPayloadAndSendHttpRequest(url, requestObject, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Error sending request to add_data endpoint: %v", err)
+		logging.Log.Error(internalstates.Ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	logging.Log.Debugf(internalstates.Ctx, "Added data to collection: %s \n", collectionName)
+
+	return
+}
+
+// DataExtractionCreateCollectionRequest sends a request to the collection endpoint.
+//
+// Tags:
+//   - @displayName: Create Collection
+//
+// Parameters:
+//   - collectionName: the name of the collection to create.
+func DataExtractionCreateCollectionRequest(collectionName string) {
+	// Create the CreateCollectionInput object
+	requestObject := sharedtypes.DbCreateCollectionInput{
+		CollectionName: collectionName,
+	}
+
+	// Create the URL
+	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "create_collection")
+
+	// Send the HTTP POST request
+	var response sharedtypes.DbCreateCollectionOutput
+	err, statusCode := createPayloadAndSendHttpRequest(url, requestObject, &response)
+	if err != nil {
+		if statusCode == 409 {
+			logging.Log.Warn(internalstates.Ctx, "Collection already exists")
+		} else {
+			errorMessage := fmt.Sprintf("Error sending request to create_collection endpoint: %v", err)
+			logging.Log.Error(internalstates.Ctx, errorMessage)
+			panic(errorMessage)
+		}
+	}
+
+	logging.Log.Debugf(internalstates.Ctx, "Created collection: %s \n", collectionName)
+
+	return
 }

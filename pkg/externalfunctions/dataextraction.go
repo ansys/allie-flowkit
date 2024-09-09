@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
-	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
@@ -24,6 +23,9 @@ import (
 )
 
 // DataExtractionGetGithubFilesToExtract gets all files from github that need to be extracted.
+//
+// Tags:
+//   - @displayName: List Github Files
 //
 // Parameters:
 //   - githubRepoName: name of the github repository.
@@ -74,6 +76,9 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 
 // DataExtractionGetLocalFilesToExtract gets all files from local that need to be extracted.
 //
+// Tags:
+//   - @displayName: List Local Files
+//
 // Parameters:
 //   - localPath: path to the local directory.
 //   - localFileExtensions: local file extensions.
@@ -117,6 +122,9 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 
 // DataExtractionAppendStringSlices creates a new slice by appending all elements of the provided slices.
 //
+// Tags:
+//   - @displayName: Append String Slices
+//
 // Parameters:
 //   - slice1, slice2, slice3, slice4, slice5: slices to append.
 //
@@ -136,6 +144,9 @@ func DataExtractionAppendStringSlices(slice1, slice2, slice3, slice4, slice5 []s
 }
 
 // DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.
+//
+// Tags:
+//   - @displayName: Download Github File Content
 //
 // Parameters:
 //   - githubRepoName: name of the github repository.
@@ -178,6 +189,10 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 }
 
 // DataExtractionGetLocalFileContent reads local file and returns checksum and content.
+//
+// Tags:
+//   - @displayName: Get Local File Content
+//
 // Parameters:
 //   - localFilePath: path to file.
 //
@@ -215,6 +230,9 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 
 // DataExtractionGetDocumentType returns the document type of a file.
 //
+// Tags:
+//   - @displayName: Get Document Type
+//
 // Parameters:
 //   - filePath: path to file.
 //
@@ -229,6 +247,9 @@ func DataExtractionGetDocumentType(filePath string) (documentType string) {
 }
 
 // DataExtractionLangchainSplitter splits content into chunks using langchain.
+//
+// Tags:
+//   - @displayName: Split Content
 //
 // Parameters:
 //   - content: content to split.
@@ -314,6 +335,9 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 }
 
 // DataExtractionGenerateDocumentTree generates a tree structure from the document chunks.
+//
+// Tags:
+//   - @displayName: Document Tree
 //
 // Parameters:
 //   - documentName: name of the document.
@@ -501,64 +525,4 @@ func DataExtractionGenerateDocumentTree(documentName string, documentId string, 
 	llmHandlerWaitGroup.Wait()
 
 	return returnedDocumentData
-}
-
-// DataExtractionAddDataRequest sends a request to the add_data endpoint.
-//
-// Parameters:
-//   - collectionName: name of the collection the request is sent to.
-//   - data: the data to add.
-func DataExtractionAddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
-	// Create the AddDataInput object
-	requestObject := sharedtypes.DbAddDataInput{
-		CollectionName: collectionName,
-		Data:           documentData,
-	}
-
-	// Create the URL
-	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "add_data")
-
-	// Send the HTTP POST request
-	var response sharedtypes.DbAddDataOutput
-	err, _ := createPayloadAndSendHttpRequest(url, requestObject, &response)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Error sending request to add_data endpoint: %v", err)
-		logging.Log.Error(internalstates.Ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(internalstates.Ctx, "Added data to collection: %s \n", collectionName)
-
-	return
-}
-
-// DataExtractionCreateCollectionRequest sends a request to the collection endpoint.
-//
-// Parameters:
-//   - collectionName: the name of the collection to create.
-func DataExtractionCreateCollectionRequest(collectionName string) {
-	// Create the CreateCollectionInput object
-	requestObject := sharedtypes.DbCreateCollectionInput{
-		CollectionName: collectionName,
-	}
-
-	// Create the URL
-	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "create_collection")
-
-	// Send the HTTP POST request
-	var response sharedtypes.DbCreateCollectionOutput
-	err, statusCode := createPayloadAndSendHttpRequest(url, requestObject, &response)
-	if err != nil {
-		if statusCode == 409 {
-			logging.Log.Warn(internalstates.Ctx, "Collection already exists")
-		} else {
-			errorMessage := fmt.Sprintf("Error sending request to create_collection endpoint: %v", err)
-			logging.Log.Error(internalstates.Ctx, errorMessage)
-			panic(errorMessage)
-		}
-	}
-
-	logging.Log.Debugf(internalstates.Ctx, "Created collection: %s \n", collectionName)
-
-	return
 }
