@@ -17,6 +17,18 @@ var externalFunctionsFile string
 //go:embed pkg/externalfunctions/dataextraction.go
 var dataExtractionFile string
 
+//go:embed pkg/externalfunctions/generic.go
+var genericFile string
+
+//go:embed pkg/externalfunctions/knowledgedb.go
+var knowledgeDBFile string
+
+//go:embed pkg/externalfunctions/llmhandler.go
+var llmHandlerFile string
+
+//go:embed pkg/externalfunctions/ansysgpt.go
+var ansysGPTFile string
+
 func init() {
 	// initialize config
 	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
@@ -37,14 +49,21 @@ func main() {
 	// Initialize internal states
 	internalstates.InitializeInternalStates()
 
-	// Load function definitions
-	err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(externalFunctionsFile)
-	if err != nil {
-		logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
+	// Create file list
+	files := map[string]string{
+		"data_extraction": dataExtractionFile,
+		"generic":         genericFile,
+		"knowledge_db":    knowledgeDBFile,
+		"llm_handler":     llmHandlerFile,
+		"ansys_gpt":       ansysGPTFile,
 	}
-	err = functiondefinitions.ExtractFunctionDefinitionsFromPackage(dataExtractionFile)
-	if err != nil {
-		logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
+
+	// Load function definitions
+	for category, file := range files {
+		err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(file, category)
+		if err != nil {
+			logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
+		}
 	}
 
 	// Log the version of the system
