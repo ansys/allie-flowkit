@@ -351,6 +351,7 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 			indexList = append(indexList, "ansysgpt-documentation-2023r2")
 			indexList = append(indexList, "scade-documentation-2023r2")
 			indexList = append(indexList, "ansys-dot-com-marketing")
+			indexList = append(indexList, "external-crtech-thermal-desktop")
 			// indexList = append(indexList, "ibp-app-brief")
 			// indexList = append(indexList, "pyansys_help_documentation")
 			// indexList = append(indexList, "pyansys-examples")
