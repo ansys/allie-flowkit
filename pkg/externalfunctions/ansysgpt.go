@@ -355,9 +355,9 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 			// indexList = append(indexList, "pyansys_help_documentation")
 			// indexList = append(indexList, "pyansys-examples")
 		case "Ansys Semiconductor":
-			// indexList = append(indexList, "ansysgpt-scbu")
+			indexList = append(indexList, "ansysgpt-scbu")
 		default:
-			logging.Log.Warnf(internalstates.Ctx, "Invalid indexGroup: %v\n", indexGroup)
+			logging.Log.Errorf(internalstates.Ctx, "Invalid indexGroup: %v\n", indexGroup)
 			return
 		}
 	}

@@ -689,6 +689,9 @@ func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields stri
 	case "lsdyna-documentation-r14":
 		searchedEmbeddedFields = "contentVector, titleVector"
 		returnedProperties = "title, url, token_size, physics, typeOFasset, content, product"
+	case "external-crtech-thermal-desktop":
+		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, bridge_id, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
 		logging.Log.Error(internalstates.Ctx, errMessage)
@@ -716,6 +719,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
+		output = respObject.Value
 
 	case "ansysgpt-alh", "ansysgpt-scbu":
 		respObjectAlh := ACSSearchResponseStructALH{}
@@ -767,13 +771,41 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 			})
 		}
 
+	case "external-crtech-thermal-desktop":
+		respObjectCrtech := ACSSearchResponseStructCrtech{}
+		err := json.Unmarshal(body, &respObjectCrtech)
+		if err != nil {
+			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructCrtech: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		for _, item := range respObjectCrtech.Value {
+			fmt.Println("hashdsahdsha")
+			output = append(output, sharedtypes.ACSSearchResponse{
+				SourceTitleLvl2:     item.SourceTitleLvl2,
+				SourceURLLvl2:       item.SourceURLLvl2,
+				SourceTitleLvl3:     item.SourceTitleLvl3,
+				SourceURLLvl3:       item.SourceURLLvl3,
+				Content:             item.Content,
+				TypeOFasset:         item.TypeOFasset,
+				Physics:             item.Physics,
+				Product:             item.Product,
+				Version:             item.Version,
+				Weight:              item.Weight,
+				TokenSize:           item.TokenSize,
+				SearchScore:         item.SearchScore,
+				SearchRerankerScore: item.SearchRerankerScore,
+			})
+		}
+
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
 		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
 
-	return respObject.Value
+	return output
 }
 
 // dataExtractionFilterGithubTreeEntries filters the Github tree entries based on the specified filters.
