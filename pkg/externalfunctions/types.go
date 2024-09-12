@@ -148,6 +148,31 @@ type ACSSearchResponseLSdyna struct {
 	SearchRerankerScore float64 `json:"@search.rerankerScore"`
 }
 
+// ACSSearchResponseStructCrtech represents the response structure for the Azure Cognitive Search for external-crtech-thermal-desktop.
+type ACSSearchResponseStructCrtech struct {
+	OdataContext string                    `json:"@odata.context"`
+	OdataCount   int                       `json:"@odata.count"`
+	Value        []ACSSearchResponseCrtech `json:"value"`
+}
+
+// ACSSearchResponseCrtech represents the response structure for the Azure Cognitive Search for external-crtech-thermal-desktop.
+type ACSSearchResponseCrtech struct {
+	Physics             string  `json:"physics"`
+	SourceTitleLvl3     string  `json:"sourceTitle_lvl3"`
+	SourceURLLvl3       string  `json:"sourceURL_lvl3"`
+	TokenSize           int     `json:"token_size"`
+	SourceTitleLvl2     string  `json:"sourceTitle_lvl2"`
+	Weight              float64 `json:"weight"`
+	SourceURLLvl2       string  `json:"sourceURL_lvl2"`
+	Product             string  `json:"product"`
+	Content             string  `json:"content"`
+	TypeOFasset         string  `json:"typeOFasset"`
+	Version             string  `json:"version"`
+	BridgeId            string  `json:"bridge_id"`
+	SearchScore         float64 `json:"@search.score"`
+	SearchRerankerScore float64 `json:"@search.rerankerScore"`
+}
+
 // DataExtractionBranch represents the branch structure for the data extraction.
 type DataExtractionBranch struct {
 	Text             string
