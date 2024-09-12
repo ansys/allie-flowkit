@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDataExtractionGetDocumentType(t *testing.T) {
+func TestGetDocumentType(t *testing.T) {
 	tests := []struct {
 		fileName string
 		expected string
@@ -22,14 +22,14 @@ func TestDataExtractionGetDocumentType(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		actual := DataExtractionGetDocumentType(test.fileName)
+		actual := GetDocumentType(test.fileName)
 		if actual != test.expected {
 			t.Errorf("GetFileExtension(%s): expected %s, actual %s", test.fileName, test.expected, actual)
 		}
 	}
 }
 
-func TestDataExtractionGetLocalFileContent(t *testing.T) {
+func TestGetLocalFileContent(t *testing.T) {
 	// Create a temporary file for testing.
 	tempFile, err := os.CreateTemp("", "testfile")
 	if err != nil {
@@ -54,7 +54,7 @@ func TestDataExtractionGetLocalFileContent(t *testing.T) {
 	expectedChecksum := hex.EncodeToString(hash.Sum(nil))
 
 	// Call the function with the test file.
-	actualChecksum, actualContent := DataExtractionGetLocalFileContent(tempFile.Name())
+	actualChecksum, actualContent := GetLocalFileContent(tempFile.Name())
 
 	// Check if the actual checksum matches the expected checksum.
 	if actualChecksum != expectedChecksum {
@@ -67,7 +67,7 @@ func TestDataExtractionGetLocalFileContent(t *testing.T) {
 	}
 }
 
-func TestDataExtractionAppendStringSlices(t *testing.T) {
+func TestAppendStringSlices(t *testing.T) {
 	tests := []struct {
 		slice1   []string
 		slice2   []string
@@ -83,7 +83,7 @@ func TestDataExtractionAppendStringSlices(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		actual := DataExtractionAppendStringSlices(test.slice1, test.slice2, test.slice3, test.slice4, test.slice5)
+		actual := AppendStringSlices(test.slice1, test.slice2, test.slice3, test.slice4, test.slice5)
 		if len(actual) != len(test.expected) {
 			t.Errorf("expected length %d, got %d", len(test.expected), len(actual))
 		}

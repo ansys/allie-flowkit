@@ -707,7 +707,7 @@ func CreateDbFilter(
 	return filters
 }
 
-// DataExtractionAddDataRequest sends a request to the add_data endpoint.
+// AddDataRequest sends a request to the add_data endpoint.
 //
 // Tags:
 //   - @displayName: Add Data
@@ -715,7 +715,7 @@ func CreateDbFilter(
 // Parameters:
 //   - collectionName: name of the collection the request is sent to.
 //   - data: the data to add.
-func DataExtractionAddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
+func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 	// Create the AddDataInput object
 	requestObject := sharedtypes.DbAddDataInput{
 		CollectionName: collectionName,
@@ -739,14 +739,14 @@ func DataExtractionAddDataRequest(collectionName string, documentData []sharedty
 	return
 }
 
-// DataExtractionCreateCollectionRequest sends a request to the collection endpoint.
+// CreateCollectionRequest sends a request to the collection endpoint.
 //
 // Tags:
 //   - @displayName: Create Collection
 //
 // Parameters:
 //   - collectionName: the name of the collection to create.
-func DataExtractionCreateCollectionRequest(collectionName string) {
+func CreateCollectionRequest(collectionName string) {
 	// Create the CreateCollectionInput object
 	requestObject := sharedtypes.DbCreateCollectionInput{
 		CollectionName: collectionName,
