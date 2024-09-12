@@ -22,7 +22,7 @@ import (
 	"github.com/tmc/langchaingo/textsplitter"
 )
 
-// DataExtractionGetGithubFilesToExtract gets all files from github that need to be extracted.
+// GetGithubFilesToExtract gets all files from github that need to be extracted.
 //
 // Tags:
 //   - @displayName: List Github Files
@@ -38,7 +38,7 @@ import (
 //
 // Returns:
 //   - githubFilesToExtract: github files to extract.
-func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
+func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, githubAccessToken string, githubFileExtensions []string,
 	githubFilteredDirectories []string, githubExcludedDirectories []string) (githubFilesToExtract []string) {
 
@@ -74,7 +74,7 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 	return githubFilesToExtract
 }
 
-// DataExtractionGetLocalFilesToExtract gets all files from local that need to be extracted.
+// GetLocalFilesToExtract gets all files from local that need to be extracted.
 //
 // Tags:
 //   - @displayName: List Local Files
@@ -87,7 +87,7 @@ func DataExtractionGetGithubFilesToExtract(githubRepoName string, githubRepoOwne
 //
 // Returns:
 //   - localFilesToExtract: local files to extract.
-func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions []string,
+func GetLocalFilesToExtract(localPath string, localFileExtensions []string,
 	localFilteredDirectories []string, localExcludedDirectories []string) (localFilesToExtract []string) {
 	// Check if the local path exists.
 	if _, err := os.Stat(localPath); os.IsNotExist(err) {
@@ -120,7 +120,7 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 	return *localFiles
 }
 
-// DataExtractionAppendStringSlices creates a new slice by appending all elements of the provided slices.
+// AppendStringSlices creates a new slice by appending all elements of the provided slices.
 //
 // Tags:
 //   - @displayName: Append String Slices
@@ -130,7 +130,7 @@ func DataExtractionGetLocalFilesToExtract(localPath string, localFileExtensions 
 //
 // Returns:
 //   - result: a new slice with all elements appended.
-func DataExtractionAppendStringSlices(slice1, slice2, slice3, slice4, slice5 []string) []string {
+func AppendStringSlices(slice1, slice2, slice3, slice4, slice5 []string) []string {
 	var result []string
 
 	// Append all elements from each slice to the result slice
@@ -143,7 +143,7 @@ func DataExtractionAppendStringSlices(slice1, slice2, slice3, slice4, slice5 []s
 	return result
 }
 
-// DataExtractionDownloadGithubFileContent downloads file content from github and returns checksum and content.
+// DownloadGithubFileContent downloads file content from github and returns checksum and content.
 //
 // Tags:
 //   - @displayName: Download Github File Content
@@ -158,7 +158,7 @@ func DataExtractionAppendStringSlices(slice1, slice2, slice3, slice4, slice5 []s
 // Returns:
 //   - checksum: checksum of file.
 //   - content: content of file.
-func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
+func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content string) {
 
 	// Create a new GitHub client and context.
@@ -188,7 +188,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 	return checksum, content
 }
 
-// DataExtractionGetLocalFileContent reads local file and returns checksum and content.
+// GetLocalFileContent reads local file and returns checksum and content.
 //
 // Tags:
 //   - @displayName: Get Local File Content
@@ -199,7 +199,7 @@ func DataExtractionDownloadGithubFileContent(githubRepoName string, githubRepoOw
 // Returns:
 //   - checksum: checksum of file.
 //   - content: content of file.
-func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, content string) {
+func GetLocalFileContent(localFilePath string) (checksum string, content string) {
 	// Read file from local path.
 	contentBytes, err := os.ReadFile(localFilePath)
 	if err != nil {
@@ -228,7 +228,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 	return checksum, content
 }
 
-// DataExtractionGetDocumentType returns the document type of a file.
+// GetDocumentType returns the document type of a file.
 //
 // Tags:
 //   - @displayName: Get Document Type
@@ -238,7 +238,7 @@ func DataExtractionGetLocalFileContent(localFilePath string) (checksum string, c
 //
 // Returns:
 //   - documentType: file extension.
-func DataExtractionGetDocumentType(filePath string) (documentType string) {
+func GetDocumentType(filePath string) (documentType string) {
 	// Extract the file extension from the file path and remove the leading period.
 	fileExtension := filepath.Ext(filePath)
 	documentType = strings.TrimPrefix(fileExtension, ".")
@@ -246,7 +246,7 @@ func DataExtractionGetDocumentType(filePath string) (documentType string) {
 	return documentType
 }
 
-// DataExtractionLangchainSplitter splits content into chunks using langchain.
+// LangchainSplitter splits content into chunks using langchain.
 //
 // Tags:
 //   - @displayName: Split Content
@@ -259,7 +259,7 @@ func DataExtractionGetDocumentType(filePath string) (documentType string) {
 //
 // Returns:
 //   - output: chunks as an slice of strings.
-func DataExtractionLangchainSplitter(content string, documentType string, chunkSize int, chunkOverlap int) (output []string) {
+func LangchainSplitter(content string, documentType string, chunkSize int, chunkOverlap int) (output []string) {
 	output = []string{}
 	var splittedChunks []schema.Document
 	var err error
@@ -334,7 +334,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 	return output
 }
 
-// DataExtractionGenerateDocumentTree generates a tree structure from the document chunks.
+// GenerateDocumentTree generates a tree structure from the document chunks.
 //
 // Tags:
 //   - @displayName: Document Tree
@@ -352,7 +352,7 @@ func DataExtractionLangchainSplitter(content string, documentType string, chunkS
 //
 // Returns:
 //   - documentData: tree structure of the document.
-func DataExtractionGenerateDocumentTree(documentName string, documentId string, documentChunks []string,
+func GenerateDocumentTree(documentName string, documentId string, documentChunks []string,
 	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []sharedtypes.DbData) {
 
 	logging.Log.Debugf(internalstates.Ctx, "Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))

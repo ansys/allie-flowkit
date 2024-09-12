@@ -39,16 +39,16 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTGetSystemPrompt":                        AnsysGPTGetSystemPrompt,
 
 	// data extraction
-	"DataExtractionGetGithubFilesToExtract":   DataExtractionGetGithubFilesToExtract,
-	"DataExtractionGetLocalFilesToExtract":    DataExtractionGetLocalFilesToExtract,
-	"DataExtractionAppendStringSlices":        DataExtractionAppendStringSlices,
-	"DataExtractionDownloadGithubFileContent": DataExtractionDownloadGithubFileContent,
-	"DataExtractionGetLocalFileContent":       DataExtractionGetLocalFileContent,
-	"DataExtractionGetDocumentType":           DataExtractionGetDocumentType,
-	"DataExtractionLangchainSplitter":         DataExtractionLangchainSplitter,
-	"DataExtractionGenerateDocumentTree":      DataExtractionGenerateDocumentTree,
-	"DataExtractionAddDataRequest":            DataExtractionAddDataRequest,
-	"DataExtractionCreateCollectionRequest":   DataExtractionCreateCollectionRequest,
+	"GetGithubFilesToExtract":   GetGithubFilesToExtract,
+	"GetLocalFilesToExtract":    GetLocalFilesToExtract,
+	"AppendStringSlices":        AppendStringSlices,
+	"DownloadGithubFileContent": DownloadGithubFileContent,
+	"GetLocalFileContent":       GetLocalFileContent,
+	"GetDocumentType":           GetDocumentType,
+	"LangchainSplitter":         LangchainSplitter,
+	"GenerateDocumentTree":      GenerateDocumentTree,
+	"AddDataRequest":            AddDataRequest,
+	"CreateCollectionRequest":   CreateCollectionRequest,
 
 	// generic
 	"AssignStringToString": AssignStringToString,
