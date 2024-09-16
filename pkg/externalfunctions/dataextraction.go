@@ -159,7 +159,7 @@ func AppendStringSlices(slice1, slice2, slice3, slice4, slice5 []string) []strin
 //   - checksum: checksum of file.
 //   - content: content of file.
 func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
-	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content string) {
+	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content []byte) {
 
 	// Create a new GitHub client and context.
 	client, ctx := dataExtractNewGithubClient(githubAccessToken)
@@ -173,7 +173,7 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	}
 
 	// Extract the content from the file content.
-	content, err = fileContent.GetContent()
+	stringContent, err := fileContent.GetContent()
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
@@ -182,6 +182,9 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 
 	// Extract the checksum from the file content.
 	checksum = fileContent.GetSHA()
+
+	// Convert the content to a byte slice.
+	content = []byte(stringContent)
 
 	logging.Log.Debugf(internalstates.Ctx, "Got content from github file: %s", gihubFilePath)
 
@@ -199,9 +202,9 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 // Returns:
 //   - checksum: checksum of file.
 //   - content: content of file.
-func GetLocalFileContent(localFilePath string) (checksum string, content string) {
+func GetLocalFileContent(localFilePath string) (checksum string, content []byte) {
 	// Read file from local path.
-	contentBytes, err := os.ReadFile(localFilePath)
+	content, err := os.ReadFile(localFilePath)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
@@ -210,7 +213,7 @@ func GetLocalFileContent(localFilePath string) (checksum string, content string)
 
 	// Calculate checksum from file content.
 	hash := sha256.New()
-	_, err = hash.Write(contentBytes)
+	_, err = hash.Write(content)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
@@ -219,9 +222,6 @@ func GetLocalFileContent(localFilePath string) (checksum string, content string)
 
 	// Convert checksum to a hexadecimal string.
 	checksum = hex.EncodeToString(hash.Sum(nil))
-
-	// Convert content to a string.
-	content = string(contentBytes)
 
 	logging.Log.Debugf(internalstates.Ctx, "Got content from local file: %s", localFilePath)
 
@@ -259,13 +259,12 @@ func GetDocumentType(filePath string) (documentType string) {
 //
 // Returns:
 //   - output: chunks as an slice of strings.
-func LangchainSplitter(content string, documentType string, chunkSize int, chunkOverlap int) (output []string) {
+func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, chunkOverlap int) (output []string) {
 	output = []string{}
 	var splittedChunks []schema.Document
 	var err error
 
 	// Creating a reader from the content of the file.
-	bytesContent := []byte(content)
 	reader := bytes.NewReader(bytesContent)
 
 	// Creating a splitter with the chunk size and overlap specified in the config file.

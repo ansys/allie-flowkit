@@ -1253,6 +1253,12 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 			return nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
 		}
 
+		// Check if the response is an info message.
+		if response.Type == "info" {
+			logging.Log.Infof(internalstates.Ctx, "Received info message for embedding request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			continue
+		}
+
 		// Get embedded vector array
 		interfaceArray, ok := response.EmbeddedData.([]interface{})
 		if !ok {

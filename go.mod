@@ -5,13 +5,13 @@ go 1.22.0
 toolchain go1.22.5
 
 require (
-	github.com/ansys/allie-sharedtypes v0.0.0-20240906091513-a52185c93d7b
+	github.com/ansys/allie-sharedtypes v0.0.0-20240916081142-f7371bcb5bba
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/pandodao/tokenizer-go v0.2.0
 	github.com/tmc/langchaingo v0.1.12
 	golang.org/x/oauth2 v0.22.0
-	google.golang.org/grpc v1.66.0
+	google.golang.org/grpc v1.66.2
 	nhooyr.io/websocket v1.8.17
 )
 
