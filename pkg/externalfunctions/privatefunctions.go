@@ -255,6 +255,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 					logging.Log.Debugf(internalstates.Ctx, "Embeddings received from allie-llm.")
 				case "info":
 					logging.Log.Infof(internalstates.Ctx, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
+					stopListener = false
 				default:
 					logging.Log.Warn(internalstates.Ctx, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
