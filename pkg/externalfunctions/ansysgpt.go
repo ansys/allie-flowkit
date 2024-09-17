@@ -199,7 +199,7 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	}
 
 	// Perform the general request
-	rephrasedQuery, _, err := performGeneralRequest(userTemplate, exampleHistory, false, "You are query rephrasing assistant. You receive a 'previous user query' as well as a 'current user query' and rephrase the 'current user query' to include any relevant information from the 'previous user query'.")
+	rephrasedQuery, _, err := performGeneralRequest(userTemplate, exampleHistory, false, "You are a query rephrasing assistant. You receive a 'previous user query' as well as a 'current user query' and rephrase the 'current user query' to include any relevant information from the 'previous user query'.")
 	if err != nil {
 		panic(err)
 	}
