@@ -173,7 +173,7 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	historyMessages := ""
 
 	if len(history) >= 1 {
-		historyMessages += "user:" + history[len(history)-2].Content + "\n"
+		historyMessages += history[len(history)-2].Content
 	} else {
 		return query
 	}
@@ -187,8 +187,19 @@ func AnsysGPTPerformLLMRephraseRequest(template string, query string, history []
 	userTemplate := formatTemplate(template, dataMap)
 	logging.Log.Debugf(internalstates.Ctx, "User template: %v", userTemplate)
 
+	// create example
+	exampleHistory := make([]sharedtypes.HistoricMessage, 2)
+	exampleHistory[0] = sharedtypes.HistoricMessage{
+		Role:    "user",
+		Content: "'previous user query': 'How to create a beam with Ansys Mechanical?'\n'current user query': 'How to make the beam larger?'",
+	}
+	exampleHistory[1] = sharedtypes.HistoricMessage{
+		Role:    "assistant",
+		Content: "How to make a beam larger in Ansys Mechanical?",
+	}
+
 	// Perform the general request
-	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, "You are AnsysGPT, a technical support assistant that is professional, friendly and multilingual that generates a clear and concise answer")
+	rephrasedQuery, _, err := performGeneralRequest(userTemplate, exampleHistory, false, "You are query rephrasing assistant. You receive a 'previous user query' as well as a 'current user query' and rephrase the 'current user query' to include any relevant information from the 'previous user query'.")
 	if err != nil {
 		panic(err)
 	}
