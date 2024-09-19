@@ -760,7 +760,7 @@ func CreateCollectionRequest(collectionName string) {
 	err, statusCode := createPayloadAndSendHttpRequest(url, requestObject, &response)
 	if err != nil {
 		if statusCode == 409 {
-			logging.Log.Warn(internalstates.Ctx, "Collection already exists")
+			logging.Log.Warnf(internalstates.Ctx, "Collection already exists %s \n", collectionName)
 		} else {
 			errorMessage := fmt.Sprintf("Error sending request to create_collection endpoint: %v", err)
 			logging.Log.Error(internalstates.Ctx, errorMessage)

@@ -53,6 +53,10 @@ func StartServer() {
 		opts = append(opts, grpc.UnaryInterceptor(apiKeyAuthInterceptor(config.GlobalConfig.FLOWKIT_API_KEY)))
 	}
 
+	// Set gRPC message size limits
+	opts = append(opts, grpc.MaxRecvMsgSize(1024*1024*1024)) // 1 GB receive limit
+	opts = append(opts, grpc.MaxSendMsgSize(1024*1024*1024)) // 1 GB send limit
+
 	// Create the gRPC server with the options
 	s := grpc.NewServer(opts...)
 	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})

@@ -1,6 +1,7 @@
 package externalfunctions
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"os"
@@ -61,8 +62,7 @@ func TestGetLocalFileContent(t *testing.T) {
 		t.Errorf("expected checksum %v, got %v", expectedChecksum, actualChecksum)
 	}
 
-	// Check if the actual content matches the expected content.
-	if actualContent != content {
+	if !bytes.Equal(actualContent, []byte(content)) {
 		t.Errorf("expected content %v, got %v", content, actualContent)
 	}
 }
