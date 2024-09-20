@@ -1218,6 +1218,14 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 	logging.Log.Debugf(internalstates.Ctx, "LLM Handler Worker stopped.")
 }
 
+// dataExtractionProcessBatchEmbeddings processes the data extraction batch embeddings.
+//
+// Parameters:
+//   - documentData: the document data.
+//   - maxBatchSize: the max batch size.
+//
+// Returns:
+//   - error: an error if any
 func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, maxBatchSize int) error {
 	// Remove empty chunks (including root node if applicable)
 	nonEmptyDocumentData := make([]*sharedtypes.DbData, 0, len(documentData))
@@ -1264,10 +1272,10 @@ func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, ma
 // llmHandlerPerformVectorEmbeddingRequest performs a vector embedding request to LLM Handler.
 //
 // Parameters:
-//   - input: the input string.
+//   - input: slice of input strings.
 //
 // Returns:
-//   - embeddedVector: the embedded vector.
+//   - embeddedVector: the embedded vectors.
 //   - error: an error if any.
 func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors [][]float32, err error) {
 	// get the LLM handler endpoint
