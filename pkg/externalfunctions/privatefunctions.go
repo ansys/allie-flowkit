@@ -782,7 +782,6 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 		}
 
 		for _, item := range respObjectCrtech.Value {
-			fmt.Println("hashdsahdsha")
 			output = append(output, sharedtypes.ACSSearchResponse{
 				SourceTitleLvl2:     item.SourceTitleLvl2,
 				SourceURLLvl2:       item.SourceURLLvl2,
