@@ -29,7 +29,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTCheckProhibitedWords":                   AnsysGPTCheckProhibitedWords,
 	"AnsysGPTExtractFieldsFromQuery":                 AnsysGPTExtractFieldsFromQuery,
 	"AnsysGPTPerformLLMRephraseRequest":              AnsysGPTPerformLLMRephraseRequest,
-	"AnsysGPTPerformLLMRephraseRequestOld":           AnsysGPTPerformLLMRephraseRequestOld,
+	"AnsysGPTPerformLLMRephraseRequestNew":           AnsysGPTPerformLLMRephraseRequestNew,
 	"AnsysGPTBuildFinalQuery":                        AnsysGPTBuildFinalQuery,
 	"AnsysGPTPerformLLMRequest":                      AnsysGPTPerformLLMRequest,
 	"AnsysGPTReturnIndexList":                        AnsysGPTReturnIndexList,
