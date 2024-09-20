@@ -255,6 +255,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 					logging.Log.Debugf(internalstates.Ctx, "Embeddings received from allie-llm.")
 				case "info":
 					logging.Log.Infof(internalstates.Ctx, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
+					stopListener = false
 				default:
 					logging.Log.Warn(internalstates.Ctx, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
@@ -1279,6 +1280,12 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors []
 		// Check if the response is an error.
 		if response.Type == "error" {
 			return nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		// Check if the response is an info message.
+		if response.Type == "info" {
+			logging.Log.Infof(internalstates.Ctx, "Received info message for embedding request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			continue
 		}
 
 		// Get embedded vector array
