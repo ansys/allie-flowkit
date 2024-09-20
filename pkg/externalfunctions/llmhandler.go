@@ -94,7 +94,7 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 		}
 
 		// Log LLM response
-		logging.Log.Debugf(internalstates.Ctx, "Received embeddings response.")
+		logging.Log.Debugf(internalstates.Ctx, "Received batch embeddings response.")
 
 		// Get embedded vector array
 		interfaceArray, ok := response.EmbeddedData.([]interface{})

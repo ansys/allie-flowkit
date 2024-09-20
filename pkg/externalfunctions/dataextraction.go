@@ -512,6 +512,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 		}
 	}
 
+	// Send batch embedding request to LLM handler. Set max batch size to 1000.
+	maxBatchSize := 4
+	err = dataExtractionProcessBatchEmbeddings(documentData, maxBatchSize)
+	if err != nil {
+		panic(err.Error())
+	}
+
 	logging.Log.Debugf(internalstates.Ctx, "Finished processing document: %s \n", documentName)
 
 	// Copy document data to returned document data

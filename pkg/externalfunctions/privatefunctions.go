@@ -1185,13 +1185,6 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 		if instruction.Data.Text == "" {
 			logging.Log.Warnf(internalstates.Ctx, "Text field is empty for document %v \n", instruction.Data.DocumentName)
 
-			//If adapter type is embedding, set embedding to empty slice of dimension embeddingsDimensions.
-			if instruction.Adapter == "embeddings" {
-				instruction.Lock.Lock()
-				instruction.Data.Embedding = make([]float32, embeddingsDimensions)
-				instruction.Lock.Unlock()
-			}
-
 			// Lower instruction sequence waitgroup counter and update processed instructions counter.
 			instruction.InstructionSequenceWaitGroup.Done()
 			continue
@@ -1200,12 +1193,6 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 		// If text field is not empty perform request to LLM Handler depending on adapter type.
 		instruction.Lock.Lock()
 		switch instruction.Adapter {
-		case "embeddings":
-			res, err := llmHandlerPerformVectorEmbeddingRequest(instruction.Data.Text)
-			if err != nil {
-				errorChannel <- err
-			}
-			instruction.Data.Embedding = res
 		case "chat":
 			if instruction.ChatRequestType == "summary" {
 				res, err := llmHandlerPerformSummaryRequest(instruction.Data.Text)
@@ -1230,6 +1217,48 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 	logging.Log.Debugf(internalstates.Ctx, "LLM Handler Worker stopped.")
 }
 
+func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, maxBatchSize int) error {
+	if len(documentData) == 0 {
+		return fmt.Errorf("documentData slice is empty")
+	}
+
+	// Remove empty chunks (including root node if applicable)
+	nonEmptyDocumentData := make([]*sharedtypes.DbData, 0, len(documentData))
+	for _, data := range documentData {
+		if data.Text != "" {
+			nonEmptyDocumentData = append(nonEmptyDocumentData, data)
+		}
+	}
+
+	// Process data in batches
+	for i := 0; i < len(nonEmptyDocumentData); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(nonEmptyDocumentData) {
+			end = len(nonEmptyDocumentData)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := nonEmptyDocumentData[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.Text
+		}
+
+		// Perform vector embedding request to LLM handler
+		batchEmbeddings, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed)
+		if err != nil {
+			return fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Update document data with embeddings
+		for j, embeddings := range batchEmbeddings {
+			batchData[j].Embedding = embeddings
+		}
+	}
+
+	return nil
+}
+
 // llmHandlerPerformVectorEmbeddingRequest performs a vector embedding request to LLM Handler.
 //
 // Parameters:
@@ -1238,7 +1267,7 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 // Returns:
 //   - embeddedVector: the embedded vector.
 //   - error: an error if any.
-func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []float32, err error) {
+func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors [][]float32, err error) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
@@ -1246,7 +1275,6 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
 
 	// Process the first response and close the channel.
-	var embedding32 []float32
 	for response := range responseChannel {
 		// Check if the response is an error.
 		if response.Type == "error" {
@@ -1256,15 +1284,18 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 		// Get embedded vector array
 		interfaceArray, ok := response.EmbeddedData.([]interface{})
 		if !ok {
-			errMessage := "error converting embedded data to interface array"
-			logging.Log.Error(internalstates.Ctx, errMessage)
-			panic(errMessage)
+			return nil, fmt.Errorf("error converting embedded data to interface array")
 		}
-		embedding32, err = convertToFloat32Slice(interfaceArray)
-		if err != nil {
-			errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
-			panic(errMessage)
+		for i, interfaceArrayElement := range interfaceArray {
+			lowerInterfaceArray, ok := interfaceArrayElement.([]interface{})
+			if !ok {
+				return nil, fmt.Errorf("error converting embedded data to interface array")
+			}
+			embedding32, err := convertToFloat32Slice(lowerInterfaceArray)
+			if err != nil {
+				return nil, err
+			}
+			embeddedVectors[i] = embedding32
 		}
 
 		// Mark that the first response has been received.
@@ -1279,7 +1310,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input string) (embeddedVector []flo
 	// Close the response channel
 	close(responseChannel)
 
-	return embedding32, nil
+	return embeddedVectors, nil
 }
 
 // llmHandlerPerformSummaryRequest performs a summary request to LLM Handler.
