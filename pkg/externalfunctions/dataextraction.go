@@ -515,7 +515,9 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	maxBatchSize := 4
 	err = dataExtractionProcessBatchEmbeddings(documentData, maxBatchSize)
 	if err != nil {
-		panic(err.Error())
+		errMessage := fmt.Sprintf("Error in dataExtractionProcessBatchEmbeddings: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
 	}
 
 	logging.Log.Debugf(internalstates.Ctx, "Finished processing document: %s \n", documentName)

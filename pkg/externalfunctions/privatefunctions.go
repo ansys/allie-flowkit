@@ -1219,16 +1219,17 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 }
 
 func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, maxBatchSize int) error {
-	if len(documentData) == 0 {
-		return fmt.Errorf("documentData slice is empty")
-	}
-
 	// Remove empty chunks (including root node if applicable)
 	nonEmptyDocumentData := make([]*sharedtypes.DbData, 0, len(documentData))
 	for _, data := range documentData {
 		if data.Text != "" {
 			nonEmptyDocumentData = append(nonEmptyDocumentData, data)
 		}
+	}
+
+	if len(nonEmptyDocumentData) == 0 {
+		logging.Log.Error(internalstates.Ctx, "error in dataExtractionProcessBatchEmbeddings: documentData slice is empty")
+		return fmt.Errorf("error in dataExtractionProcessBatchEmbeddings: documentData slice is empty")
 	}
 
 	// Process data in batches
@@ -1276,6 +1277,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors []
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
 
 	// Process the first response and close the channel.
+	embeddedVectors = make([][]float32, len(input))
 	for response := range responseChannel {
 		// Check if the response is an error.
 		if response.Type == "error" {
@@ -1284,7 +1286,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors []
 
 		// Check if the response is an info message.
 		if response.Type == "info" {
-			logging.Log.Infof(internalstates.Ctx, "Received info message for embedding request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			logging.Log.Infof(internalstates.Ctx, "Received info message for batch embedding request: %v: %v", response.InstructionGuid, response.InfoMessage)
 			continue
 		}
 
