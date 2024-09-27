@@ -669,7 +669,16 @@ func AisChangeAcsResponsesByFactor(factors map[string]float64, semanticSearchOut
 //
 // Returns:
 //   - stream: the stream channel
-func AisPerformLLMFinalRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage, context []sharedtypes.ACSSearchResponse, prohibitedWords []string, errorList1 []string, errorList2 []string, isStream bool) (message string, stream *chan string) {
+func AisPerformLLMFinalRequest(systemTemplate string,
+	userTemplate string,
+	query string,
+	history []sharedtypes.HistoricMessage,
+	context []sharedtypes.ACSSearchResponse,
+	prohibitedWords []string,
+	errorList1 []string,
+	errorList2 []string,
+	isStream bool) (message string, stream *chan string) {
+
 	logging.Log.Debugf(internalstates.Ctx, "Performing LLM final request")
 
 	// create "chat_history" string
