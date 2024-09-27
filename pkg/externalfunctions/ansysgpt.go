@@ -1,6 +1,7 @@
 package externalfunctions
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"sort"
@@ -199,7 +200,7 @@ func AnsysGPTPerformLLMRephraseRequestNew(template string, query string, history
 	}
 
 	// Perform the general request
-	rephrasedQuery, _, err := performGeneralRequest(userTemplate, exampleHistory, false, "You are a query rephrasing assistant. You receive a 'previous user query' as well as a 'current user query' and rephrase the 'current user query' to include any relevant information from the 'previous user query'.")
+	rephrasedQuery, _, err := performGeneralRequest(userTemplate, exampleHistory, false, "You are a query rephrasing assistant. You receive a 'previous user query' as well as a 'current user query' and rephrase the 'current user query' to include any relevant information from the 'previous user query'.", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -242,7 +243,7 @@ func AnsysGPTPerformLLMRephraseRequest(userTemplate string, query string, histor
 	logging.Log.Debugf(internalstates.Ctx, "User template for repharasing query: %v", userTemplate)
 
 	// Perform the general request
-	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, systemPrompt)
+	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, systemPrompt, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -299,7 +300,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.Historic
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -405,7 +406,7 @@ func AnsysGPTACSSemanticHybridSearchs(
 
 	output = make([]sharedtypes.ACSSearchResponse, 0)
 	for _, indexName := range indexList {
-		partOutput := ansysGPTACSSemanticHybridSearch(query, embeddedQuery, indexName, filter, topK)
+		partOutput := ansysGPTACSSemanticHybridSearch(query, embeddedQuery, indexName, filter, topK, false, nil)
 		output = append(output, partOutput...)
 	}
 
@@ -496,4 +497,264 @@ func AnsysGPTGetSystemPrompt(query string, prohibitedWords []string, template st
 
 	// return system prompt
 	return systemTemplate
+}
+
+// AisPerformLLMRephraseRequest performs a rephrase request to LLM
+//
+// Tags:
+//   - @displayName: AIS Rephrase Request
+//
+// Parameters:
+//   - systemTemplate: the system template for the rephrase request
+//   - userTemplate: the user template for the rephrase request
+//   - query: the user query
+//   - history: the conversation history
+//
+// Returns:
+//   - rephrasedQuery: the rephrased query
+func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage) (rephrasedQuery string) {
+	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
+
+	// create "chat_history" string
+	historyMessages := ""
+	for _, message := range history {
+		switch message.Role {
+		case "user":
+			historyMessages += "`HumanMessage`: `" + message.Content + "`\n"
+		case "assistant":
+			historyMessages += "`AIMessage`: `" + message.Content + "`\n"
+		}
+	}
+
+	// Create map for the data to be used in the template
+	dataMap := make(map[string]string)
+	dataMap["query"] = query
+	dataMap["chat_history"] = historyMessages
+
+	// Format the user and system template
+	userPrompt := formatTemplate(userTemplate, dataMap)
+	logging.Log.Debugf(internalstates.Ctx, "User template for repharasing query: %v", userTemplate)
+	systemPrompt := formatTemplate(systemTemplate, dataMap)
+	logging.Log.Debugf(internalstates.Ctx, "System template for repharasing query: %v", systemTemplate)
+
+	// create options
+	var maxTokens int32 = 500
+	var temperature float32 = 0.0
+	options := &sharedtypes.ModelOptions{
+		MaxTokens:   &maxTokens,
+		Temperature: &temperature,
+	}
+
+	// Perform the general request
+	rephrasedQuery, _, err := performGeneralRequest(userPrompt, nil, false, systemPrompt, options)
+	if err != nil {
+		panic(err)
+	}
+
+	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
+
+	return rephrasedQuery
+}
+
+// AisReturnIndexList returns the index list for AIS
+//
+// Tags:
+//   - @displayName: Get AIS Index List
+//
+// Parameters:
+//   - accessPoint: the access point
+//
+// Returns:
+//   - indexList: the index list
+func AisReturnIndexList(accessPoint string) (indexList []string) {
+	indexList = []string{}
+
+	switch accessPoint {
+	case "ansysgpt-general", "ais-embedded":
+		indexList = append(indexList, "granular-ansysgpt")
+		indexList = append(indexList, "ansysgpt-documentation-2023r2")
+		indexList = append(indexList, "lsdyna-documentation-r14")
+		indexList = append(indexList, "scade-documentation-2023r2")
+		indexList = append(indexList, "external-marketing")
+		indexList = append(indexList, "ansysgpt-alh")
+	case "ansysgpt-scbu":
+		indexList = append(indexList, "ansysgpt-scbu")
+	default:
+		logging.Log.Errorf(internalstates.Ctx, "Invalid accessPoint: %v\n", accessPoint)
+		return
+	}
+
+	return indexList
+}
+
+// AisAcsSemanticHybridSearchs performs a semantic hybrid search in ACS
+//
+// Tags:
+//   - @displayName: AIS ACS Semantic Hybrid Search
+//
+// Parameters:
+//   - query: the query string
+//   - embeddedQuery: the embedded query
+//   - indexList: the index list
+//   - physics: the physics
+//   - topK: the number of results to be returned
+//
+// Returns:
+//   - output: the search results
+func AisAcsSemanticHybridSearchs(
+	query string,
+	embeddedQuery []float32,
+	indexList []string,
+	physics []string,
+	topK int) (output []sharedtypes.ACSSearchResponse) {
+
+	output = make([]sharedtypes.ACSSearchResponse, 0)
+	for _, indexName := range indexList {
+		partOutput := ansysGPTACSSemanticHybridSearch(query, embeddedQuery, indexName, nil, topK, true, physics)
+		output = append(output, partOutput...)
+	}
+
+	return output
+}
+
+// AisChangeAcsResponsesByFactor changes the ACS responses by a factor
+//
+// Tags:
+//   - @displayName: Change ACS Responses By Factor
+//
+// Parameters:
+//   - factors: the factors
+//   - semanticSearchOutput: the search response
+//
+// Returns:
+//   - changedSemanticSearchOutput: the changed search response
+func AisChangeAcsResponsesByFactor(factors map[string]float64, semanticSearchOutput []sharedtypes.ACSSearchResponse) (changedSemanticSearchOutput []sharedtypes.ACSSearchResponse) {
+
+	// Iterate through the search response and change the 'weight' and '@search.reranker_score' based on the factors
+	for i, value := range semanticSearchOutput {
+		// Check if the document's 'typeOFasset' exists in the factors map
+		factor, exists := factors[value.TypeOFasset]
+		if exists {
+			// Update 'weight'
+			value.Weight = value.Weight * factor
+
+			// Update '@search.reranker_score' if it is set, otherwise set it to 'weight'
+			if value.SearchRerankerScore != 0 {
+				value.SearchRerankerScore = value.SearchRerankerScore * factor
+			} else {
+				value.SearchRerankerScore = value.Weight
+			}
+
+			// assign the changed value to the output
+			semanticSearchOutput[i] = value
+		}
+	}
+
+	return semanticSearchOutput
+}
+
+// AisPerformLLMFinalRequest performs a final request to LLM
+//
+// Tags:
+//   - @displayName: AIS Final Request
+//
+// Parameters:
+//   - systemTemplate: the system template for the final request
+//   - userTemplate: the user template for the final request
+//   - query: the user query
+//   - history: the conversation history
+//   - prohibitedWords: the list of prohibited words
+//   - errorList1: the list of error words
+//   - errorList2: the list of error words
+//
+// Returns:
+//   - stream: the stream channel
+func AisPerformLLMFinalRequest(systemTemplate string,
+	userTemplate string,
+	query string,
+	history []sharedtypes.HistoricMessage,
+	context []sharedtypes.ACSSearchResponse,
+	prohibitedWords []string,
+	errorList1 []string,
+	errorList2 []string,
+	isStream bool) (message string, stream *chan string) {
+
+	logging.Log.Debugf(internalstates.Ctx, "Performing LLM final request")
+
+	// create "chat_history" string
+	historyMessages := ""
+	for _, message := range history {
+		switch message.Role {
+		case "user":
+			historyMessages += "`HumanMessage`: `" + message.Content + "`\n"
+		case "assistant":
+			historyMessages += "`AIMessage`: `" + message.Content + "`\n"
+		}
+	}
+
+	// create json string from context
+	contextString := ""
+	for _, example := range context {
+		json, err := json.Marshal(example)
+		if err != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v\n", err)
+			return "", nil
+		}
+		contextString += fmt.Sprintf("%v", string(json)) + "\n"
+	}
+
+	// create string from prohibited words
+	prohibitedWordsString := ""
+	for _, word := range prohibitedWords {
+		prohibitedWordsString += word + ", "
+	}
+
+	// create string from error list 1
+	errorList1String := ""
+	for _, word := range errorList1 {
+		errorList1String += word + ", "
+	}
+
+	// create string from error list 2
+	errorList2String := ""
+	for _, word := range errorList2 {
+		errorList2String += word + ", "
+	}
+
+	// Create map for the data to be used in the template
+	dataMap := make(map[string]string)
+	dataMap["query"] = query
+	dataMap["chat_history"] = historyMessages
+	dataMap["context"] = contextString
+	dataMap["prohibit_word_list"] = prohibitedWordsString
+	dataMap["error_list_1"] = errorList1String
+	dataMap["error_list_2"] = errorList2String
+
+	// Format the user and system template
+	userPrompt := formatTemplate(userTemplate, dataMap)
+	logging.Log.Debugf(internalstates.Ctx, "User template for final query: %v", userPrompt)
+	systemPrompt := formatTemplate(systemTemplate, dataMap)
+	logging.Log.Debugf(internalstates.Ctx, "System template for final query: %v", systemPrompt)
+
+	// create options
+	var maxTokens int32 = 2000
+	var temperature float32 = 0.0
+	options := &sharedtypes.ModelOptions{
+		MaxTokens:   &maxTokens,
+		Temperature: &temperature,
+	}
+
+	// get the LLM handler endpoint.
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request.
+	responseChannel := sendChatRequest(userPrompt, "general", nil, 0, systemPrompt, llmHandlerEndpoint, nil, options)
+
+	// Create a stream channel
+	streamChannel := make(chan string, 400)
+
+	// Start a goroutine to transfer the data from the response channel to the stream channel.
+	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+
+	return "", &streamChannel
 }

@@ -12,6 +12,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"BuildFinalQueryForGeneralLLMRequest": BuildFinalQueryForGeneralLLMRequest,
 	"BuildFinalQueryForCodeLLMRequest":    BuildFinalQueryForCodeLLMRequest,
 	"AppendMessageHistory":                AppendMessageHistory,
+	"ShortenMessageHistory":               ShortenMessageHistory,
 
 	// knowledge db
 	"SendVectorsToKnowledgeDB": SendVectorsToKnowledgeDB,
@@ -37,6 +38,11 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AnsysGPTRemoveNoneCitationsFromSearchResponse":  AnsysGPTRemoveNoneCitationsFromSearchResponse,
 	"AnsysGPTReorderSearchResponseAndReturnOnlyTopK": AnsysGPTReorderSearchResponseAndReturnOnlyTopK,
 	"AnsysGPTGetSystemPrompt":                        AnsysGPTGetSystemPrompt,
+	"AisPerformLLMRephraseRequest":                   AisPerformLLMRephraseRequest,
+	"AisReturnIndexList":                             AisReturnIndexList,
+	"AisAcsSemanticHybridSearchs":                    AisAcsSemanticHybridSearchs,
+	"AisChangeAcsResponsesByFactor":                  AisChangeAcsResponsesByFactor,
+	"AisPerformLLMFinalRequest":                      AisPerformLLMFinalRequest,
 
 	// data extraction
 	"GetGithubFilesToExtract":   GetGithubFilesToExtract,

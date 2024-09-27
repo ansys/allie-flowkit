@@ -126,6 +126,7 @@ type ACSSearchResponseALH struct {
 	TokenSize           int     `json:"token_size"`
 	SearchScore         float64 `json:"@search.score"`
 	SearchRerankerScore float64 `json:"@search.rerankerScore"`
+	IndexName           string  // only internal
 }
 
 // ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for lsdyna-documentation-r14.
@@ -146,6 +147,7 @@ type ACSSearchResponseLSdyna struct {
 	TokenSize           int     `json:"token_size"`
 	SearchScore         float64 `json:"@search.score"`
 	SearchRerankerScore float64 `json:"@search.rerankerScore"`
+	IndexName           string  // only internal
 }
 
 // ACSSearchResponseStructCrtech represents the response structure for the Azure Cognitive Search for external-crtech-thermal-desktop.
@@ -171,6 +173,7 @@ type ACSSearchResponseCrtech struct {
 	BridgeId            string  `json:"bridge_id"`
 	SearchScore         float64 `json:"@search.score"`
 	SearchRerankerScore float64 `json:"@search.rerankerScore"`
+	IndexName           string  // only internal
 }
 
 // DataExtractionBranch represents the branch structure for the data extraction.
