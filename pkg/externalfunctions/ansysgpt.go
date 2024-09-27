@@ -692,7 +692,7 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 		}
 	}
 
-	// create json string fron context
+	// create json string from context
 	contextString := ""
 	for _, example := range context {
 		json, err := json.Marshal(example)
