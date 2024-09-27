@@ -151,7 +151,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint, nil, nil)
 
 	// Process all responses
 	var responseAsStr string
@@ -202,7 +202,7 @@ func PerformSummaryRequest(input string) (summary string) {
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil, nil)
 
 	// Process all responses
 	var responseAsStr string
@@ -249,7 +249,7 @@ func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil)
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
 		// Create a stream channel
@@ -306,7 +306,7 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -362,7 +362,7 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -585,4 +585,25 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	history = append(history, newMessageHistory)
 
 	return history
+}
+
+// ShortenMessageHistory shortens the conversation history to a maximum length.
+// It will retain only the most recent messages and older messages will be
+// removed.
+//
+// Tags:
+//   - @displayName: Shorten History
+//
+// Parameters:
+//   - history: the conversation history
+//   - maxLength: the maximum length of the conversation history
+//
+// Returns:
+//   - updatedHistory: the updated conversation history
+func ShortenMessageHistory(history []sharedtypes.HistoricMessage, maxLength int) (updatedHistory []sharedtypes.HistoricMessage) {
+	if len(history) <= maxLength {
+		return history
+	}
+
+	return history[len(history)-maxLength:]
 }
