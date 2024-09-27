@@ -36,5 +36,5 @@ func TestAnsysGPTACSSearchIndex(indexName string, query string) {
 
 	filter := externalfunctions.AnsysGPTExtractFieldsFromQuery(query, filedValues, defaultFields)
 	output := externalfunctions.AnsysGPTACSSemanticHybridSearchs(query, embeddedQuery, indexNames, filter, 10)
-	fmt.Println(output)
+	fmt.Println(len(output))
 }

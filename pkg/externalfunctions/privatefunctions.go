@@ -95,8 +95,8 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan sharedtypes.H
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
-func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
-	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelIds)
+func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions) chan sharedtypes.HandlerResponse {
+	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelIds, options)
 }
 
 // sendChatRequest sends a chat request to LLM
@@ -109,7 +109,7 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
-func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
+func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelChat := make(chan []byte, 400)
 	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
@@ -119,7 +119,7 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 	go listener(c, responseChannel)
 	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options)
 
 	return responseChannel // Return the response channel
 }
@@ -142,7 +142,7 @@ func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, modelIds
 	go listener(c, responseChannel)
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds)
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds, nil)
 	return responseChannel // Return the response channel
 }
 
@@ -314,7 +314,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string) {
+func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions) {
 	request := sharedtypes.HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
@@ -378,6 +378,9 @@ func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, c
 			request.SystemPrompt = systemPrompt
 		}
 
+		if options != nil {
+			request.ModelOptions = *options
+		}
 	}
 
 	requestJSON, err := json.Marshal(request)
@@ -582,7 +585,9 @@ func ansysGPTACSSemanticHybridSearch(
 	embeddedQuery []float32,
 	indexName string,
 	filter map[string]string,
-	topK int) (output []sharedtypes.ACSSearchResponse) {
+	topK int,
+	isAis bool,
+	physics []string) (output []sharedtypes.ACSSearchResponse) {
 
 	// get credentials
 	acsEndpoint := config.GlobalConfig.ACS_ENDPOINT
@@ -594,9 +599,15 @@ func ansysGPTACSSemanticHybridSearch(
 
 	// Construct the filter query
 	var filterData []string
-	for key, value := range filter {
-		if value != "" {
-			filterData = append(filterData, fmt.Sprintf("%s eq '%s'", key, value))
+	if !isAis {
+		for key, value := range filter {
+			if value != "" {
+				filterData = append(filterData, fmt.Sprintf("%s eq '%s'", key, value))
+			}
+		}
+	} else {
+		for _, value := range physics {
+			filterData = append(filterData, fmt.Sprintf("physics eq '%s'", value))
 		}
 	}
 	filterQuery := strings.Join(filterData, " or ")
@@ -662,10 +673,22 @@ func ansysGPTACSSemanticHybridSearch(
 		panic(errMessage)
 	}
 
+	// check if the reponse is an error
+	if resp.StatusCode != 200 {
+		errMessage := fmt.Sprintf("Error in ACS semantic hybrid search for index %v: %s", indexName, string(body))
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
 	// extract and convert the response
 	output = extractAndConvertACSResponse(body, indexName)
 	for _, item := range output {
 		logging.Log.Debugf(internalstates.Ctx, "ACS topic returned for index %v: %v\n", indexName, item.SourceTitleLvl2)
+	}
+
+	// assign index name to the output
+	for i := range output {
+		output[i].IndexName = indexName
 	}
 
 	return output
@@ -681,15 +704,24 @@ func ansysGPTACSSemanticHybridSearch(
 //   - returnedProperties: the properties to be returned
 func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields string, returnedProperties string) {
 	switch indexName {
-	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
+	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
 		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
-		returnedProperties = "physics, sourceTitle_lvl3, sourceURL_lvl3, sourceTitle_lvl2, weight, sourceURL_lvl2, product, content, typeOFasset, version"
-	case "ansysgpt-alh", "ansysgpt-scbu":
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "scade-documentation-2023r2":
+		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "external-marketing":
+		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, industry, application, modelUsed, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "ansysgpt-alh":
 		searchedEmbeddedFields = "contentVector, sourcetitleSAPVector"
 		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourcetitleSAP, sourceURLSAP, sourcetitleDCB, sourceURLDCB"
 	case "lsdyna-documentation-r14":
 		searchedEmbeddedFields = "contentVector, titleVector"
 		returnedProperties = "title, url, token_size, physics, typeOFasset, content, product"
+	case "ansysgpt-scbu":
+		searchedEmbeddedFields = "contentVector"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourcetitleSAP, sourceURLSAP, sourcetitleDCB, sourceURLDCB"
 	case "external-crtech-thermal-desktop":
 		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
 		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, bridge_id, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
@@ -713,7 +745,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 	respObject := ACSSearchResponseStruct{}
 	switch indexName {
 
-	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief":
+	case "granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "external-marketing", "ibp-app-brief":
 		err := json.Unmarshal(body, &respObject)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStruct: %v", err)
@@ -733,10 +765,10 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 
 		for _, item := range respObjectAlh.Value {
 			output = append(output, sharedtypes.ACSSearchResponse{
+				SourceTitleLvl3:     item.SourcetitleSAP,
+				SourceURLLvl3:       item.SourceURLSAP,
 				SourceTitleLvl2:     item.SourcetitleSAP,
 				SourceURLLvl2:       item.SourceURLSAP,
-				SourceTitleLvl3:     item.SourcetitleDCB,
-				SourceURLLvl3:       item.SourceURLDCB,
 				Content:             item.Content,
 				TypeOFasset:         item.TypeOFasset,
 				Physics:             item.Physics,
@@ -762,6 +794,8 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 			output = append(output, sharedtypes.ACSSearchResponse{
 				SourceTitleLvl2:     item.Title,
 				SourceURLLvl2:       item.Url,
+				SourceTitleLvl3:     item.Title,
+				SourceURLLvl3:       item.Url,
 				Content:             item.Content,
 				TypeOFasset:         item.TypeOFasset,
 				Physics:             item.Physics,
@@ -1342,7 +1376,7 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
-	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil, nil)
 
 	// Process all responses.
 	var responseAsStr string
@@ -1382,12 +1416,12 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 //   - message: the generated message.
 //   - stream: the stream channel.
 //   - err: the error.
-func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string, err error) {
+func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string, options *sharedtypes.ModelOptions) (message string, stream *chan string, err error) {
 	// get the LLM handler endpoint.
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, options)
 
 	// If isStream is true, create a stream channel and return asap.
 	if isStream {
@@ -1439,7 +1473,7 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
-	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint, nil)
+	responseChannel := sendChatRequestNoHistory(input, "keywords", numKeywords, llmHandlerEndpoint, nil, nil)
 
 	// Process all responses.
 	var responseAsStr string
