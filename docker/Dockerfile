@@ -28,18 +28,55 @@ FROM python:3.11-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Install system dependencies for pyright and ansys-mapdl-core
-RUN apk add --no-cache --update npm \
-    && npm install -g pyright --quiet && npm cache clean --force
+RUN apk add --no-cache --update npm
+RUN npm install -g pyright --quiet && npm cache clean --force
 
 # Upgrade pip and install Pyright
-RUN python -m pip install --upgrade pip --quiet --no-cache-dir --root-user-action=ignore \
-    && pip install pyright --quiet --no-cache-dir --root-user-action=ignore
+RUN python -m pip install --upgrade pip --quiet --no-cache-dir --root-user-action=ignore
+RUN pip install pyright --quiet --no-cache-dir --root-user-action=ignore
 
 # Install PyAnsys libraries and scientific Python libraries without dependencies
-RUN pip install ansys-additive-core ansys-dpf-composites ansys-dpf-core ansys-dpf-post ansys-dpf-gate ansys-dyna-core ansys-dynamicreporting-core ansys-geometry-core ansys-grantami-bomanalytics ansys-grantami-recordlists ansys-fluent-core ansys-mapdl-core ansys-math-core ansys-mechanical-core ansys-meshing-prime ansys-motorcad-core ansys-platform-instancemanagement ansys-pyensight-core ansys-openapi-common ansys-optislang-core ansys-seascape ansys-sherlock-core ansys-systemcoupling-core ansys-turbogrid-core pyaedt pytwin ansys-fluent-visualization ansys-fluent-parametric ansys-units ansys-tools-path pyansys-tools-report pyansys-tools-versioning --no-deps --quiet --no-cache-dir --root-user-action=ignore
+RUN pip install \
+    ansys-additive-core \
+    ansys-dpf-composites  \
+    ansys-dpf-core \
+    ansys-dpf-post \
+    ansys-dpf-gate \
+    ansys-dyna-core \
+    ansys-dynamicreporting-core  \
+    ansys-geometry-core  \
+    ansys-grantami-bomanalytics  \
+    ansys-grantami-recordlists  \
+    ansys-fluent-core \
+    ansys-mapdl-core \
+    ansys-math-core \
+    ansys-mechanical-core  \
+    ansys-meshing-prime  \
+    ansys-motorcad-core  \
+    ansys-platform-instancemanagement  \
+    ansys-pyensight-core  \
+    ansys-openapi-common  \
+    ansys-optislang-core  \
+    ansys-seascape \
+    ansys-sherlock-core  \
+    ansys-systemcoupling-core  \
+    ansys-turbogrid-core  \
+    pyaedt \
+    pytwin \
+    ansys-fluent-visualization  \
+    ansys-fluent-parametric  \
+    ansys-units \
+    ansys-tools-path \
+    pyansys-tools-report  \
+    pyansys-tools-versioning \
+    --no-deps --quiet --no-cache-dir --root-user-action=ignore
 
 # Install scientific Python libraries
-RUN pip install scipy numpy pandas --no-deps --quiet --no-cache-dir --root-user-action=ignore; exit 0
+RUN pip install \
+    scipy \
+    numpy \
+    pandas \
+    --no-deps --quiet --no-cache-dir --root-user-action=ignore; exit 0
 RUN pip install matplotlib --no-deps --quiet --no-cache-dir --root-user-action=ignore; exit 0
 RUN pip install matplotlib-arm64 --no-deps --quiet --no-cache-dir --root-user-action=ignore; exit 0
 
