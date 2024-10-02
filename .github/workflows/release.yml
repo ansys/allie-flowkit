@@ -7,6 +7,8 @@ on:
 env:
   MAIN_PYTHON_VERSION: '3.12'
   DOCUMENTATION_CNAME: 'laughing-guide-5m1lvq6.pages.github.io'
+  DEPLOY_TAG_TEST: 'false'
+  DEPLOY_TAG_PROD: 'false'
 
 jobs:
   binaries:
@@ -129,10 +131,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check if tag name contains 'dev'
-        run: echo "is_dev_tag=$(echo ${{ github.ref_name }} | grep -q 'dev' && echo 'true' || echo 'false')" >> $GITHUB_ENV
+        run: echo "IS_DEV_TAG=$(echo ${{ github.ref_name }} | grep -q 'dev' && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
       - name: Decompose tag into components
-        if: env.is_dev_tag == 'false'
+        if: env.IS_DEV_TAG == 'false'
         run: |
           if [[ ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Split the tag into its components
@@ -140,13 +142,14 @@ jobs:
             echo "X=${PARTS[0]}" >> $GITHUB_ENV
             echo "Y=${PARTS[1]}" >> $GITHUB_ENV
             echo "Z=${PARTS[2]}" >> $GITHUB_ENV
+            echo "DEPLOY_TAG_TEST=true" >> $GITHUB_ENV
           else
             echo "Invalid tag format. Expected vX.Y.Z but got ${{ github.ref_name }}"
             exit 1
           fi
 
       - name: Build and push Docker image
-        if: env.is_dev_tag == 'false'
+        if: env.IS_DEV_TAG == 'false'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -160,7 +163,7 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
 
       - name: Build and push Docker image dev
-        if: env.is_dev_tag == 'true'
+        if: env.IS_DEV_TAG == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -233,3 +236,22 @@ jobs:
           cname: ${{ env.DOCUMENTATION_CNAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
           doc-artifact-name: documentation-html-with-api
+
+  upload_tag_files:
+    name: Upload tag files to Artifactory
+    runs-on: ubuntu-latest
+    if: env.IS_DEV_TAG == 'false'
+    steps:
+    - name: Update TEST deployment tag file in Artifactory
+      if: env.DEPLOY_TAG_TEST == 'true'
+      run: |
+        echo "${{ github.ref_name }}" > agent.txt
+        curl -u{{ secrets.ARTIFACTORY_4CPBUUSER }} \
+          -T agent.txt "https://artifactory.ansys.com/artifactory/Allie_TEST_ImageTags/agent.txt"	
+
+    - name: Update PROD deployment tag file in Artifactory
+      if: env.DEPLOY_TAG_PROD == 'true'
+      run: |
+        echo "${{ github.ref_name }}" > agent.txt
+        curl -u{{ secrets.ARTIFACTORY_4CPBUUSER }} \
+          -T agent.txt "https://artifactory.ansys.com/artifactory/Allie_PROD_ImageTags/agent.txt"	
