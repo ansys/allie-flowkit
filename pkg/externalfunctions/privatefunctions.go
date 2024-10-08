@@ -600,16 +600,42 @@ func ansysGPTACSSemanticHybridSearch(
 	// Construct the filter query
 	var filterData []string
 	if !isAis {
+		// create filter query
 		for key, value := range filter {
 			if value != "" {
+				// check for granular-ansysgpt index and append (currently not used)
+				// if indexName == "granular-ansysgpt" {
+				// 	// append physics filter
+				// 	if key == "physics" {
+				// 		filterData = append(filterData, fmt.Sprintf("%s eq 'tbd'", key))
+				// 		filterData = append(filterData, fmt.Sprintf("%s eq 'n/a'", key))
+				// 		filterData = append(filterData, fmt.Sprintf("%s eq 'general'", key))
+				// 	}
+
+				// 	// append product filter
+				// 	if key == "product" {
+				// 		filterData = append(filterData, fmt.Sprintf("%s eq 'tbd'", key))
+				// 		filterData = append(filterData, fmt.Sprintf("%s eq 'n/a'", key))
+				// 		filterData = append(filterData, fmt.Sprintf("%s eq 'general'", key))
+				// 	}
+				// }
+
+				// normally append filter
 				filterData = append(filterData, fmt.Sprintf("%s eq '%s'", key, value))
 			}
+		}
+
+		// reset filter query for granular-ansysgpt index
+		if indexName == "granular-ansysgpt" {
+			filterData = []string{}
 		}
 	} else {
 		for _, value := range physics {
 			filterData = append(filterData, fmt.Sprintf("physics eq '%s'", value))
 		}
 	}
+
+	// join filter data
 	filterQuery := strings.Join(filterData, " or ")
 
 	logging.Log.Debugf(internalstates.Ctx, "filter_data is : %s\n", filterQuery)
@@ -637,6 +663,7 @@ func ansysGPTACSSemanticHybridSearch(
 		Count:                 true,
 	}
 
+	// Marshal the search request
 	requestBody, err := json.Marshal(searchRequest)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to marshal search request to ACS: %v", err)
