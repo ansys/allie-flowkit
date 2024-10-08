@@ -40,28 +40,12 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 			want:  map[string]string{},
 		},
 		{
-			query: "Which of the following controls/options are available under Analysis Setting in WB LS-DYNA documentation?",
-			want:  map[string]string{"product": "ls-dyna", "type_of_asset": "documentation"},
-		},
-		{
 			query: "How does bonded contact differ from Shared Topology?",
-			want:  map[string]string{},
+			want:  map[string]string{"product": "", "type_of_asset": "", "physics": ""},
 		},
 		{
 			query: "I'm interested in understanding how the residual vectors help in MSUP Harmonic Analysis. Can you list the KM on this topic?",
-			want:  map[string]string{"type_of_asset": "km"},
-		},
-		{
-			query: "In the Mechanical Fatigue tool according to product documentaton, which option is used to specify the stress type for fatigue calculations ? Please choose the best option from the following: Equivalent Stress, Exposure Duration, Fatigue Strength Factor, or Stress Component.",
-			want:  map[string]string{"product": "mechanical", "type_of_asset": "documentation"},
-		},
-		{
-			query: "Is there any courses available on Ansys Getting started with Mechanical?",
-			want:  map[string]string{"product": "mechanical", "type_of_asset": "aic"},
-		},
-		{
-			query: "Is there any knowledge articles on how to define frictional contact in Ansys Mechanical?",
-			want:  map[string]string{"product": "mechanical", "type_of_asset": "article"},
+			want:  map[string]string{"type_of_asset": "km", "physics": "", "product": ""},
 		},
 		{
 			query: "Is there any KMs on how to model turbulent fluid flow in Ansys Fluent?",
@@ -69,39 +53,59 @@ func TestExtractFieldsFromQuery(t *testing.T) {
 		},
 		{
 			query: "Please provide information on materials used in semiconductors.",
-			want:  map[string]string{"physics": "semiconductors"},
-		},
-		{
-			query: "What are the new features in the latest SCADE release?",
-			want:  map[string]string{"product": "scade"},
+			want:  map[string]string{"physics": "semiconductors", "type_of_asset": "", "product": ""},
 		},
 		{
 			query: "I need some documentation on the CFX solver.",
-			want:  map[string]string{"product": "cfx solver", "type_of_asset": "documentation"},
+			want:  map[string]string{"product": "cfx solver", "type_of_asset": "documentation", "physics": ""},
 		},
 		{
 			query: "Are there any new articles on fluid dynamics?",
-			want:  map[string]string{"physics": "fluid dynamics", "type_of_asset": "article"},
-		},
-		{
-			query: "Tell me more about the Mechanical APDL course.",
-			want:  map[string]string{"product": "mechanical apdl", "type_of_asset": "aic"},
-		},
-		{
-			query: "Is there any training available for Discovery?",
-			want:  map[string]string{"product": "discovery"},
+			want:  map[string]string{"physics": "fluid dynamics", "type_of_asset": "article", "product": ""},
 		},
 		{
 			query: "Where can I find the general FAQ for DesignXplorer?",
-			want:  map[string]string{"product": "designxplorer", "type_of_asset": "general_faq"},
+			want:  map[string]string{"product": "designxplorer", "type_of_asset": "general_faq", "physics": ""},
 		},
 		{
 			query: "Any new documentation on the Additive Print tool?",
-			want:  map[string]string{"product": "additive print", "type_of_asset": "documentation"},
+			want:  map[string]string{"product": "additive print", "type_of_asset": "documentation", "physics": ""},
 		},
 		{
 			query: "Looking for a brochure on SpaceClaim.",
-			want:  map[string]string{"product": "spaceclaim", "type_of_asset": "brochure"},
+			want:  map[string]string{"product": "spaceclaim", "type_of_asset": "brochure", "physics": ""},
+		},
+		{
+			query: "Which of the following controls/options are available under Analysis Setting in WB LS-DYNA documentation?",
+			want:  map[string]string{"product": "ls-dyna", "type_of_asset": "documentation", "physics": ""},
+		},
+		{
+			query: "In the Mechanical Fatigue tool according to product documentaton, which option is used to specify the stress type for fatigue calculations ? Please choose the best option from the following: Equivalent Stress, Exposure Duration, Fatigue Strength Factor, or Stress Component.",
+			want:  map[string]string{"product": "mechanical", "type_of_asset": "documentation", "physics": ""},
+		},
+		{
+			query: "Is there any courses available on Ansys Getting started with Mechanical?",
+			want:  map[string]string{"product": "mechanical", "type_of_asset": "aic", "physics": ""},
+		},
+		{
+			query: "Is there any knowledge articles on how to define frictional contact in Ansys Mechanical?",
+			want:  map[string]string{"product": "mechanical", "type_of_asset": "article", "physics": ""},
+		},
+		{
+			query: "What are the new features in the latest SCADE release?",
+			want:  map[string]string{"product": "scade", "type_of_asset": "", "physics": "scade"},
+		},
+		{
+			query: "Tell me more about the Mechanical APDL course.",
+			want:  map[string]string{"product": "mechanical apdl", "type_of_asset": "aic", "physics": ""},
+		},
+		{
+			query: "Is there any training available for Discovery?",
+			want:  map[string]string{"product": "discovery", "type_of_asset": "", "physics": "discovery"},
+		},
+		{
+			query: "How can I import a 3D model from a CAD software into Ansys Workbench?",
+			want:  map[string]string{"product": "", "type_of_asset": "", "physics": ""},
 		},
 	}
 

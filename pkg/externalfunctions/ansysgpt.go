@@ -128,15 +128,13 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 
 		// If no exact match found, use fuzzy matching
 		if fields[field] == "" {
-			cutoff := 0.75
+			cutoff := 0.76
 			for _, fieldValue := range values {
-				for _, fieldWord := range strings.Fields(fieldValue) {
-					for _, queryWord := range words {
-						distance := levenshtein.RatioForStrings([]rune(fieldWord), []rune(queryWord), levenshtein.DefaultOptions)
-						if distance >= cutoff {
-							fields[field] = fieldValue
-							break
-						}
+				for _, queryWord := range words {
+					distance := levenshtein.RatioForStrings([]rune(fieldValue), []rune(queryWord), levenshtein.DefaultOptions)
+					if distance >= cutoff {
+						fields[field] = fieldValue
+						break
 					}
 				}
 			}
