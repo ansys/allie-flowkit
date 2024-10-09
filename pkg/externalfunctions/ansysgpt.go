@@ -306,7 +306,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.Historic
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -510,7 +510,7 @@ func AnsysGPTGetSystemPrompt(query string, prohibitedWords []string, template st
 //
 // Returns:
 //   - rephrasedQuery: the rephrased query
-func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage) (rephrasedQuery string) {
+func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage, tokenCountModelName string) (rephrasedQuery string, inputTokenCount int, outputTokenCount int) {
 	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
 
 	// create "chat_history" string
@@ -549,9 +549,19 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 		panic(err)
 	}
 
+	// calculate input and output token count
+	inputTokenCount, err = openAiTokenCount(tokenCountModelName, userPrompt+systemPrompt)
+	if err != nil {
+		panic(err)
+	}
+	outputTokenCount, err = openAiTokenCount(tokenCountModelName, rephrasedQuery)
+	if err != nil {
+		panic(err)
+	}
+
 	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
 
-	return rephrasedQuery
+	return rephrasedQuery, inputTokenCount, outputTokenCount
 }
 
 // AisReturnIndexList returns the index list for AIS
@@ -675,6 +685,9 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	prohibitedWords []string,
 	errorList1 []string,
 	errorList2 []string,
+	previousInputTokenCount int,
+	previousOutputTokenCount int,
+	tokenCountModelName string,
 	isStream bool) (message string, stream *chan string) {
 
 	logging.Log.Debugf(internalstates.Ctx, "Performing LLM final request")
@@ -751,8 +764,15 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	// Create a stream channel
 	streamChannel := make(chan string, 400)
 
+	// calculate input token count
+	inputTokenCount, err := openAiTokenCount(tokenCountModelName, userPrompt+systemPrompt)
+	if err != nil {
+		panic(err)
+	}
+	totalInputTokenCount := previousInputTokenCount + inputTokenCount
+
 	// Start a goroutine to transfer the data from the response channel to the stream channel.
-	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, true, totalInputTokenCount, previousOutputTokenCount, tokenCountModelName)
 
 	return "", &streamChannel
 }
