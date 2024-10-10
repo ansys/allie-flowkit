@@ -24,6 +24,7 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
+	"github.com/tiktoken-go/tokenizer"
 	"golang.org/x/oauth2"
 	"nhooyr.io/websocket"
 )
@@ -34,13 +35,28 @@ import (
 //   - responseChannel: the response channel
 //   - streamChannel: the stream channel
 //   - validateCode: the flag to indicate whether the code should be validated
-func transferDatafromResponseToStreamChannel(responseChannel *chan sharedtypes.HandlerResponse, streamChannel *chan string, validateCode bool) {
+func transferDatafromResponseToStreamChannel(
+	responseChannel *chan sharedtypes.HandlerResponse,
+	streamChannel *chan string,
+	validateCode bool,
+	sendTokenCount bool,
+	previousInputTokenCount int,
+	previousOutputTokenCount int,
+	tokenCountModelName string) {
+
+	// Defer the closing of the channels
+	defer close(*responseChannel)
+	defer close(*streamChannel)
+
+	// Loop through the response channel
 	responseAsStr := ""
 	for response := range *responseChannel {
 		// Check if the response is an error
 		if response.Type == "error" {
-			*streamChannel <- response.Error.Message
-			break
+			logging.Log.Errorf(internalstates.Ctx, "Error in request %v: %v\n", response.InstructionGuid, response.Error.Message)
+			// send the error message to the stream channel and exit function
+			*streamChannel <- fmt.Sprintf("$$error$$:$$%v$$", response.Error.Message)
+			return
 		}
 
 		// append the response to the responseAsStr
@@ -51,6 +67,23 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan sharedtypes.H
 
 		// check for last response
 		if *(response.IsLast) {
+
+			finalMessage := ""
+			// check for token count
+			if sendTokenCount {
+
+				// get the output token count
+				outputTokenCount, err := openAiTokenCount(tokenCountModelName, responseAsStr)
+				if err != nil {
+					logging.Log.Errorf(internalstates.Ctx, "Error getting token count: %v\n", err)
+					// send the error message to the stream channel and exit function
+					*streamChannel <- fmt.Sprintf("$$error$$:$$Error getting token count: %v$$", err)
+				}
+				totalOuputTokenCount := previousOutputTokenCount + outputTokenCount
+
+				// append the token count message to the final message
+				finalMessage += fmt.Sprintf("$$input_token_count$$:$$%d$$;$$output_token_count$$:$$%d$$;", previousInputTokenCount, totalOuputTokenCount)
+			}
 
 			// check for code validation
 			if validateCode {
@@ -67,23 +100,26 @@ func transferDatafromResponseToStreamChannel(responseChannel *chan sharedtypes.H
 					} else {
 						if valid {
 							if warnings {
-								*streamChannel <- "Code has warnings."
+								finalMessage += "$$code_validation$$:$$warnings$$;"
 							} else {
-								*streamChannel <- "Code is valid."
+								finalMessage += "$$code_validation$$:$$valid$$;"
 							}
 						} else {
-							*streamChannel <- "Code is invalid."
+							finalMessage += "$$code_validation$$:$$invalid$$;"
 						}
 					}
 				}
 			}
 
-			// exit the loop
-			break
+			// send the final message to the stream channel
+			if finalMessage != "" {
+				*streamChannel <- finalMessage
+			}
+
+			// exit the function
+			return
 		}
 	}
-	close(*responseChannel)
-	close(*streamChannel)
 }
 
 // sendChatRequestNoHistory sends a chat request to LLM without history
@@ -1456,7 +1492,7 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel.
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false)
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "")
 
 		// Return the stream channel.
 		return "", &streamChannel, nil
@@ -1705,4 +1741,33 @@ func createPayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 	}
 
 	return nil, 0
+}
+
+// TokenCount takes a model name and a message string, returns the token count.
+func openAiTokenCount(modelName string, message string) (int, error) {
+	// get model from model name
+	var encoding tokenizer.Encoding
+	switch modelName {
+	case "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo":
+		encoding = tokenizer.Cl100kBase
+	case "gpt-4o", "gpt-4o-mini":
+		encoding = tokenizer.O200kBase
+	default:
+		return 0, fmt.Errorf("model %s not found", modelName)
+	}
+
+	// Load the tokenizer for the specified model
+	tokenizer, err := tokenizer.Get(encoding)
+	if err != nil {
+		return 0, fmt.Errorf("failed to load tokenizer for model %s: %w", modelName, err)
+	}
+
+	// Tokenize the message
+	tokens, _, err := tokenizer.Encode(message)
+	if err != nil {
+		return 0, fmt.Errorf("failed to tokenize message: %w", err)
+	}
+
+	// Return the number of tokens
+	return len(tokens), nil
 }

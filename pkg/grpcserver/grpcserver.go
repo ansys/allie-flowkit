@@ -272,6 +272,7 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 
 	// listen to channel and send to stream
 	var counter int32
+	var previousOutput *allieflowkitgrpc.StreamOutput
 	for message := range *streamChannel {
 		// create output
 		output := &allieflowkitgrpc.StreamOutput{
@@ -281,10 +282,15 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 		}
 
 		// send output to stream
-		err := stream.Send(output)
-		if err != nil {
-			return err
+		if counter > 0 {
+			err := stream.Send(previousOutput)
+			if err != nil {
+				return err
+			}
 		}
+
+		// save output to previous output
+		previousOutput = output
 
 		// increment counter
 		counter++
@@ -294,7 +300,7 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 	output := &allieflowkitgrpc.StreamOutput{
 		MessageCounter: counter,
 		IsLast:         true,
-		Value:          "",
+		Value:          previousOutput.Value,
 	}
 	err = stream.Send(output)
 	if err != nil {
