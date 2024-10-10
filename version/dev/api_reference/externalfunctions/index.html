@@ -1,0 +1,4098 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API reference &#8212; allie-flowkit</title>
+  
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/ansys_sphinx_theme.css?v=e7c4c341" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://www.nerdfonts.com/assets/css/webfont.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  
+    <link href="../../_static/css/breadcrumbs.css" rel="stylesheet" />
+  
+    <script src="../../_static/documentation_options.js?v=7838c05f"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/table.js?v=b64f5182"></script>
+    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_reference/test/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.15.4';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://ansys.github.io/allie-flowkit/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner = false;
+        </script>
+    <link rel="icon" href="../../_static/ansys-favicon.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <link rel="canonical" href="https://laughing-guide-5m1lvq6.pages.github.io/version/stable/api_reference/externalfunctions/index.html" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/pyansys_logo_transparent_black.png" class="logo__image only-light" alt="allie-flowkit - Home"/>
+    <script>document.write(`<img src="../../_static/pyansys_logo_transparent_white.png" class="logo__image only-dark" alt="allie-flowkit - Home"/>`);</script>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../index.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<div class="search-bar" id="search-bar">
+<form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search" class="form-control" name="q" placeholder="Search the docs ..."
+         aria-label="Search the docs ..." autocomplete="off" autocorrect="off"
+         autocapitalize="off" spellcheck="false"/>
+  <span class="search-button__kbd-shortcut">
+    <kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd>
+  </span>
+</form>
+<!-- Search results container -->
+<div id="results" class="results" style="display: none;" tabindex="0">
+</div>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-2"
+      type="button"
+      class="version-switcher__button btn btn-sm dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-2"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-2"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-2">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/ansys/allie-flowkit" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<div class="search-bar" id="search-bar">
+<form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search" class="form-control" name="q" placeholder="Search the docs ..."
+         aria-label="Search the docs ..." autocomplete="off" autocorrect="off"
+         autocapitalize="off" spellcheck="false"/>
+  <span class="search-button__kbd-shortcut">
+    <kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd>
+  </span>
+</form>
+<!-- Search results container -->
+<div id="results" class="results" style="display: none;" tabindex="0">
+</div>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+  
+    <div id="announcement_msg"></div>
+<script>
+  fetch("announcement.html")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(
+      (text) => (document.getElementById("announcement_msg").innerHTML = text),
+    )
+    .catch((error) => console.error(`Fetch problem: ${error.message}`));
+</script>
+  
+
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../index.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <div class="version-switcher__container dropdown">
+    <button id="pst-version-switcher-button-3"
+      type="button"
+      class="version-switcher__button btn btn-sm dropdown-toggle"
+      data-bs-toggle="dropdown"
+      aria-haspopup="listbox"
+      aria-controls="pst-version-switcher-list-3"
+      aria-label="Version switcher list"
+    >
+      Choose version  <!-- this text may get changed later by javascript -->
+      <span class="caret"></span>
+    </button>
+    <div id="pst-version-switcher-list-3"
+      class="version-switcher__menu dropdown-menu list-group-flush py-0"
+      role="listbox" aria-labelledby="pst-version-switcher-button-3">
+      <!-- dropdown will be populated by javascript on page load -->
+    </div>
+  </div>
+`);
+</script></div>
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/ansys/allie-flowkit" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+         
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="https://allie.docs.pyansys.com/" class="nav-link">Allie</a>
+    </li>
+     
+    <li class="breadcrumb-item">
+      <a
+        href="../../index.html"
+        class="nav-link"
+        aria-label="Home"
+      >
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+      
+    <li class="breadcrumb-item active" aria-current="page">API reference</li>
+    
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package externalfunctions
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/ansys/allie-flowkit/pkg/externalfunctions"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#AddDataRequest">func AddDataRequest(collectionName string, documentData []sharedtypes.DbData)</a></dd>
+			
+				
+				<dd><a href="#AisAcsSemanticHybridSearchs">func AisAcsSemanticHybridSearchs(query string, embeddedQuery []float32, indexList []string, physics []string, topK int) (output []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#AisChangeAcsResponsesByFactor">func AisChangeAcsResponsesByFactor(factors map[string]float64, semanticSearchOutput []sharedtypes.ACSSearchResponse) (changedSemanticSearchOutput []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#AisPerformLLMFinalRequest">func AisPerformLLMFinalRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage, context []sharedtypes.ACSSearchResponse, prohibitedWords []string, errorList1 []string, errorList2 []string, previousInputTokenCount int, previousOutputTokenCount int, tokenCountModelName string, isStream bool) (message string, stream *chan string)</a></dd>
+			
+				
+				<dd><a href="#AisPerformLLMRephraseRequest">func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage, tokenCountModelName string) (rephrasedQuery string, inputTokenCount int, outputTokenCount int)</a></dd>
+			
+				
+				<dd><a href="#AisReturnIndexList">func AisReturnIndexList(accessPoint string) (indexList []string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTACSSemanticHybridSearchs">func AnsysGPTACSSemanticHybridSearchs(query string, embeddedQuery []float32, indexList []string, filter map[string]string, topK int) (output []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTBuildFinalQuery">func AnsysGPTBuildFinalQuery(refrasedQuery string, context []sharedtypes.ACSSearchResponse) (finalQuery string, errorResponse string, displayFixedMessageToUser bool)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTCheckProhibitedWords">func AnsysGPTCheckProhibitedWords(query string, prohibitedWords []string, errorResponseMessage string) (foundProhibited bool, responseMessage string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTExtractFieldsFromQuery">func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]string, defaultFields []sharedtypes.AnsysGPTDefaultFields) (fields map[string]string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTGetSystemPrompt">func AnsysGPTGetSystemPrompt(query string, prohibitedWords []string, template string) (systemPrompt string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTPerformLLMRephraseRequest">func AnsysGPTPerformLLMRephraseRequest(userTemplate string, query string, history []sharedtypes.HistoricMessage, systemPrompt string) (rephrasedQuery string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTPerformLLMRephraseRequestNew">func AnsysGPTPerformLLMRephraseRequestNew(template string, query string, history []sharedtypes.HistoricMessage) (rephrasedQuery string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTPerformLLMRequest">func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.HistoricMessage, systemPrompt string, isStream bool) (message string, stream *chan string)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTRemoveNoneCitationsFromSearchResponse">func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []sharedtypes.ACSSearchResponse, citations []sharedtypes.AnsysGPTCitation) (reducedSemanticSearchOutput []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTReorderSearchResponseAndReturnOnlyTopK">func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []sharedtypes.ACSSearchResponse, topK int) (reorderedSemanticSearchOutput []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#AnsysGPTReturnIndexList">func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string)</a></dd>
+			
+				
+				<dd><a href="#AppendMessageHistory">func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, history []sharedtypes.HistoricMessage) (updatedHistory []sharedtypes.HistoricMessage)</a></dd>
+			
+				
+				<dd><a href="#AppendStringSlices">func AppendStringSlices(slice1, slice2, slice3, slice4, slice5 []string) []string</a></dd>
+			
+				
+				<dd><a href="#AssignStringToString">func AssignStringToString(inputString string) (outputString string)</a></dd>
+			
+				
+				<dd><a href="#BuildFinalQueryForCodeLLMRequest">func BuildFinalQueryForCodeLLMRequest(request string, knowledgedbResponse []sharedtypes.DbResponse) (finalQuery string)</a></dd>
+			
+				
+				<dd><a href="#BuildFinalQueryForGeneralLLMRequest">func BuildFinalQueryForGeneralLLMRequest(request string, knowledgedbResponse []sharedtypes.DbResponse) (finalQuery string)</a></dd>
+			
+				
+				<dd><a href="#BuildLibraryContext">func BuildLibraryContext(message string, libraryContext string) (messageWithContext string)</a></dd>
+			
+				
+				<dd><a href="#CreateCollectionRequest">func CreateCollectionRequest(collectionName string)</a></dd>
+			
+				
+				<dd><a href="#CreateDbFilter">func CreateDbFilter(guid []string, documentId []string, documentName []string, level []string, tags sharedtypes.DbArrayFilter, keywords sharedtypes.DbArrayFilter, metadata []sharedtypes.DbJsonFilter) (databaseFilter sharedtypes.DbFilters)</a></dd>
+			
+				
+				<dd><a href="#CreateKeywordsDbFilter">func CreateKeywordsDbFilter(keywords []string, needAll bool) (databaseFilter sharedtypes.DbArrayFilter)</a></dd>
+			
+				
+				<dd><a href="#CreateMetadataDbFilter">func CreateMetadataDbFilter(fieldName string, fieldType string, filterData []string, needAll bool) (databaseFilter sharedtypes.DbJsonFilter)</a></dd>
+			
+				
+				<dd><a href="#CreateTagsDbFilter">func CreateTagsDbFilter(tags []string, needAll bool) (databaseFilter sharedtypes.DbArrayFilter)</a></dd>
+			
+				
+				<dd><a href="#DownloadGithubFileContent">func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string, githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content []byte)</a></dd>
+			
+				
+				<dd><a href="#GeneralNeo4jQuery">func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse)</a></dd>
+			
+				
+				<dd><a href="#GeneralQuery">func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters sharedtypes.DbFilters) (databaseResponse []sharedtypes.DbResponse)</a></dd>
+			
+				
+				<dd><a href="#GenerateDocumentTree">func GenerateDocumentTree(documentName string, documentId string, documentChunks []string, embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []sharedtypes.DbData)</a></dd>
+			
+				
+				<dd><a href="#GetDocumentType">func GetDocumentType(filePath string) (documentType string)</a></dd>
+			
+				
+				<dd><a href="#GetGithubFilesToExtract">func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string, githubRepoBranch string, githubAccessToken string, githubFileExtensions []string, githubFilteredDirectories []string, githubExcludedDirectories []string) (githubFilesToExtract []string)</a></dd>
+			
+				
+				<dd><a href="#GetListCollections">func GetListCollections() (collectionsList []string)</a></dd>
+			
+				
+				<dd><a href="#GetLocalFileContent">func GetLocalFileContent(localFilePath string) (checksum string, content []byte)</a></dd>
+			
+				
+				<dd><a href="#GetLocalFilesToExtract">func GetLocalFilesToExtract(localPath string, localFileExtensions []string, localFilteredDirectories []string, localExcludedDirectories []string) (localFilesToExtract []string)</a></dd>
+			
+				
+				<dd><a href="#LangchainSplitter">func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, chunkOverlap int) (output []string)</a></dd>
+			
+				
+				<dd><a href="#PerformBatchEmbeddingRequest">func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32)</a></dd>
+			
+				
+				<dd><a href="#PerformCodeLLMRequest">func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, validateCode bool) (message string, stream *chan string)</a></dd>
+			
+				
+				<dd><a href="#PerformGeneralRequest">func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string)</a></dd>
+			
+				
+				<dd><a href="#PerformGeneralRequestSpecificModel">func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string, modelIds []string) (message string, stream *chan string)</a></dd>
+			
+				
+				<dd><a href="#PerformKeywordExtractionRequest">func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (keywords []string)</a></dd>
+			
+				
+				<dd><a href="#PerformSummaryRequest">func PerformSummaryRequest(input string) (summary string)</a></dd>
+			
+				
+				<dd><a href="#PerformVectorEmbeddingRequest">func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32)</a></dd>
+			
+				
+				<dd><a href="#RetrieveDependencies">func RetrieveDependencies(collectionName string, relationshipName string, relationshipDirection string, sourceDocumentId string, nodeTypesFilter sharedtypes.DbArrayFilter, maxHopsNumber int) (dependenciesIds []string)</a></dd>
+			
+				
+				<dd><a href="#SendRestAPICall">func SendRestAPICall(requestType string, endpoint string, header map[string]string, query map[string]string, jsonBody string) (success bool, returnJsonBody string)</a></dd>
+			
+				
+				<dd><a href="#SendVectorsToKnowledgeDB">func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64) (databaseResponse []sharedtypes.DbResponse)</a></dd>
+			
+				
+				<dd><a href="#ShortenMessageHistory">func ShortenMessageHistory(history []sharedtypes.HistoricMessage, maxLength int) (updatedHistory []sharedtypes.HistoricMessage)</a></dd>
+			
+				
+				<dd><a href="#SimilaritySearch">func SimilaritySearch(collectionName string, embeddedVector []float32, maxRetrievalCount int, outputFields []string, filters sharedtypes.DbFilters, minScore float64, getLeafNodes bool, getSiblings bool, getParent bool, getChildren bool) (databaseResponse []sharedtypes.DbResponse)</a></dd>
+			
+				
+				<dd><a href="#ansysGPTACSSemanticHybridSearch">func ansysGPTACSSemanticHybridSearch(query string, embeddedQuery []float32, indexName string, filter map[string]string, topK int, isAis bool, physics []string) (output []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#convertToFloat32Slice">func convertToFloat32Slice(interfaceSlice []interface{}) ([]float32, error)</a></dd>
+			
+				
+				<dd><a href="#createDbArrayFilter">func createDbArrayFilter(filterData []string, needAll bool) (databaseFilter sharedtypes.DbArrayFilter)</a></dd>
+			
+				
+				<dd><a href="#createDbJsonFilter">func createDbJsonFilter(fieldName string, fieldType string, filterData []string, needAll bool) (databaseFilter sharedtypes.DbJsonFilter)</a></dd>
+			
+				
+				<dd><a href="#createPayloadAndSendHttpRequest">func createPayloadAndSendHttpRequest(url string, requestObject interface{}, responsePtr interface{}) (funcError error, statusCode int)</a></dd>
+			
+				
+				<dd><a href="#dataExtractNewGithubClient">func dataExtractNewGithubClient(githubAccessToken string) (client *github.Client, ctx context.Context)</a></dd>
+			
+				
+				<dd><a href="#dataExtractionDocumentLevelHandler">func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, chunks []string, documentId string, documentPath string, getSummary bool, getKeywords bool, numKeywords uint32) (orderedChildDataObjects []*sharedtypes.DbData, err error)</a></dd>
+			
+				
+				<dd><a href="#dataExtractionFilterGithubTreeEntries">func dataExtractionFilterGithubTreeEntries(tree *github.Tree, githubFilteredDirectories, githubExcludedDirectories, githubFileExtensions []string) (githubFilesToExtract []string)</a></dd>
+			
+				
+				<dd><a href="#dataExtractionLLMHandlerWorker">func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan *DataExtractionLLMInputChannelItem, errorChannel chan error, embeddingsDimensions int)</a></dd>
+			
+				
+				<dd><a href="#dataExtractionLocalFilepathExtractWalker">func dataExtractionLocalFilepathExtractWalker(localPath string, localFileExtensions []string, localFilteredDirectories []string, localExcludedDirectories []string, filesToExtract *[]string, f os.FileInfo, err error) error</a></dd>
+			
+				
+				<dd><a href="#dataExtractionPerformSplitterRequest">func dataExtractionPerformSplitterRequest(content []byte, documentType string, chunkSize int, chunkOverlap int) (output []string, err error)</a></dd>
+			
+				
+				<dd><a href="#dataExtractionProcessBatchEmbeddings">func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, maxBatchSize int) error</a></dd>
+			
+				
+				<dd><a href="#extractAndConvertACSResponse">func extractAndConvertACSResponse(body []byte, indexName string) (output []sharedtypes.ACSSearchResponse)</a></dd>
+			
+				
+				<dd><a href="#extractPythonCode">func extractPythonCode(markdown string) (pythonCode string, error error)</a></dd>
+			
+				
+				<dd><a href="#formatTemplate">func formatTemplate(template string, data map[string]string) string</a></dd>
+			
+				
+				<dd><a href="#getFieldsAndReturnProperties">func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields string, returnedProperties string)</a></dd>
+			
+				
+				<dd><a href="#httpRequest">func httpRequest(method string, url string, headers map[string]string, body []byte) ([]byte, error)</a></dd>
+			
+				
+				<dd><a href="#initializeClient">func initializeClient(llmHandlerEndpoint string) *websocket.Conn</a></dd>
+			
+				
+				<dd><a href="#listener">func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerResponse)</a></dd>
+			
+				
+				<dd><a href="#llmHandlerPerformKeywordExtractionRequest">func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32) (keywords []string, err error)</a></dd>
+			
+				
+				<dd><a href="#llmHandlerPerformSummaryRequest">func llmHandlerPerformSummaryRequest(input string) (summary string, err error)</a></dd>
+			
+				
+				<dd><a href="#llmHandlerPerformVectorEmbeddingRequest">func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors [][]float32, err error)</a></dd>
+			
+				
+				<dd><a href="#openAiTokenCount">func openAiTokenCount(modelName string, message string) (int, error)</a></dd>
+			
+				
+				<dd><a href="#performGeneralRequest">func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string, options *sharedtypes.ModelOptions) (message string, stream *chan string, err error)</a></dd>
+			
+				
+				<dd><a href="#randomNameGenerator">func randomNameGenerator() string</a></dd>
+			
+				
+				<dd><a href="#sendChatRequest">func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions) chan sharedtypes.HandlerResponse</a></dd>
+			
+				
+				<dd><a href="#sendChatRequestNoHistory">func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions) chan sharedtypes.HandlerResponse</a></dd>
+			
+				
+				<dd><a href="#sendEmbeddingsRequest">func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse</a></dd>
+			
+				
+				<dd><a href="#sendRequest">func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions)</a></dd>
+			
+				
+				<dd><a href="#shutdownHandler">func shutdownHandler(c *websocket.Conn)</a></dd>
+			
+				
+				<dd><a href="#transferDatafromResponseToStreamChannel">func transferDatafromResponseToStreamChannel(responseChannel *chan sharedtypes.HandlerResponse, streamChannel *chan string, validateCode bool, sendTokenCount bool, previousInputTokenCount int, previousOutputTokenCount int, tokenCountModelName string)</a></dd>
+			
+				
+				<dd><a href="#validatePythonCode">func validatePythonCode(pythonCode string) (bool, bool, error)</a></dd>
+			
+				
+				<dd><a href="#writer">func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan sharedtypes.HandlerResponse)</a></dd>
+			
+			
+				
+				<dd><a href="#ACSSearchRequest">type ACSSearchRequest</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseALH">type ACSSearchResponseALH</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseCrtech">type ACSSearchResponseCrtech</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseLSdyna">type ACSSearchResponseLSdyna</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseStruct">type ACSSearchResponseStruct</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseStructALH">type ACSSearchResponseStructALH</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseStructCrtech">type ACSSearchResponseStructCrtech</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSSearchResponseStructLSdyna">type ACSSearchResponseStructLSdyna</a></dd>
+				
+				
+			
+				
+				<dd><a href="#ACSVectorQuery">type ACSVectorQuery</a></dd>
+				
+				
+			
+				
+				<dd><a href="#AppendMessageHistoryRole">type AppendMessageHistoryRole</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DataExtractionBranch">type DataExtractionBranch</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DataExtractionLLMInputChannelItem">type DataExtractionLLMInputChannelItem</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#dataExtractionNewLlmInputChannelItem">func dataExtractionNewLlmInputChannelItem(data *sharedtypes.DbData, instructionSequenceWaitGroup *sync.WaitGroup, adapter string, chatRequestType string, maxNumberOfKeywords uint32, lock *sync.Mutex) *DataExtractionLLMInputChannelItem</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DataExtractionSplitterServiceRequest">type DataExtractionSplitterServiceRequest</a></dd>
+				
+				
+			
+				
+				<dd><a href="#DataExtractionSplitterServiceResponse">type DataExtractionSplitterServiceResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="#queryInput">type queryInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#queryOutput">type queryOutput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#retrieveDependenciesInput">type retrieveDependenciesInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#retrieveDependenciesOutput">type retrieveDependenciesOutput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#similarityElement">type similarityElement</a></dd>
+				
+				
+			
+				
+				<dd><a href="#similaritySearchInput">type similaritySearchInput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#similaritySearchOutput">type similaritySearchOutput</a></dd>
+				
+				
+			
+				
+				<dd><a href="#summaryCounters">type summaryCounters</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go">ansysgpt.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go">dataextraction.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/externalfunctions.go">externalfunctions.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/generic.go">generic.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go">knowledgedb.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go">llmhandler.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go">privatefunctions.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go">types.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				
+				<pre>var <span id="ExternalFunctionsMap">ExternalFunctionsMap</span> = map[<a href="https://pkg.go.dev/builtin/#string">string</a>]interface{}{
+
+    &#34;PerformVectorEmbeddingRequest&#34;:       <a href="#PerformVectorEmbeddingRequest">PerformVectorEmbeddingRequest</a>,
+    &#34;PerformBatchEmbeddingRequest&#34;:        <a href="#PerformBatchEmbeddingRequest">PerformBatchEmbeddingRequest</a>,
+    &#34;PerformKeywordExtractionRequest&#34;:     <a href="#PerformKeywordExtractionRequest">PerformKeywordExtractionRequest</a>,
+    &#34;PerformGeneralRequest&#34;:               <a href="#PerformGeneralRequest">PerformGeneralRequest</a>,
+    &#34;PerformGeneralRequestSpecificModel&#34;:  <a href="#PerformGeneralRequestSpecificModel">PerformGeneralRequestSpecificModel</a>,
+    &#34;PerformCodeLLMRequest&#34;:               <a href="#PerformCodeLLMRequest">PerformCodeLLMRequest</a>,
+    &#34;BuildLibraryContext&#34;:                 <a href="#BuildLibraryContext">BuildLibraryContext</a>,
+    &#34;BuildFinalQueryForGeneralLLMRequest&#34;: <a href="#BuildFinalQueryForGeneralLLMRequest">BuildFinalQueryForGeneralLLMRequest</a>,
+    &#34;BuildFinalQueryForCodeLLMRequest&#34;:    <a href="#BuildFinalQueryForCodeLLMRequest">BuildFinalQueryForCodeLLMRequest</a>,
+    &#34;AppendMessageHistory&#34;:                <a href="#AppendMessageHistory">AppendMessageHistory</a>,
+    &#34;ShortenMessageHistory&#34;:               <a href="#ShortenMessageHistory">ShortenMessageHistory</a>,
+
+    &#34;SendVectorsToKnowledgeDB&#34;: <a href="#SendVectorsToKnowledgeDB">SendVectorsToKnowledgeDB</a>,
+    &#34;GetListCollections&#34;:       <a href="#GetListCollections">GetListCollections</a>,
+    &#34;RetrieveDependencies&#34;:     <a href="#RetrieveDependencies">RetrieveDependencies</a>,
+    &#34;GeneralNeo4jQuery&#34;:        <a href="#GeneralNeo4jQuery">GeneralNeo4jQuery</a>,
+    &#34;GeneralQuery&#34;:             <a href="#GeneralQuery">GeneralQuery</a>,
+    &#34;SimilaritySearch&#34;:         <a href="#SimilaritySearch">SimilaritySearch</a>,
+    &#34;CreateKeywordsDbFilter&#34;:   <a href="#CreateKeywordsDbFilter">CreateKeywordsDbFilter</a>,
+    &#34;CreateTagsDbFilter&#34;:       <a href="#CreateTagsDbFilter">CreateTagsDbFilter</a>,
+    &#34;CreateMetadataDbFilter&#34;:   <a href="#CreateMetadataDbFilter">CreateMetadataDbFilter</a>,
+    &#34;CreateDbFilter&#34;:           <a href="#CreateDbFilter">CreateDbFilter</a>,
+
+    &#34;AnsysGPTCheckProhibitedWords&#34;:                   <a href="#AnsysGPTCheckProhibitedWords">AnsysGPTCheckProhibitedWords</a>,
+    &#34;AnsysGPTExtractFieldsFromQuery&#34;:                 <a href="#AnsysGPTExtractFieldsFromQuery">AnsysGPTExtractFieldsFromQuery</a>,
+    &#34;AnsysGPTPerformLLMRephraseRequest&#34;:              <a href="#AnsysGPTPerformLLMRephraseRequest">AnsysGPTPerformLLMRephraseRequest</a>,
+    &#34;AnsysGPTPerformLLMRephraseRequestNew&#34;:           <a href="#AnsysGPTPerformLLMRephraseRequestNew">AnsysGPTPerformLLMRephraseRequestNew</a>,
+    &#34;AnsysGPTBuildFinalQuery&#34;:                        <a href="#AnsysGPTBuildFinalQuery">AnsysGPTBuildFinalQuery</a>,
+    &#34;AnsysGPTPerformLLMRequest&#34;:                      <a href="#AnsysGPTPerformLLMRequest">AnsysGPTPerformLLMRequest</a>,
+    &#34;AnsysGPTReturnIndexList&#34;:                        <a href="#AnsysGPTReturnIndexList">AnsysGPTReturnIndexList</a>,
+    &#34;AnsysGPTACSSemanticHybridSearchs&#34;:               <a href="#AnsysGPTACSSemanticHybridSearchs">AnsysGPTACSSemanticHybridSearchs</a>,
+    &#34;AnsysGPTRemoveNoneCitationsFromSearchResponse&#34;:  <a href="#AnsysGPTRemoveNoneCitationsFromSearchResponse">AnsysGPTRemoveNoneCitationsFromSearchResponse</a>,
+    &#34;AnsysGPTReorderSearchResponseAndReturnOnlyTopK&#34;: <a href="#AnsysGPTReorderSearchResponseAndReturnOnlyTopK">AnsysGPTReorderSearchResponseAndReturnOnlyTopK</a>,
+    &#34;AnsysGPTGetSystemPrompt&#34;:                        <a href="#AnsysGPTGetSystemPrompt">AnsysGPTGetSystemPrompt</a>,
+    &#34;AisPerformLLMRephraseRequest&#34;:                   <a href="#AisPerformLLMRephraseRequest">AisPerformLLMRephraseRequest</a>,
+    &#34;AisReturnIndexList&#34;:                             <a href="#AisReturnIndexList">AisReturnIndexList</a>,
+    &#34;AisAcsSemanticHybridSearchs&#34;:                    <a href="#AisAcsSemanticHybridSearchs">AisAcsSemanticHybridSearchs</a>,
+    &#34;AisChangeAcsResponsesByFactor&#34;:                  <a href="#AisChangeAcsResponsesByFactor">AisChangeAcsResponsesByFactor</a>,
+    &#34;AisPerformLLMFinalRequest&#34;:                      <a href="#AisPerformLLMFinalRequest">AisPerformLLMFinalRequest</a>,
+
+    &#34;GetGithubFilesToExtract&#34;:   <a href="#GetGithubFilesToExtract">GetGithubFilesToExtract</a>,
+    &#34;GetLocalFilesToExtract&#34;:    <a href="#GetLocalFilesToExtract">GetLocalFilesToExtract</a>,
+    &#34;AppendStringSlices&#34;:        <a href="#AppendStringSlices">AppendStringSlices</a>,
+    &#34;DownloadGithubFileContent&#34;: <a href="#DownloadGithubFileContent">DownloadGithubFileContent</a>,
+    &#34;GetLocalFileContent&#34;:       <a href="#GetLocalFileContent">GetLocalFileContent</a>,
+    &#34;GetDocumentType&#34;:           <a href="#GetDocumentType">GetDocumentType</a>,
+    &#34;LangchainSplitter&#34;:         <a href="#LangchainSplitter">LangchainSplitter</a>,
+    &#34;GenerateDocumentTree&#34;:      <a href="#GenerateDocumentTree">GenerateDocumentTree</a>,
+    &#34;AddDataRequest&#34;:            <a href="#AddDataRequest">AddDataRequest</a>,
+    &#34;CreateCollectionRequest&#34;:   <a href="#CreateCollectionRequest">CreateCollectionRequest</a>,
+
+    &#34;AssignStringToString&#34;: <a href="#AssignStringToString">AssignStringToString</a>,
+    &#34;SendRestAPICall&#34;:      <a href="#SendRestAPICall">SendRestAPICall</a>,
+}</pre>
+			
+		
+		
+			
+			
+			<h2 id="AddDataRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L718">AddDataRequest</a>
+				<a class="permalink" href="#AddDataRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AddDataRequest(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, documentData []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>)</pre>
+			<p>AddDataRequest sends a request to the add_data endpoint.
+<p>Tags:
+<ul>
+<li>@displayName: Add Data
+</ul>
+<p>Parameters:
+<ul>
+<li>collectionName: name of the collection the request is sent to.
+<li>data: the data to add.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AisAcsSemanticHybridSearchs">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L612">AisAcsSemanticHybridSearchs</a>
+				<a class="permalink" href="#AisAcsSemanticHybridSearchs">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AisAcsSemanticHybridSearchs(
+    query <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    embeddedQuery []<a href="https://pkg.go.dev/builtin/#float32">float32</a>,
+    indexList []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    physics []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    topK <a href="https://pkg.go.dev/builtin/#int">int</a>) (output []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>AisAcsSemanticHybridSearchs performs a semantic hybrid search in ACS
+<p>Tags:
+<ul>
+<li>@displayName: AIS ACS Semantic Hybrid Search
+</ul>
+<p>Parameters:
+<ul>
+<li>query: the query string
+<li>embeddedQuery: the embedded query
+<li>indexList: the index list
+<li>physics: the physics
+<li>topK: the number of results to be returned
+</ul>
+<p>Returns:
+<ul>
+<li>output: the search results
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AisChangeAcsResponsesByFactor">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L639">AisChangeAcsResponsesByFactor</a>
+				<a class="permalink" href="#AisChangeAcsResponsesByFactor">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AisChangeAcsResponsesByFactor(factors map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#float64">float64</a>, semanticSearchOutput []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>) (changedSemanticSearchOutput []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>AisChangeAcsResponsesByFactor changes the ACS responses by a factor
+<p>Tags:
+<ul>
+<li>@displayName: Change ACS Responses By Factor
+</ul>
+<p>Parameters:
+<ul>
+<li>factors: the factors
+<li>semanticSearchOutput: the search response
+</ul>
+<p>Returns:
+<ul>
+<li>changedSemanticSearchOutput: the changed search response
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AisPerformLLMFinalRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L680">AisPerformLLMFinalRequest</a>
+				<a class="permalink" href="#AisPerformLLMFinalRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AisPerformLLMFinalRequest(systemTemplate <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    userTemplate <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    query <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>,
+    context []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>,
+    prohibitedWords []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    errorList1 []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    errorList2 []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    previousInputTokenCount <a href="https://pkg.go.dev/builtin/#int">int</a>,
+    previousOutputTokenCount <a href="https://pkg.go.dev/builtin/#int">int</a>,
+    tokenCountModelName <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    isStream <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (message <a href="https://pkg.go.dev/builtin/#string">string</a>, stream *chan <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AisPerformLLMFinalRequest performs a final request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: AIS Final Request
+</ul>
+<p>Parameters:
+<ul>
+<li>systemTemplate: the system template for the final request
+<li>userTemplate: the user template for the final request
+<li>query: the user query
+<li>history: the conversation history
+<li>prohibitedWords: the list of prohibited words
+<li>errorList1: the list of error words
+<li>errorList2: the list of error words
+</ul>
+<p>Returns:
+<ul>
+<li>stream: the stream channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AisPerformLLMRephraseRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L513">AisPerformLLMRephraseRequest</a>
+				<a class="permalink" href="#AisPerformLLMRephraseRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AisPerformLLMRephraseRequest(systemTemplate <a href="https://pkg.go.dev/builtin/#string">string</a>, userTemplate <a href="https://pkg.go.dev/builtin/#string">string</a>, query <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, tokenCountModelName <a href="https://pkg.go.dev/builtin/#string">string</a>) (rephrasedQuery <a href="https://pkg.go.dev/builtin/#string">string</a>, inputTokenCount <a href="https://pkg.go.dev/builtin/#int">int</a>, outputTokenCount <a href="https://pkg.go.dev/builtin/#int">int</a>)</pre>
+			<p>AisPerformLLMRephraseRequest performs a rephrase request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: AIS Rephrase Request
+</ul>
+<p>Parameters:
+<ul>
+<li>systemTemplate: the system template for the rephrase request
+<li>userTemplate: the user template for the rephrase request
+<li>query: the user query
+<li>history: the conversation history
+</ul>
+<p>Returns:
+<ul>
+<li>rephrasedQuery: the rephrased query
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AisReturnIndexList">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L577">AisReturnIndexList</a>
+				<a class="permalink" href="#AisReturnIndexList">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AisReturnIndexList(accessPoint <a href="https://pkg.go.dev/builtin/#string">string</a>) (indexList []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AisReturnIndexList returns the index list for AIS
+<p>Tags:
+<ul>
+<li>@displayName: Get AIS Index List
+</ul>
+<p>Parameters:
+<ul>
+<li>accessPoint: the access point
+</ul>
+<p>Returns:
+<ul>
+<li>indexList: the index list
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTACSSemanticHybridSearchs">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L398">AnsysGPTACSSemanticHybridSearchs</a>
+				<a class="permalink" href="#AnsysGPTACSSemanticHybridSearchs">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTACSSemanticHybridSearchs(
+    query <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    embeddedQuery []<a href="https://pkg.go.dev/builtin/#float32">float32</a>,
+    indexList []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    filter map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    topK <a href="https://pkg.go.dev/builtin/#int">int</a>) (output []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>AnsysGPTACSSemanticHybridSearchs performs a semantic hybrid search in ACS
+<p>Tags:
+<ul>
+<li>@displayName: ACS Semantic Hybrid Search
+</ul>
+<p>Parameters:
+<ul>
+<li>query: the query string
+<li>embeddedQuery: the embedded query
+<li>indexList: the index list
+<li>typeOfAsset: the type of asset
+<li>physics: the physics
+<li>product: the product
+<li>productMain: the main product
+<li>filter: the filter
+<li>filterAfterVectorSearch: the flag to define the filter order
+<li>returnedProperties: the properties to be returned
+<li>topK: the number of results to be returned from vector search
+<li>searchedEmbeddedFields: the ACS fields to be searched
+</ul>
+<p>Returns:
+<ul>
+<li>output: the search results
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTBuildFinalQuery">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L265">AnsysGPTBuildFinalQuery</a>
+				<a class="permalink" href="#AnsysGPTBuildFinalQuery">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTBuildFinalQuery(refrasedQuery <a href="https://pkg.go.dev/builtin/#string">string</a>, context []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>) (finalQuery <a href="https://pkg.go.dev/builtin/#string">string</a>, errorResponse <a href="https://pkg.go.dev/builtin/#string">string</a>, displayFixedMessageToUser <a href="https://pkg.go.dev/builtin/#bool">bool</a>)</pre>
+			<p>AnsysGPTBuildFinalQuery builds the final query for Ansys GPT
+<p>Tags:
+<ul>
+<li>@displayName: Build Final Query
+</ul>
+<p>Parameters:
+<ul>
+<li>refrasedQuery: the refrased query
+<li>context: the context
+</ul>
+<p>Returns:
+<ul>
+<li>finalQuery: the final query
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTCheckProhibitedWords">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L30">AnsysGPTCheckProhibitedWords</a>
+				<a class="permalink" href="#AnsysGPTCheckProhibitedWords">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTCheckProhibitedWords(query <a href="https://pkg.go.dev/builtin/#string">string</a>, prohibitedWords []<a href="https://pkg.go.dev/builtin/#string">string</a>, errorResponseMessage <a href="https://pkg.go.dev/builtin/#string">string</a>) (foundProhibited <a href="https://pkg.go.dev/builtin/#bool">bool</a>, responseMessage <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTCheckProhibitedWords checks the user query for prohibited words
+<p>Tags:
+<ul>
+<li>@displayName: Check Prohibited Words
+</ul>
+<p>Parameters:
+<ul>
+<li>query: the user query
+<li>prohibitedWords: the list of prohibited words
+<li>errorResponseMessage: the error response message
+</ul>
+<p>Returns:
+<ul>
+<li>foundProhibited: the flag indicating whether prohibited words were found
+<li>responseMessage: the response message
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTExtractFieldsFromQuery">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L93">AnsysGPTExtractFieldsFromQuery</a>
+				<a class="permalink" href="#AnsysGPTExtractFieldsFromQuery">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTExtractFieldsFromQuery(query <a href="https://pkg.go.dev/builtin/#string">string</a>, fieldValues map[<a href="https://pkg.go.dev/builtin/#string">string</a>][]<a href="https://pkg.go.dev/builtin/#string">string</a>, defaultFields []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#AnsysGPTDefaultFields">AnsysGPTDefaultFields</a>) (fields map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTExtractFieldsFromQuery extracts the fields from the user query
+<p>Tags:
+<ul>
+<li>@displayName: Extract Fields
+</ul>
+<p>Parameters:
+<ul>
+<li>query: the user query
+<li>fieldValues: the field values that the user query can contain
+<li>defaultFields: the default fields that the user query can contain
+</ul>
+<p>Returns:
+<ul>
+<li>fields: the extracted fields
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTGetSystemPrompt">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L479">AnsysGPTGetSystemPrompt</a>
+				<a class="permalink" href="#AnsysGPTGetSystemPrompt">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTGetSystemPrompt(query <a href="https://pkg.go.dev/builtin/#string">string</a>, prohibitedWords []<a href="https://pkg.go.dev/builtin/#string">string</a>, template <a href="https://pkg.go.dev/builtin/#string">string</a>) (systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTGetSystemPrompt returns the system prompt for Ansys GPT
+<p>Tags:
+<ul>
+<li>@displayName: Get System Prompt
+</ul>
+<p>Parameters:
+<ul>
+<li>rephrasedQuery: the rephrased query
+</ul>
+<p>Returns:
+<ul>
+<li>systemPrompt: the system prompt
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTPerformLLMRephraseRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L223">AnsysGPTPerformLLMRephraseRequest</a>
+				<a class="permalink" href="#AnsysGPTPerformLLMRephraseRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTPerformLLMRephraseRequest(userTemplate <a href="https://pkg.go.dev/builtin/#string">string</a>, query <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>) (rephrasedQuery <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTPerformLLMRephraseRequest performs a rephrase request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Rephrase Request
+</ul>
+<p>Parameters:
+<ul>
+<li>template: the template for the rephrase request
+<li>query: the user query
+<li>history: the conversation history
+</ul>
+<p>Returns:
+<ul>
+<li>rephrasedQuery: the rephrased query
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTPerformLLMRephraseRequestNew">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L169">AnsysGPTPerformLLMRephraseRequestNew</a>
+				<a class="permalink" href="#AnsysGPTPerformLLMRephraseRequestNew">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTPerformLLMRephraseRequestNew(template <a href="https://pkg.go.dev/builtin/#string">string</a>, query <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>) (rephrasedQuery <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTPerformLLMRephraseRequestNew performs a rephrase request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Rephrase Request New
+</ul>
+<p>Parameters:
+<ul>
+<li>template: the template for the rephrase request
+<li>query: the user query
+<li>history: the conversation history
+</ul>
+<p>Returns:
+<ul>
+<li>rephrasedQuery: the rephrased query
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTPerformLLMRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L296">AnsysGPTPerformLLMRequest</a>
+				<a class="permalink" href="#AnsysGPTPerformLLMRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTPerformLLMRequest(finalQuery <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>, isStream <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (message <a href="https://pkg.go.dev/builtin/#string">string</a>, stream *chan <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTPerformLLMRequest performs a request to Ansys GPT
+<p>Tags:
+<ul>
+<li>@displayName: LLM Request
+</ul>
+<p>Parameters:
+<ul>
+<li>finalQuery: the final query
+<li>history: the conversation history
+<li>systemPrompt: the system prompt
+</ul>
+<p>Returns:
+<ul>
+<li>stream: the stream channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTRemoveNoneCitationsFromSearchResponse">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L425">AnsysGPTRemoveNoneCitationsFromSearchResponse</a>
+				<a class="permalink" href="#AnsysGPTRemoveNoneCitationsFromSearchResponse">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>, citations []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#AnsysGPTCitation">AnsysGPTCitation</a>) (reducedSemanticSearchOutput []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>AnsysGPTRemoveNoneCitationsFromSearchResponse removes none citations from search response
+<p>Tags:
+<ul>
+<li>@displayName: Remove None Citations
+</ul>
+<p>Parameters:
+<ul>
+<li>semanticSearchOutput: the search response
+<li>citations: the citations
+</ul>
+<p>Returns:
+<ul>
+<li>reducedSemanticSearchOutput: the reduced search response
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTReorderSearchResponseAndReturnOnlyTopK">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L454">AnsysGPTReorderSearchResponseAndReturnOnlyTopK</a>
+				<a class="permalink" href="#AnsysGPTReorderSearchResponseAndReturnOnlyTopK">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>, topK <a href="https://pkg.go.dev/builtin/#int">int</a>) (reorderedSemanticSearchOutput []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>AnsysGPTReorderSearchResponseAndReturnOnlyTopK reorders the search response
+<p>Tags:
+<ul>
+<li>@displayName: Reorder Search Response
+</ul>
+<p>Parameters:
+<ul>
+<li>semanticSearchOutput: the search response
+<li>topK: the number of results to be returned
+</ul>
+<p>Returns:
+<ul>
+<li>reorderedSemanticSearchOutput: the reordered search response
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AnsysGPTReturnIndexList">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/ansysgpt.go#L349">AnsysGPTReturnIndexList</a>
+				<a class="permalink" href="#AnsysGPTReturnIndexList">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AnsysGPTReturnIndexList(indexGroups []<a href="https://pkg.go.dev/builtin/#string">string</a>) (indexList []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AnsysGPTReturnIndexList returns the index list for Ansys GPT
+<p>Tags:
+<ul>
+<li>@displayName: List Indexes
+</ul>
+<p>Parameters:
+<ul>
+<li>indexGroups: the index groups
+</ul>
+<p>Returns:
+<ul>
+<li>indexList: the index list
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AppendMessageHistory">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L562">AppendMessageHistory</a>
+				<a class="permalink" href="#AppendMessageHistory">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AppendMessageHistory(newMessage <a href="https://pkg.go.dev/builtin/#string">string</a>, role <a href="#AppendMessageHistoryRole">AppendMessageHistoryRole</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>) (updatedHistory []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>)</pre>
+			<p>AppendMessageHistory appends a new message to the conversation history
+<p>Tags:
+<ul>
+<li>@displayName: Append Message History
+</ul>
+<p>Parameters:
+<ul>
+<li>newMessage: the new message
+<li>role: the role of the message
+<li>history: the conversation history
+</ul>
+<p>Returns:
+<ul>
+<li>updatedHistory: the updated conversation history
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AppendStringSlices">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L133">AppendStringSlices</a>
+				<a class="permalink" href="#AppendStringSlices">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AppendStringSlices(slice1, slice2, slice3, slice4, slice5 []<a href="https://pkg.go.dev/builtin/#string">string</a>) []<a href="https://pkg.go.dev/builtin/#string">string</a></pre>
+			<p>AppendStringSlices creates a new slice by appending all elements of the provided slices.
+<p>Tags:
+<ul>
+<li>@displayName: Append String Slices
+</ul>
+<p>Parameters:
+<ul>
+<li>slice1, slice2, slice3, slice4, slice5: slices to append.
+</ul>
+<p>Returns:
+<ul>
+<li>result: a new slice with all elements appended.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="AssignStringToString">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/generic.go#L90">AssignStringToString</a>
+				<a class="permalink" href="#AssignStringToString">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func AssignStringToString(inputString <a href="https://pkg.go.dev/builtin/#string">string</a>) (outputString <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>AssignStringToString assigns a string to another string
+<p>Tags:
+<ul>
+<li>@displayName: Assign String to String
+</ul>
+<p>Parameters:
+<ul>
+<li>inputString: the input string
+</ul>
+<p>Returns:
+<ul>
+<li>outputString: the output string
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="BuildFinalQueryForCodeLLMRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L492">BuildFinalQueryForCodeLLMRequest</a>
+				<a class="permalink" href="#BuildFinalQueryForCodeLLMRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func BuildFinalQueryForCodeLLMRequest(request <a href="https://pkg.go.dev/builtin/#string">string</a>, knowledgedbResponse []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a>) (finalQuery <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>BuildFinalQueryForCodeLLMRequest builds the final query for a code generation
+request to LLM. The final query is a markdown string that contains the
+original request and the code examples from the KnowledgeDB.
+<p>Tags:
+<ul>
+<li>@displayName: Final Query (Code LLM Request)
+</ul>
+<p>Parameters:
+<ul>
+<li>request: the original request
+<li>knowledgedbResponse: the KnowledgeDB response
+</ul>
+<p>Returns:
+<ul>
+<li>finalQuery: the final query
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="BuildFinalQueryForGeneralLLMRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L461">BuildFinalQueryForGeneralLLMRequest</a>
+				<a class="permalink" href="#BuildFinalQueryForGeneralLLMRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func BuildFinalQueryForGeneralLLMRequest(request <a href="https://pkg.go.dev/builtin/#string">string</a>, knowledgedbResponse []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a>) (finalQuery <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>BuildFinalQueryForGeneralLLMRequest builds the final query for a general
+request to LLM. The final query is a markdown string that contains the
+original request and the examples from the KnowledgeDB.
+<p>Tags:
+<ul>
+<li>@displayName: Final Query (General LLM Request)
+</ul>
+<p>Parameters:
+<ul>
+<li>request: the original request
+<li>knowledgedbResponse: the KnowledgeDB response
+</ul>
+<p>Returns:
+<ul>
+<li>finalQuery: the final query
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="BuildLibraryContext">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L441">BuildLibraryContext</a>
+				<a class="permalink" href="#BuildLibraryContext">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func BuildLibraryContext(message <a href="https://pkg.go.dev/builtin/#string">string</a>, libraryContext <a href="https://pkg.go.dev/builtin/#string">string</a>) (messageWithContext <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>BuildLibraryContext builds the context string for the query
+<p>Tags:
+<ul>
+<li>@displayName: Library Context
+</ul>
+<p>Parameters:
+<ul>
+<li>message: the message string
+<li>libraryContext: the library context string
+</ul>
+<p>Returns:
+<ul>
+<li>messageWithContext: the message with context
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateCollectionRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L749">CreateCollectionRequest</a>
+				<a class="permalink" href="#CreateCollectionRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateCollectionRequest(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>CreateCollectionRequest sends a request to the collection endpoint.
+<p>Tags:
+<ul>
+<li>@displayName: Create Collection
+</ul>
+<p>Parameters:
+<ul>
+<li>collectionName: the name of the collection to create.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateDbFilter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L662">CreateDbFilter</a>
+				<a class="permalink" href="#CreateDbFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateDbFilter(
+    guid []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    documentId []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    documentName []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    level []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    tags <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>,
+    keywords <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>,
+    metadata []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbJsonFilter">DbJsonFilter</a>) (databaseFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbFilters">DbFilters</a>)</pre>
+			<p>CreateDbFilter creates a filter for the KnowledgeDB.
+<p>The function returns the filter.
+<p>Tags:
+<ul>
+<li>@displayName: Create Filter
+</ul>
+<p>Parameters:
+<ul>
+<li>guid: the guid filter
+<li>documentId: the document ID filter
+<li>documentName: the document name filter
+<li>level: the level filter
+<li>tags: the tags filter
+<li>keywords: the keywords filter
+<li>metadata: the metadata filter
+</ul>
+<p>Returns:
+<ul>
+<li>databaseFilter: the filter
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateKeywordsDbFilter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L590">CreateKeywordsDbFilter</a>
+				<a class="permalink" href="#CreateKeywordsDbFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateKeywordsDbFilter(keywords []<a href="https://pkg.go.dev/builtin/#string">string</a>, needAll <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (databaseFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>)</pre>
+			<p>CreateKeywordsDbFilter creates a keywords filter for the KnowledgeDB.
+<p>The function returns the keywords filter.
+<p>Tags:
+<ul>
+<li>@displayName: Keywords Filter
+</ul>
+<p>Parameters:
+<ul>
+<li>keywords: the keywords to be used for the filter
+<li>needAll: flag to indicate whether all keywords are needed
+</ul>
+<p>Returns:
+<ul>
+<li>databaseFilter: the keywords filter
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateMetadataDbFilter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L640">CreateMetadataDbFilter</a>
+				<a class="permalink" href="#CreateMetadataDbFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateMetadataDbFilter(fieldName <a href="https://pkg.go.dev/builtin/#string">string</a>, fieldType <a href="https://pkg.go.dev/builtin/#string">string</a>, filterData []<a href="https://pkg.go.dev/builtin/#string">string</a>, needAll <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (databaseFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbJsonFilter">DbJsonFilter</a>)</pre>
+			<p>CreateMetadataDbFilter creates a metadata filter for the KnowledgeDB.
+<p>The function returns the metadata filter.
+<p>Tags:
+<ul>
+<li>@displayName: Metadata Filter
+</ul>
+<p>Parameters:
+<ul>
+<li>fieldName: the name of the field
+<li>fieldType: the type of the field
+<li>filterData: the filter data
+<li>needAll: flag to indicate whether all data is needed
+</ul>
+<p>Returns:
+<ul>
+<li>databaseFilter: the metadata filter
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateTagsDbFilter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L614">CreateTagsDbFilter</a>
+				<a class="permalink" href="#CreateTagsDbFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateTagsDbFilter(tags []<a href="https://pkg.go.dev/builtin/#string">string</a>, needAll <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (databaseFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>)</pre>
+			<p>CreateTagsDbFilter creates a tags filter for the KnowledgeDB.
+<p>The function returns the tags filter.
+<p>Tags:
+<ul>
+<li>@displayName: Tags Filter
+</ul>
+<p>Parameters:
+<ul>
+<li>tags: the tags to be used for the filter
+<li>needAll: flag to indicate whether all tags are needed
+</ul>
+<p>Returns:
+<ul>
+<li>databaseFilter: the tags filter
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="DownloadGithubFileContent">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L161">DownloadGithubFileContent</a>
+				<a class="permalink" href="#DownloadGithubFileContent">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func DownloadGithubFileContent(githubRepoName <a href="https://pkg.go.dev/builtin/#string">string</a>, githubRepoOwner <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    githubRepoBranch <a href="https://pkg.go.dev/builtin/#string">string</a>, gihubFilePath <a href="https://pkg.go.dev/builtin/#string">string</a>, githubAccessToken <a href="https://pkg.go.dev/builtin/#string">string</a>) (checksum <a href="https://pkg.go.dev/builtin/#string">string</a>, content []<a href="https://pkg.go.dev/builtin/#byte">byte</a>)</pre>
+			<p>DownloadGithubFileContent downloads file content from github and returns checksum and content.
+<p>Tags:
+<ul>
+<li>@displayName: Download Github File Content
+</ul>
+<p>Parameters:
+<ul>
+<li>githubRepoName: name of the github repository.
+<li>githubRepoOwner: owner of the github repository.
+<li>githubRepoBranch: branch of the github repository.
+<li>gihubFilePath: path to file in the github repository.
+<li>githubAccessToken: access token for github.
+</ul>
+<p>Returns:
+<ul>
+<li>checksum: checksum of file.
+<li>content: content of file.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GeneralNeo4jQuery">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L325">GeneralNeo4jQuery</a>
+				<a class="permalink" href="#GeneralNeo4jQuery">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GeneralNeo4jQuery(query <a href="https://pkg.go.dev/builtin/#string">string</a>) (databaseResponse <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#Neo4jResponse">Neo4jResponse</a>)</pre>
+			<p>GeneralNeo4jQuery executes the given Neo4j query and returns the response.
+<p>The function returns the neo4j response.
+<p>Tags:
+<ul>
+<li>@displayName: General Neo4J Query
+</ul>
+<p>Parameters:
+<ul>
+<li>query: the Neo4j query to be executed.
+</ul>
+<p>Returns:
+<ul>
+<li>databaseResponse: the Neo4j response
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GeneralQuery">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L403">GeneralQuery</a>
+				<a class="permalink" href="#GeneralQuery">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GeneralQuery(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, maxRetrievalCount <a href="https://pkg.go.dev/builtin/#int">int</a>, outputFields []<a href="https://pkg.go.dev/builtin/#string">string</a>, filters <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbFilters">DbFilters</a>) (databaseResponse []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a>)</pre>
+			<p>GeneralQuery performs a general query in the KnowledgeDB.
+<p>The function returns the query results.
+<p>Tags:
+<ul>
+<li>@displayName: Query
+</ul>
+<p>Parameters:
+<ul>
+<li>collectionName: the name of the collection to which the data objects will be added.
+<li>maxRetrievalCount: the maximum number of results to be retrieved.
+<li>outputFields: the fields to be included in the output.
+<li>filters: the filter for the query.
+</ul>
+<p>Returns:
+<ul>
+<li>databaseResponse: the query results
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GenerateDocumentTree">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L354">GenerateDocumentTree</a>
+				<a class="permalink" href="#GenerateDocumentTree">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GenerateDocumentTree(documentName <a href="https://pkg.go.dev/builtin/#string">string</a>, documentId <a href="https://pkg.go.dev/builtin/#string">string</a>, documentChunks []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    embeddingsDimensions <a href="https://pkg.go.dev/builtin/#int">int</a>, getSummary <a href="https://pkg.go.dev/builtin/#bool">bool</a>, getKeywords <a href="https://pkg.go.dev/builtin/#bool">bool</a>, numKeywords <a href="https://pkg.go.dev/builtin/#int">int</a>, chunkSize <a href="https://pkg.go.dev/builtin/#int">int</a>, numLlmWorkers <a href="https://pkg.go.dev/builtin/#int">int</a>) (returnedDocumentData []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>)</pre>
+			<p>GenerateDocumentTree generates a tree structure from the document chunks.
+<p>Tags:
+<ul>
+<li>@displayName: Document Tree
+</ul>
+<p>Parameters:
+<ul>
+<li>documentName: name of the document.
+<li>documentId: id of the document.
+<li>documentChunks: chunks of the document.
+<li>embeddingsDimensions: dimensions of the embeddings.
+<li>getSummary: whether to get summary.
+<li>getKeywords: whether to get keywords.
+<li>numKeywords: number of keywords.
+<li>chunkSize: size of the chunks.
+<li>numLlmWorkers: number of llm workers.
+</ul>
+<p>Returns:
+<ul>
+<li>documentData: tree structure of the document.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GetDocumentType">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L241">GetDocumentType</a>
+				<a class="permalink" href="#GetDocumentType">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GetDocumentType(filePath <a href="https://pkg.go.dev/builtin/#string">string</a>) (documentType <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>GetDocumentType returns the document type of a file.
+<p>Tags:
+<ul>
+<li>@displayName: Get Document Type
+</ul>
+<p>Parameters:
+<ul>
+<li>filePath: path to file.
+</ul>
+<p>Returns:
+<ul>
+<li>documentType: file extension.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GetGithubFilesToExtract">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L41">GetGithubFilesToExtract</a>
+				<a class="permalink" href="#GetGithubFilesToExtract">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GetGithubFilesToExtract(githubRepoName <a href="https://pkg.go.dev/builtin/#string">string</a>, githubRepoOwner <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    githubRepoBranch <a href="https://pkg.go.dev/builtin/#string">string</a>, githubAccessToken <a href="https://pkg.go.dev/builtin/#string">string</a>, githubFileExtensions []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    githubFilteredDirectories []<a href="https://pkg.go.dev/builtin/#string">string</a>, githubExcludedDirectories []<a href="https://pkg.go.dev/builtin/#string">string</a>) (githubFilesToExtract []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>GetGithubFilesToExtract gets all files from github that need to be extracted.
+<p>Tags:
+<ul>
+<li>@displayName: List Github Files
+</ul>
+<p>Parameters:
+<ul>
+<li>githubRepoName: name of the github repository.
+<li>githubRepoOwner: owner of the github repository.
+<li>githubRepoBranch: branch of the github repository.
+<li>githubAccessToken: access token for github.
+<li>githubFileExtensions: github file extensions.
+<li>githubFilteredDirectories: github filtered directories.
+<li>githubExcludedDirectories: github excluded directories.
+</ul>
+<p>Returns:
+<ul>
+<li>githubFilesToExtract: github files to extract.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GetListCollections">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L165">GetListCollections</a>
+				<a class="permalink" href="#GetListCollections">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GetListCollections() (collectionsList []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>GetListCollections retrieves the list of collections from the KnowledgeDB.
+<p>Tags:
+<ul>
+<li>@displayName: List Collections
+</ul>
+<p>The function returns the list of collections.
+<p>Parameters:
+<ul>
+<li>knowledgeDbEndpoint: the KnowledgeDB endpoint
+</ul>
+<p>Returns:
+<ul>
+<li>collectionsList: the list of collections
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GetLocalFileContent">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L205">GetLocalFileContent</a>
+				<a class="permalink" href="#GetLocalFileContent">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GetLocalFileContent(localFilePath <a href="https://pkg.go.dev/builtin/#string">string</a>) (checksum <a href="https://pkg.go.dev/builtin/#string">string</a>, content []<a href="https://pkg.go.dev/builtin/#byte">byte</a>)</pre>
+			<p>GetLocalFileContent reads local file and returns checksum and content.
+<p>Tags:
+<ul>
+<li>@displayName: Get Local File Content
+</ul>
+<p>Parameters:
+<ul>
+<li>localFilePath: path to file.
+</ul>
+<p>Returns:
+<ul>
+<li>checksum: checksum of file.
+<li>content: content of file.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="GetLocalFilesToExtract">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L90">GetLocalFilesToExtract</a>
+				<a class="permalink" href="#GetLocalFilesToExtract">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func GetLocalFilesToExtract(localPath <a href="https://pkg.go.dev/builtin/#string">string</a>, localFileExtensions []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    localFilteredDirectories []<a href="https://pkg.go.dev/builtin/#string">string</a>, localExcludedDirectories []<a href="https://pkg.go.dev/builtin/#string">string</a>) (localFilesToExtract []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>GetLocalFilesToExtract gets all files from local that need to be extracted.
+<p>Tags:
+<ul>
+<li>@displayName: List Local Files
+</ul>
+<p>Parameters:
+<ul>
+<li>localPath: path to the local directory.
+<li>localFileExtensions: local file extensions.
+<li>localFilteredDirectories: local filtered directories.
+<li>localExcludedDirectories: local excluded directories.
+</ul>
+<p>Returns:
+<ul>
+<li>localFilesToExtract: local files to extract.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="LangchainSplitter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/dataextraction.go#L262">LangchainSplitter</a>
+				<a class="permalink" href="#LangchainSplitter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func LangchainSplitter(bytesContent []<a href="https://pkg.go.dev/builtin/#byte">byte</a>, documentType <a href="https://pkg.go.dev/builtin/#string">string</a>, chunkSize <a href="https://pkg.go.dev/builtin/#int">int</a>, chunkOverlap <a href="https://pkg.go.dev/builtin/#int">int</a>) (output []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>LangchainSplitter splits content into chunks using langchain.
+<p>Tags:
+<ul>
+<li>@displayName: Split Content
+</ul>
+<p>Parameters:
+<ul>
+<li>content: content to split.
+<li>documentType: type of document.
+<li>chunkSize: size of the chunks.
+<li>chunkOverlap: overlap of the chunks.
+</ul>
+<p>Returns:
+<ul>
+<li>output: chunks as an slice of strings.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformBatchEmbeddingRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L81">PerformBatchEmbeddingRequest</a>
+				<a class="permalink" href="#PerformBatchEmbeddingRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformBatchEmbeddingRequest(input []<a href="https://pkg.go.dev/builtin/#string">string</a>) (embeddedVectors [][]<a href="https://pkg.go.dev/builtin/#float32">float32</a>)</pre>
+			<p>PerformBatchEmbeddingRequest performs a batch vector embedding request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Batch Embeddings
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the input strings
+</ul>
+<p>Returns:
+<ul>
+<li>embeddedVectors: the embedded vectors in float32 format
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformCodeLLMRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L360">PerformCodeLLMRequest</a>
+				<a class="permalink" href="#PerformCodeLLMRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformCodeLLMRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, isStream <a href="https://pkg.go.dev/builtin/#bool">bool</a>, validateCode <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (message <a href="https://pkg.go.dev/builtin/#string">string</a>, stream *chan <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>PerformCodeLLMRequest performs a code generation request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Code LLM Request
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the input string
+<li>history: the conversation history
+<li>isStream: the stream flag
+</ul>
+<p>Returns:
+<ul>
+<li>message: the generated code
+<li>stream: the stream channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformGeneralRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L247">PerformGeneralRequest</a>
+				<a class="permalink" href="#PerformGeneralRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformGeneralRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, isStream <a href="https://pkg.go.dev/builtin/#bool">bool</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>) (message <a href="https://pkg.go.dev/builtin/#string">string</a>, stream *chan <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>PerformGeneralRequest performs a general chat completion request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: General LLM Request
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the input string
+<li>history: the conversation history
+<li>isStream: the stream flag
+<li>systemPrompt: the system prompt
+</ul>
+<p>Returns:
+<ul>
+<li>message: the generated message
+<li>stream: the stream channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformGeneralRequestSpecificModel">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L304">PerformGeneralRequestSpecificModel</a>
+				<a class="permalink" href="#PerformGeneralRequestSpecificModel">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformGeneralRequestSpecificModel(input <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, isStream <a href="https://pkg.go.dev/builtin/#bool">bool</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>, modelIds []<a href="https://pkg.go.dev/builtin/#string">string</a>) (message <a href="https://pkg.go.dev/builtin/#string">string</a>, stream *chan <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>PerformGeneralRequestSpecificModel performs a general request to LLM with a specific model
+<p>Tags:
+<ul>
+<li>@displayName: General LLM Request (Specific Models)
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the user input
+<li>history: the conversation history
+<li>isStream: the flag to indicate whether the response should be streamed
+<li>systemPrompt: the system prompt
+<li>modelId: the model ID
+</ul>
+<p>Returns:
+<ul>
+<li>message: the response message
+<li>stream: the stream channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformKeywordExtractionRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L149">PerformKeywordExtractionRequest</a>
+				<a class="permalink" href="#PerformKeywordExtractionRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformKeywordExtractionRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>, maxKeywordsSearch <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>) (keywords []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>PerformKeywordExtractionRequest performs a keywords extraction request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Keyword Extraction
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the input string
+<li>maxKeywordsSearch: the maximum number of keywords to search for
+</ul>
+<p>Returns:
+<ul>
+<li>keywords: the keywords extracted from the input string as a slice of strings
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformSummaryRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L200">PerformSummaryRequest</a>
+				<a class="permalink" href="#PerformSummaryRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformSummaryRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>) (summary <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>PerformSummaryRequest performs a summary request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Summary
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the input string
+</ul>
+<p>Returns:
+<ul>
+<li>summary: the summary extracted from the input string
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="PerformVectorEmbeddingRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L23">PerformVectorEmbeddingRequest</a>
+				<a class="permalink" href="#PerformVectorEmbeddingRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func PerformVectorEmbeddingRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>) (embeddedVector []<a href="https://pkg.go.dev/builtin/#float32">float32</a>)</pre>
+			<p>PerformVectorEmbeddingRequest performs a vector embedding request to LLM
+<p>Tags:
+<ul>
+<li>@displayName: Embeddings
+</ul>
+<p>Parameters:
+<ul>
+<li>input: the input string
+</ul>
+<p>Returns:
+<ul>
+<li>embeddedVector: the embedded vector in float32 format
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="RetrieveDependencies">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L239">RetrieveDependencies</a>
+				<a class="permalink" href="#RetrieveDependencies">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func RetrieveDependencies(
+    collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    relationshipName <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    relationshipDirection <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    sourceDocumentId <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    nodeTypesFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>,
+    maxHopsNumber <a href="https://pkg.go.dev/builtin/#int">int</a>) (dependenciesIds []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>RetrieveDependencies retrieves the dependencies of the specified source node.
+<p>The function returns the list of dependencies.
+<p>Tags:
+<ul>
+<li>@displayName: Retrieve Dependencies
+</ul>
+<p>Parameters:
+<ul>
+<li>collectionName: the name of the collection to which the data objects will be added.
+<li>relationshipName: the name of the relationship to retrieve dependencies for.
+<li>relationshipDirection: the direction of the relationship to retrieve dependencies for.
+<li>sourceDocumentId: the document ID of the source node.
+<li>nodeTypesFilter: filter based on node types.
+<li>maxHopsNumber: maximum number of hops to traverse.
+</ul>
+<p>Returns:
+<ul>
+<li>dependenciesIds: the list of dependencies
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="SendRestAPICall">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/generic.go#L26">SendRestAPICall</a>
+				<a class="permalink" href="#SendRestAPICall">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func SendRestAPICall(requestType <a href="https://pkg.go.dev/builtin/#string">string</a>, endpoint <a href="https://pkg.go.dev/builtin/#string">string</a>, header map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>, query map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>, jsonBody <a href="https://pkg.go.dev/builtin/#string">string</a>) (success <a href="https://pkg.go.dev/builtin/#bool">bool</a>, returnJsonBody <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
+<p>Tags:
+<ul>
+<li>@displayName: REST Call
+</ul>
+<p>Parameters:
+<ul>
+<li>requestType: the type of the request (GET, POST, PUT, PATCH, DELETE)
+<li>urlString: the URL to send the request to
+<li>headers: the headers to include in the request
+<li>query: the query parameters to include in the request
+<li>jsonBody: the body of the request as a JSON string
+</ul>
+<p>Returns:
+<ul>
+<li>success: a boolean indicating whether the request was successful
+<li>returnJsonBody: the JSON body of the response as a string
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="SendVectorsToKnowledgeDB">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L37">SendVectorsToKnowledgeDB</a>
+				<a class="permalink" href="#SendVectorsToKnowledgeDB">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func SendVectorsToKnowledgeDB(vector []<a href="https://pkg.go.dev/builtin/#float32">float32</a>, keywords []<a href="https://pkg.go.dev/builtin/#string">string</a>, keywordsSearch <a href="https://pkg.go.dev/builtin/#bool">bool</a>, collection <a href="https://pkg.go.dev/builtin/#string">string</a>, similaritySearchResults <a href="https://pkg.go.dev/builtin/#int">int</a>, similaritySearchMinScore <a href="https://pkg.go.dev/builtin/#float64">float64</a>) (databaseResponse []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a>)</pre>
+			<p>SendVectorsToKnowledgeDB sends the given vector to the KnowledgeDB and
+returns the most relevant data. The number of results is specified in the
+config file. The keywords are used to filter the results. The min score
+filter is also specified in the config file. If it is not specified, the
+default value is used.
+<p>The function returns the most relevant data.
+<p>Tags:
+<ul>
+<li>@displayName: Similarity Search
+</ul>
+<p>Parameters:
+<ul>
+<li>vector: the vector to be sent to the KnowledgeDB
+<li>keywords: the keywords to be used to filter the results
+<li>keywordsSearch: the flag to enable the keywords search
+<li>collection: the collection name
+<li>similaritySearchResults: the number of results to be returned
+<li>similaritySearchMinScore: the minimum score for the results
+</ul>
+<p>Returns:
+<ul>
+<li>databaseResponse: an array of the most relevant data
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ShortenMessageHistory">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L603">ShortenMessageHistory</a>
+				<a class="permalink" href="#ShortenMessageHistory">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func ShortenMessageHistory(history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, maxLength <a href="https://pkg.go.dev/builtin/#int">int</a>) (updatedHistory []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>)</pre>
+			<p>ShortenMessageHistory shortens the conversation history to a maximum length.
+It will retain only the most recent messages and older messages will be
+removed.
+<p>Tags:
+<ul>
+<li>@displayName: Shorten History
+</ul>
+<p>Parameters:
+<ul>
+<li>history: the conversation history
+<li>maxLength: the maximum length of the conversation history
+</ul>
+<p>Returns:
+<ul>
+<li>updatedHistory: the updated conversation history
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="SimilaritySearch">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/knowledgedb.go#L490">SimilaritySearch</a>
+				<a class="permalink" href="#SimilaritySearch">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func SimilaritySearch(
+    collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    embeddedVector []<a href="https://pkg.go.dev/builtin/#float32">float32</a>,
+    maxRetrievalCount <a href="https://pkg.go.dev/builtin/#int">int</a>,
+    outputFields []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    filters <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbFilters">DbFilters</a>,
+    minScore <a href="https://pkg.go.dev/builtin/#float64">float64</a>,
+    getLeafNodes <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    getSiblings <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    getParent <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    getChildren <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (databaseResponse []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a>)</pre>
+			<p>SimilaritySearch performs a similarity search in the KnowledgeDB.
+<p>The function returns the similarity search results.
+<p>Tags:
+<ul>
+<li>@displayName: Similarity Search (Filtered)
+</ul>
+<p>Parameters:
+<ul>
+<li>collectionName: the name of the collection to which the data objects will be added.
+<li>embeddedVector: the embedded vector used for searching.
+<li>maxRetrievalCount: the maximum number of results to be retrieved.
+<li>outputFields: the fields to be included in the output.
+<li>filters: the filter for the query.
+<li>minScore: the minimum score filter.
+<li>getLeafNodes: flag to indicate whether to retrieve all the leaf nodes in the result node branch.
+<li>getSiblings: flag to indicate whether to retrieve the previous and next node to the result nodes.
+<li>getParent: flag to indicate whether to retrieve the parent object.
+<li>getChildren: flag to indicate whether to retrieve the children objects.
+</ul>
+<p>Returns:
+<ul>
+<li>databaseResponse: the similarity search results
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="ansysGPTACSSemanticHybridSearch">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L619">ansysGPTACSSemanticHybridSearch</a>
+				<a class="permalink" href="#ansysGPTACSSemanticHybridSearch">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func ansysGPTACSSemanticHybridSearch(
+    query <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    embeddedQuery []<a href="https://pkg.go.dev/builtin/#float32">float32</a>,
+    indexName <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    filter map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    topK <a href="https://pkg.go.dev/builtin/#int">int</a>,
+    isAis <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    physics []<a href="https://pkg.go.dev/builtin/#string">string</a>) (output []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>ansysGPTACSSemanticHybridSearch performs a semantic hybrid search in ACS
+<p>Parameters:
+<ul>
+<li>query: the query string
+<li>embeddedQuery: the embedded query
+<li>indexName: the index name
+<li>filter: string build in specific format (<a href="https://learn.microsoft.com/en-us/azure/search/search-filters">https://learn.microsoft.com/en-us/azure/search/search-filters</a>)
+<li>filterAfterVectorSearch: the flag to define the filter order (recommended true)
+<li>returnedProperties: the properties to be returned
+<li>topK: the number of results to be returned from vector search
+<li>searchedEmbeddedFields: the ACS fields to be searched
+</ul>
+<p>Returns:
+<ul>
+<li>output: the search results
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="convertToFloat32Slice">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1673">convertToFloat32Slice</a>
+				<a class="permalink" href="#convertToFloat32Slice">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func convertToFloat32Slice(interfaceSlice []interface{}) ([]<a href="https://pkg.go.dev/builtin/#float32">float32</a>, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>convertToFloat32Slice converts an interface slice to a float32 slice.
+<p>Parameters:
+<ul>
+<li>interfaceSlice: the interface slice.
+</ul>
+<p>Returns:
+<ul>
+<li>float32Slice: the float32 slice.
+<li>error: an error if any.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createDbArrayFilter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L468">createDbArrayFilter</a>
+				<a class="permalink" href="#createDbArrayFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createDbArrayFilter(filterData []<a href="https://pkg.go.dev/builtin/#string">string</a>, needAll <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (databaseFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>)</pre>
+			<p>createDbArrayFilter creates an array filter for the KnowledgeDB.
+<p>The function returns the array filter.
+<p>Parameters:
+<ul>
+<li>filterData: the filter data
+<li>needAll: flag to indicate whether all data is needed
+</ul>
+<p>Returns:
+<ul>
+<li>databaseFilter: the array filter
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createDbJsonFilter">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L487">createDbJsonFilter</a>
+				<a class="permalink" href="#createDbJsonFilter">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createDbJsonFilter(fieldName <a href="https://pkg.go.dev/builtin/#string">string</a>, fieldType <a href="https://pkg.go.dev/builtin/#string">string</a>, filterData []<a href="https://pkg.go.dev/builtin/#string">string</a>, needAll <a href="https://pkg.go.dev/builtin/#bool">bool</a>) (databaseFilter <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbJsonFilter">DbJsonFilter</a>)</pre>
+			<p>createDbJsonFilter creates a JSON filter for the KnowledgeDB.
+<p>The function returns the JSON filter.
+<p>Parameters:
+<ul>
+<li>fieldName: the name of the field
+<li>fieldType: the type of the field
+<li>filterData: the filter data
+<li>needAll: flag to indicate whether all data is needed
+</ul>
+<p>Returns:
+<ul>
+<li>databaseFilter: the JSON filter
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createPayloadAndSendHttpRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1699">createPayloadAndSendHttpRequest</a>
+				<a class="permalink" href="#createPayloadAndSendHttpRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createPayloadAndSendHttpRequest(url <a href="https://pkg.go.dev/builtin/#string">string</a>, requestObject interface{}, responsePtr interface{}) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>, statusCode <a href="https://pkg.go.dev/builtin/#int">int</a>)</pre>
+			<p>createPayloadAndSendHttpRequest creates a JSON payload and sends an HTTP POST request.
+<p>Parameters:
+<ul>
+<li>url: the URL to send the request to.
+<li>requestObject: the object to send in the request body.
+<li>responsePtr: a pointer to the object to store the response in.
+</ul>
+<p>Returns:
+<ul>
+<li>error: the error returned by the function.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractNewGithubClient">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1029">dataExtractNewGithubClient</a>
+				<a class="permalink" href="#dataExtractNewGithubClient">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractNewGithubClient(githubAccessToken <a href="https://pkg.go.dev/builtin/#string">string</a>) (client *<a href="https://pkg.go.dev/github.com/google/go-github/v56/github/">github</a>.<a href="https://pkg.go.dev/github.com/google/go-github/v56/github/#Client">Client</a>, ctx <a href="https://pkg.go.dev/context/">context</a>.<a href="https://pkg.go.dev/context/#Context">Context</a>)</pre>
+			<p>dataExtractNewGithubClient initializes a new GitHub client with the given access token.
+<p>Parameters:
+<ul>
+<li>githubAccessToken: the GitHub access token.
+</ul>
+<p>Returns:
+<ul>
+<li>*github.Client: the GitHub client.
+<li>context.Context: the context.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractionDocumentLevelHandler">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1175">dataExtractionDocumentLevelHandler</a>
+				<a class="permalink" href="#dataExtractionDocumentLevelHandler">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractionDocumentLevelHandler(inputChannel chan *<a href="#DataExtractionLLMInputChannelItem">DataExtractionLLMInputChannelItem</a>, errorChannel chan <a href="https://pkg.go.dev/builtin/#error">error</a>, chunks []<a href="https://pkg.go.dev/builtin/#string">string</a>, documentId <a href="https://pkg.go.dev/builtin/#string">string</a>, documentPath <a href="https://pkg.go.dev/builtin/#string">string</a>, getSummary <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    getKeywords <a href="https://pkg.go.dev/builtin/#bool">bool</a>, numKeywords <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>) (orderedChildDataObjects []*<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>dataExtractionDocumentLevelHandler handles the data extraction at document level.
+<p>Parameters:
+<ul>
+<li>inputChannel: the input channel.
+<li>chunks: the document chunks.
+<li>documentId: the document ID.
+<li>documentPath: the document path.
+<li>getSummary: the flag to indicate whether to get the summary.
+<li>getKeywords: the flag to indicate whether to get the keywords.
+<li>numKeywords: the number of keywords.
+</ul>
+<p>Returns:
+<ul>
+<li>orderedChildDataObjects: the ordered child data objects.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractionFilterGithubTreeEntries">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L918">dataExtractionFilterGithubTreeEntries</a>
+				<a class="permalink" href="#dataExtractionFilterGithubTreeEntries">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractionFilterGithubTreeEntries(tree *<a href="https://pkg.go.dev/github.com/google/go-github/v56/github/">github</a>.<a href="https://pkg.go.dev/github.com/google/go-github/v56/github/#Tree">Tree</a>, githubFilteredDirectories, githubExcludedDirectories, githubFileExtensions []<a href="https://pkg.go.dev/builtin/#string">string</a>) (githubFilesToExtract []<a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>dataExtractionFilterGithubTreeEntries filters the Github tree entries based on the specified filters.
+<p>Parameters:
+<ul>
+<li>tree: the Github tree.
+<li>githubFilteredDirectories: the Github filtered directories.
+<li>githubExcludedDirectories: the Github excluded directories.
+<li>githubFileExtensions: the Github file extensions.
+</ul>
+<p>Returns:
+<ul>
+<li>[]string: the files to extract.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractionLLMHandlerWorker">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1277">dataExtractionLLMHandlerWorker</a>
+				<a class="permalink" href="#dataExtractionLLMHandlerWorker">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractionLLMHandlerWorker(waitgroup *<a href="https://pkg.go.dev/sync/">sync</a>.<a href="https://pkg.go.dev/sync/#WaitGroup">WaitGroup</a>, inputChannel chan *<a href="#DataExtractionLLMInputChannelItem">DataExtractionLLMInputChannelItem</a>, errorChannel chan <a href="https://pkg.go.dev/builtin/#error">error</a>, embeddingsDimensions <a href="https://pkg.go.dev/builtin/#int">int</a>)</pre>
+			<p>dataExtractionLLMHandlerWorker is a worker function for the LLM Handler requests during data extraction.
+<p>Parameters:
+<ul>
+<li>waitgroup: the wait group
+<li>inputChannel: the input channel
+<li>errorChannel: the error channel
+<li>embeddingsDimensions: the embeddings dimensions
+</ul>
+<p>Returns:
+<ul>
+<li>error: an error if any
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractionLocalFilepathExtractWalker">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1058">dataExtractionLocalFilepathExtractWalker</a>
+				<a class="permalink" href="#dataExtractionLocalFilepathExtractWalker">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractionLocalFilepathExtractWalker(localPath <a href="https://pkg.go.dev/builtin/#string">string</a>, localFileExtensions []<a href="https://pkg.go.dev/builtin/#string">string</a>,
+    localFilteredDirectories []<a href="https://pkg.go.dev/builtin/#string">string</a>, localExcludedDirectories []<a href="https://pkg.go.dev/builtin/#string">string</a>, filesToExtract *[]<a href="https://pkg.go.dev/builtin/#string">string</a>, f <a href="https://pkg.go.dev/os/">os</a>.<a href="https://pkg.go.dev/os/#FileInfo">FileInfo</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>) <a href="https://pkg.go.dev/builtin/#error">error</a></pre>
+			<p>dataExtractionLocalFilepathExtractWalker is the walker function for the local file extraction.
+<p>Parameters:
+<ul>
+<li>localPath: the local path.
+<li>localFileExtensions: the local file extensions.
+<li>localFilteredDirectories: the local filtered directories.
+<li>localExcludedDirectories: the local excluded directories.
+<li>filesToExtract: the files to extract.
+<li>f: the file info
+</ul>
+<p>Returns:
+<ul>
+<li>error: error that occured during execution.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractionPerformSplitterRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1578">dataExtractionPerformSplitterRequest</a>
+				<a class="permalink" href="#dataExtractionPerformSplitterRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractionPerformSplitterRequest(content []<a href="https://pkg.go.dev/builtin/#byte">byte</a>, documentType <a href="https://pkg.go.dev/builtin/#string">string</a>, chunkSize <a href="https://pkg.go.dev/builtin/#int">int</a>, chunkOverlap <a href="https://pkg.go.dev/builtin/#int">int</a>) (output []<a href="https://pkg.go.dev/builtin/#string">string</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>dataExtractionPerformSplitterRequest performs a data extraction splitter request to the Python service.
+<p>Parameters:
+<ul>
+<li>content: the content.
+<li>documentType: the document type.
+<li>chunkSize: the chunk size.
+<li>chunkOverlap: the chunk overlap.
+</ul>
+<p>Returns:
+<ul>
+<li>output: the output.
+<li>error: an error if any.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="dataExtractionProcessBatchEmbeddings">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1325">dataExtractionProcessBatchEmbeddings</a>
+				<a class="permalink" href="#dataExtractionProcessBatchEmbeddings">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func dataExtractionProcessBatchEmbeddings(documentData []*<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>, maxBatchSize <a href="https://pkg.go.dev/builtin/#int">int</a>) <a href="https://pkg.go.dev/builtin/#error">error</a></pre>
+			<p>dataExtractionProcessBatchEmbeddings processes the data extraction batch embeddings.
+<p>Parameters:
+<ul>
+<li>documentData: the document data.
+<li>maxBatchSize: the max batch size.
+</ul>
+<p>Returns:
+<ul>
+<li>error: an error if any
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="extractAndConvertACSResponse">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L807">extractAndConvertACSResponse</a>
+				<a class="permalink" href="#extractAndConvertACSResponse">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func extractAndConvertACSResponse(body []<a href="https://pkg.go.dev/builtin/#byte">byte</a>, indexName <a href="https://pkg.go.dev/builtin/#string">string</a>) (output []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a>)</pre>
+			<p>extractAndConvertACSResponse extracts and converts the ACS response to ACSSearchResponse
+<p>Parameters:
+<ul>
+<li>body: the response body
+<li>indexName: the index name
+</ul>
+<p>Returns:
+<ul>
+<li>output: the search results
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="extractPythonCode">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L518">extractPythonCode</a>
+				<a class="permalink" href="#extractPythonCode">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func extractPythonCode(markdown <a href="https://pkg.go.dev/builtin/#string">string</a>) (pythonCode <a href="https://pkg.go.dev/builtin/#string">string</a>, error <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>extractPythonCode extracts the Python code from a markdown string. If the
+string does not contain a code block, it is assumed that the string is
+Python code and is returned as is.
+<p>Parameters:
+<ul>
+<li>markdown: the markdown string
+</ul>
+<p>Returns:
+<ul>
+<li>string: the Python code
+<li>error: error if any
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="formatTemplate">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L598">formatTemplate</a>
+				<a class="permalink" href="#formatTemplate">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func formatTemplate(template <a href="https://pkg.go.dev/builtin/#string">string</a>, data map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>) <a href="https://pkg.go.dev/builtin/#string">string</a></pre>
+			<p>formatTemplate formats a template string with the given data
+<p>Parameters:
+<ul>
+<li>template: the template string
+<li>data: the data to be used for formatting
+</ul>
+<p>Returns:
+<ul>
+<li>string: the formatted template string
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="getFieldsAndReturnProperties">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L768">getFieldsAndReturnProperties</a>
+				<a class="permalink" href="#getFieldsAndReturnProperties">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func getFieldsAndReturnProperties(indexName <a href="https://pkg.go.dev/builtin/#string">string</a>) (searchedEmbeddedFields <a href="https://pkg.go.dev/builtin/#string">string</a>, returnedProperties <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>getFieldsAndReturnProperties returns the searchedEmbeddedFields and returnedProperties based on the index name
+<p>Parameters:
+<ul>
+<li>indexName: the index name
+</ul>
+<p>Returns:
+<ul>
+<li>searchedEmbeddedFields: the ACS fields to be searched
+<li>returnedProperties: the properties to be returned
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="httpRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1627">httpRequest</a>
+				<a class="permalink" href="#httpRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func httpRequest(method <a href="https://pkg.go.dev/builtin/#string">string</a>, url <a href="https://pkg.go.dev/builtin/#string">string</a>, headers map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#string">string</a>, body []<a href="https://pkg.go.dev/builtin/#byte">byte</a>) ([]<a href="https://pkg.go.dev/builtin/#byte">byte</a>, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>httpRequest is a general function for making HTTP requests.
+<p>Parameters:
+<ul>
+<li>method: HTTP method.
+<li>url: URL to make the request to.
+<li>headers: headers to include in the request.
+<li>body: body of the request.
+</ul>
+<p>Returns:
+<ul>
+<li>response body.
+<li>error.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="initializeClient">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L189">initializeClient</a>
+				<a class="permalink" href="#initializeClient">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func initializeClient(llmHandlerEndpoint <a href="https://pkg.go.dev/builtin/#string">string</a>) *<a href="https://pkg.go.dev/nhooyr.io/websocket/">websocket</a>.<a href="https://pkg.go.dev/nhooyr.io/websocket/#Conn">Conn</a></pre>
+			<p>initializeClient initializes the LLM Handler client
+<p>Returns:
+<ul>
+<li>*websocket.Conn: the websocket connection
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="listener">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L217">listener</a>
+				<a class="permalink" href="#listener">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func listener(c *<a href="https://pkg.go.dev/nhooyr.io/websocket/">websocket</a>.<a href="https://pkg.go.dev/nhooyr.io/websocket/#Conn">Conn</a>, responseChannel chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a>)</pre>
+			<p>listener listens for messages from the LLM Handler
+<p>Parameters:
+<ul>
+<li>c: the websocket connection
+<li>responseChannel: the response channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="llmHandlerPerformKeywordExtractionRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1534">llmHandlerPerformKeywordExtractionRequest</a>
+				<a class="permalink" href="#llmHandlerPerformKeywordExtractionRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func llmHandlerPerformKeywordExtractionRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>, numKeywords <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>) (keywords []<a href="https://pkg.go.dev/builtin/#string">string</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>llmHandlerPerformKeywordExtractionRequest performs a keyword extraction request to LLM Handler.
+<p>Parameters:
+<ul>
+<li>input: the input string.
+<li>numKeywords: the number of keywords.
+</ul>
+<p>Returns:
+<ul>
+<li>keywords: the keywords.
+<li>error: an error if any.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="llmHandlerPerformSummaryRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1437">llmHandlerPerformSummaryRequest</a>
+				<a class="permalink" href="#llmHandlerPerformSummaryRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func llmHandlerPerformSummaryRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>) (summary <a href="https://pkg.go.dev/builtin/#string">string</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>llmHandlerPerformSummaryRequest performs a summary request to LLM Handler.
+<p>Parameters:
+<ul>
+<li>input: the input string.
+</ul>
+<p>Returns:
+<ul>
+<li>summary: the summary.
+<li>error: an error if any.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="llmHandlerPerformVectorEmbeddingRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1376">llmHandlerPerformVectorEmbeddingRequest</a>
+				<a class="permalink" href="#llmHandlerPerformVectorEmbeddingRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func llmHandlerPerformVectorEmbeddingRequest(input []<a href="https://pkg.go.dev/builtin/#string">string</a>) (embeddedVectors [][]<a href="https://pkg.go.dev/builtin/#float32">float32</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>llmHandlerPerformVectorEmbeddingRequest performs a vector embedding request to LLM Handler.
+<p>Parameters:
+<ul>
+<li>input: slice of input strings.
+</ul>
+<p>Returns:
+<ul>
+<li>embeddedVector: the embedded vectors.
+<li>error: an error if any.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="openAiTokenCount">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1747">openAiTokenCount</a>
+				<a class="permalink" href="#openAiTokenCount">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func openAiTokenCount(modelName <a href="https://pkg.go.dev/builtin/#string">string</a>, message <a href="https://pkg.go.dev/builtin/#string">string</a>) (<a href="https://pkg.go.dev/builtin/#int">int</a>, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>TokenCount takes a model name and a message string, returns the token count.
+
+			
+			
+
+		
+			
+			
+			<h2 id="performGeneralRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1482">performGeneralRequest</a>
+				<a class="permalink" href="#performGeneralRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func performGeneralRequest(input <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, isStream <a href="https://pkg.go.dev/builtin/#bool">bool</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>, options *<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ModelOptions">ModelOptions</a>) (message <a href="https://pkg.go.dev/builtin/#string">string</a>, stream *chan <a href="https://pkg.go.dev/builtin/#string">string</a>, err <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>performGeneralRequest performs a general chat completion request to LLM.
+<p>Parameters:
+<ul>
+<li>input: the input string.
+<li>history: the conversation history.
+<li>isStream: the stream flag.
+<li>systemPrompt: the system prompt.
+</ul>
+<p>Returns:
+<ul>
+<li>message: the generated message.
+<li>stream: the stream channel.
+<li>err: the error.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="randomNameGenerator">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L500">randomNameGenerator</a>
+				<a class="permalink" href="#randomNameGenerator">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func randomNameGenerator() <a href="https://pkg.go.dev/builtin/#string">string</a></pre>
+			<p>randomNameGenerator generates a random name for the temporary Python script file
+<p>Returns:
+<ul>
+<li>string: the name of the temporary Python script file
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="sendChatRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L148">sendChatRequest</a>
+				<a class="permalink" href="#sendChatRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func sendChatRequest(data <a href="https://pkg.go.dev/builtin/#string">string</a>, chatRequestType <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, maxKeywordsSearch <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>, llmHandlerEndpoint <a href="https://pkg.go.dev/builtin/#string">string</a>, modelIds []<a href="https://pkg.go.dev/builtin/#string">string</a>, options *<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ModelOptions">ModelOptions</a>) chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a></pre>
+			<p>sendChatRequest sends a chat request to LLM
+<p>Parameters:
+<ul>
+<li>data: the input string
+<li>chatRequestType: the chat request type
+<li>history: the conversation history
+<li>sc: the session context
+</ul>
+<p>Returns:
+<ul>
+<li>chan sharedtypes.HandlerResponse: the response channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="sendChatRequestNoHistory">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L134">sendChatRequestNoHistory</a>
+				<a class="permalink" href="#sendChatRequestNoHistory">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func sendChatRequestNoHistory(data <a href="https://pkg.go.dev/builtin/#string">string</a>, chatRequestType <a href="https://pkg.go.dev/builtin/#string">string</a>, maxKeywordsSearch <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>, llmHandlerEndpoint <a href="https://pkg.go.dev/builtin/#string">string</a>, modelIds []<a href="https://pkg.go.dev/builtin/#string">string</a>, options *<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ModelOptions">ModelOptions</a>) chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a></pre>
+			<p>sendChatRequestNoHistory sends a chat request to LLM without history
+<p>Parameters:
+<ul>
+<li>data: the input string
+<li>chatRequestType: the chat request type
+<li>sc: the session context
+</ul>
+<p>Returns:
+<ul>
+<li>chan sharedtypes.HandlerResponse: the response channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="sendEmbeddingsRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L171">sendEmbeddingsRequest</a>
+				<a class="permalink" href="#sendEmbeddingsRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint <a href="https://pkg.go.dev/builtin/#string">string</a>, modelIds []<a href="https://pkg.go.dev/builtin/#string">string</a>) chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a></pre>
+			<p>sendEmbeddingsRequest sends an embeddings request to LLM
+<p>Parameters:
+<ul>
+<li>data: the input string
+<li>sc: the session context
+</ul>
+<p>Returns:
+<ul>
+<li>chan sharedtypes.HandlerResponse: the response channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="sendRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L353">sendRequest</a>
+				<a class="permalink" href="#sendRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func sendRequest(adapter <a href="https://pkg.go.dev/builtin/#string">string</a>, data interface{}, RequestChannel chan []<a href="https://pkg.go.dev/builtin/#byte">byte</a>, chatRequestType <a href="https://pkg.go.dev/builtin/#string">string</a>, dataStream <a href="https://pkg.go.dev/builtin/#string">string</a>, history []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HistoricMessage">HistoricMessage</a>, maxKeywordsSearch <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>, systemPrompt <a href="https://pkg.go.dev/builtin/#string">string</a>, responseChannel chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a>, modelIds []<a href="https://pkg.go.dev/builtin/#string">string</a>, options *<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ModelOptions">ModelOptions</a>)</pre>
+			<p>sendRequest sends a request to LLM
+<p>Parameters:
+<ul>
+<li>adapter: the adapter type. Types: &quot;chat&quot;, &quot;embeddings&quot;
+<li>data: the input string
+<li>RequestChannel: the request channel
+<li>chatRequestType: the chat request type. Types: &quot;summary&quot;, &quot;code&quot;, &quot;keywords&quot;
+<li>dataStream: the data stream flag
+<li>history: the conversation history
+<li>sc: the session context
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="shutdownHandler">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L445">shutdownHandler</a>
+				<a class="permalink" href="#shutdownHandler">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func shutdownHandler(c *<a href="https://pkg.go.dev/nhooyr.io/websocket/">websocket</a>.<a href="https://pkg.go.dev/nhooyr.io/websocket/#Conn">Conn</a>)</pre>
+			<p>shutdownHandler handles the shutdown of the LLM Handler
+<p>Parameters:
+<ul>
+<li>c: the websocket connection
+<li>RequestChannel: the request channel
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="transferDatafromResponseToStreamChannel">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L38">transferDatafromResponseToStreamChannel</a>
+				<a class="permalink" href="#transferDatafromResponseToStreamChannel">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func transferDatafromResponseToStreamChannel(
+    responseChannel *chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a>,
+    streamChannel *chan <a href="https://pkg.go.dev/builtin/#string">string</a>,
+    validateCode <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    sendTokenCount <a href="https://pkg.go.dev/builtin/#bool">bool</a>,
+    previousInputTokenCount <a href="https://pkg.go.dev/builtin/#int">int</a>,
+    previousOutputTokenCount <a href="https://pkg.go.dev/builtin/#int">int</a>,
+    tokenCountModelName <a href="https://pkg.go.dev/builtin/#string">string</a>)</pre>
+			<p>transferDatafromResponseToStreamChannel transfers the data from the response channel to the stream channel
+<p>Parameters:
+<ul>
+<li>responseChannel: the response channel
+<li>streamChannel: the stream channel
+<li>validateCode: the flag to indicate whether the code should be validated
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="validatePythonCode">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L551">validatePythonCode</a>
+				<a class="permalink" href="#validatePythonCode">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func validatePythonCode(pythonCode <a href="https://pkg.go.dev/builtin/#string">string</a>) (<a href="https://pkg.go.dev/builtin/#bool">bool</a>, <a href="https://pkg.go.dev/builtin/#bool">bool</a>, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>validatePythonCode validates the Python code using a Python code analysis tool (pyright)
+and returns several values to indicate the validity of the Python code.
+<p>Parameters:
+<ul>
+<li>pythonCode: the Python code to be validated
+</ul>
+<p>Returns:
+<ul>
+<li>bool: true if the Python code is valid, false otherwise
+<li>bool: true if the Python code has potential errors, false otherwise
+<li>error: an error message if the Python code is invalid
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="writer">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L322">writer</a>
+				<a class="permalink" href="#writer">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func writer(c *<a href="https://pkg.go.dev/nhooyr.io/websocket/">websocket</a>.<a href="https://pkg.go.dev/nhooyr.io/websocket/#Conn">Conn</a>, RequestChannel chan []<a href="https://pkg.go.dev/builtin/#byte">byte</a>, responseChannel chan <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#HandlerResponse">HandlerResponse</a>)</pre>
+			<p>writer writes messages to the LLM Handler
+<p>Parameters:
+<ul>
+<li>c: the websocket connection
+<li>RequestChannel: the request channel
+</ul>
+
+			
+			
+
+		
+		
+			
+			
+			<h2 id="ACSSearchRequest">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L88">ACSSearchRequest</a>
+				<a class="permalink" href="#ACSSearchRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSRequest represents the request structure for the Azure Cognitive Search.
+
+			<pre>type ACSSearchRequest struct {
+<span id="ACSSearchRequest.Search"></span>    Search                <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;search&#34;`
+<span id="ACSSearchRequest.VectorQueries"></span>    VectorQueries         []<a href="#ACSVectorQuery">ACSVectorQuery</a> `json:&#34;vectorQueries&#34;`
+<span id="ACSSearchRequest.VectorFilterMode"></span>    VectorFilterMode      <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;vectorFilterMode&#34;`
+<span id="ACSSearchRequest.Filter"></span>    Filter                <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;filter&#34;`
+<span id="ACSSearchRequest.QueryType"></span>    QueryType             <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;queryType&#34;`
+<span id="ACSSearchRequest.SemanticConfiguration"></span>    SemanticConfiguration <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;semanticConfiguration&#34;`
+<span id="ACSSearchRequest.Top"></span>    Top                   <a href="https://pkg.go.dev/builtin/#int">int</a>              `json:&#34;top&#34;`
+<span id="ACSSearchRequest.Select"></span>    Select                <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;select&#34;`
+<span id="ACSSearchRequest.Count"></span>    Count                 <a href="https://pkg.go.dev/builtin/#bool">bool</a>             `json:&#34;count&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseALH">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L115">ACSSearchResponseALH</a>
+				<a class="permalink" href="#ACSSearchResponseALH">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponse represents the response structure for the Azure Cognitive Search for ansysgpt-alh &amp; ansysgpt-scbu.
+
+			<pre>type ACSSearchResponseALH struct {
+<span id="ACSSearchResponseALH.SourcetitleSAP"></span>    SourcetitleSAP      <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourcetitleSAP&#34;`
+<span id="ACSSearchResponseALH.SourceURLSAP"></span>    SourceURLSAP        <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourceURLSAP&#34;`
+<span id="ACSSearchResponseALH.SourcetitleDCB"></span>    SourcetitleDCB      <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourcetitleDCB&#34;`
+<span id="ACSSearchResponseALH.SourceURLDCB"></span>    SourceURLDCB        <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourceURLDCB&#34;`
+<span id="ACSSearchResponseALH.Content"></span>    Content             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;content&#34;`
+<span id="ACSSearchResponseALH.TypeOFasset"></span>    TypeOFasset         <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;typeOFasset&#34;`
+<span id="ACSSearchResponseALH.Physics"></span>    Physics             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;physics&#34;`
+<span id="ACSSearchResponseALH.Product"></span>    Product             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;product&#34;`
+<span id="ACSSearchResponseALH.Version"></span>    Version             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;version&#34;`
+<span id="ACSSearchResponseALH.Weight"></span>    Weight              <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;weight&#34;`
+<span id="ACSSearchResponseALH.TokenSize"></span>    TokenSize           <a href="https://pkg.go.dev/builtin/#int">int</a>     `json:&#34;token_size&#34;`
+<span id="ACSSearchResponseALH.SearchScore"></span>    SearchScore         <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;@search.score&#34;`
+<span id="ACSSearchResponseALH.SearchRerankerScore"></span>    SearchRerankerScore <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;@search.rerankerScore&#34;`
+<span id="ACSSearchResponseALH.IndexName"></span>    IndexName           <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;indexName&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseCrtech">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L161">ACSSearchResponseCrtech</a>
+				<a class="permalink" href="#ACSSearchResponseCrtech">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponseCrtech represents the response structure for the Azure Cognitive Search for external-crtech-thermal-desktop.
+
+			<pre>type ACSSearchResponseCrtech struct {
+<span id="ACSSearchResponseCrtech.Physics"></span>    Physics             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;physics&#34;`
+<span id="ACSSearchResponseCrtech.SourceTitleLvl3"></span>    SourceTitleLvl3     <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourceTitle_lvl3&#34;`
+<span id="ACSSearchResponseCrtech.SourceURLLvl3"></span>    SourceURLLvl3       <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourceURL_lvl3&#34;`
+<span id="ACSSearchResponseCrtech.TokenSize"></span>    TokenSize           <a href="https://pkg.go.dev/builtin/#int">int</a>     `json:&#34;token_size&#34;`
+<span id="ACSSearchResponseCrtech.SourceTitleLvl2"></span>    SourceTitleLvl2     <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourceTitle_lvl2&#34;`
+<span id="ACSSearchResponseCrtech.Weight"></span>    Weight              <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;weight&#34;`
+<span id="ACSSearchResponseCrtech.SourceURLLvl2"></span>    SourceURLLvl2       <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;sourceURL_lvl2&#34;`
+<span id="ACSSearchResponseCrtech.Product"></span>    Product             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;product&#34;`
+<span id="ACSSearchResponseCrtech.Content"></span>    Content             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;content&#34;`
+<span id="ACSSearchResponseCrtech.TypeOFasset"></span>    TypeOFasset         <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;typeOFasset&#34;`
+<span id="ACSSearchResponseCrtech.Version"></span>    Version             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;version&#34;`
+<span id="ACSSearchResponseCrtech.BridgeId"></span>    BridgeId            <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;bridge_id&#34;`
+<span id="ACSSearchResponseCrtech.SearchScore"></span>    SearchScore         <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;@search.score&#34;`
+<span id="ACSSearchResponseCrtech.SearchRerankerScore"></span>    SearchRerankerScore <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;@search.rerankerScore&#34;`
+<span id="ACSSearchResponseCrtech.IndexName"></span>    IndexName           <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;indexName&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseLSdyna">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L140">ACSSearchResponseLSdyna</a>
+				<a class="permalink" href="#ACSSearchResponseLSdyna">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponse represents the response structure for the Azure Cognitive Search for lsdyna-documentation-r14.
+
+			<pre>type ACSSearchResponseLSdyna struct {
+<span id="ACSSearchResponseLSdyna.Title"></span>    Title               <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;title&#34;`
+<span id="ACSSearchResponseLSdyna.Url"></span>    Url                 <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;url&#34;`
+<span id="ACSSearchResponseLSdyna.Content"></span>    Content             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;content&#34;`
+<span id="ACSSearchResponseLSdyna.TypeOFasset"></span>    TypeOFasset         <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;typeOFasset&#34;`
+<span id="ACSSearchResponseLSdyna.Physics"></span>    Physics             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;physics&#34;`
+<span id="ACSSearchResponseLSdyna.Product"></span>    Product             <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;product&#34;`
+<span id="ACSSearchResponseLSdyna.TokenSize"></span>    TokenSize           <a href="https://pkg.go.dev/builtin/#int">int</a>     `json:&#34;token_size&#34;`
+<span id="ACSSearchResponseLSdyna.SearchScore"></span>    SearchScore         <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;@search.score&#34;`
+<span id="ACSSearchResponseLSdyna.SearchRerankerScore"></span>    SearchRerankerScore <a href="https://pkg.go.dev/builtin/#float64">float64</a> `json:&#34;@search.rerankerScore&#34;`
+<span id="ACSSearchResponseLSdyna.IndexName"></span>    IndexName           <a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;indexName&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseStruct">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L101">ACSSearchResponseStruct</a>
+				<a class="permalink" href="#ACSSearchResponseStruct">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for granular-ansysgpt, ansysgpt-documentation-2023r2, scade-documentation-2023r2, ansys-dot-com-marketing.
+
+			<pre>type ACSSearchResponseStruct struct {
+<span id="ACSSearchResponseStruct.OdataContext"></span>    OdataContext <a href="https://pkg.go.dev/builtin/#string">string</a>                          `json:&#34;@odata.context&#34;`
+<span id="ACSSearchResponseStruct.OdataCount"></span>    OdataCount   <a href="https://pkg.go.dev/builtin/#int">int</a>                             `json:&#34;@odata.count&#34;`
+<span id="ACSSearchResponseStruct.Value"></span>    Value        []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#ACSSearchResponse">ACSSearchResponse</a> `json:&#34;value&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseStructALH">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L108">ACSSearchResponseStructALH</a>
+				<a class="permalink" href="#ACSSearchResponseStructALH">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for ansysgpt-alh &amp; ansysgpt-scbu.
+
+			<pre>type ACSSearchResponseStructALH struct {
+<span id="ACSSearchResponseStructALH.OdataContext"></span>    OdataContext <a href="https://pkg.go.dev/builtin/#string">string</a>                 `json:&#34;@odata.context&#34;`
+<span id="ACSSearchResponseStructALH.OdataCount"></span>    OdataCount   <a href="https://pkg.go.dev/builtin/#int">int</a>                    `json:&#34;@odata.count&#34;`
+<span id="ACSSearchResponseStructALH.Value"></span>    Value        []<a href="#ACSSearchResponseALH">ACSSearchResponseALH</a> `json:&#34;value&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseStructCrtech">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L154">ACSSearchResponseStructCrtech</a>
+				<a class="permalink" href="#ACSSearchResponseStructCrtech">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponseStructCrtech represents the response structure for the Azure Cognitive Search for external-crtech-thermal-desktop.
+
+			<pre>type ACSSearchResponseStructCrtech struct {
+<span id="ACSSearchResponseStructCrtech.OdataContext"></span>    OdataContext <a href="https://pkg.go.dev/builtin/#string">string</a>                    `json:&#34;@odata.context&#34;`
+<span id="ACSSearchResponseStructCrtech.OdataCount"></span>    OdataCount   <a href="https://pkg.go.dev/builtin/#int">int</a>                       `json:&#34;@odata.count&#34;`
+<span id="ACSSearchResponseStructCrtech.Value"></span>    Value        []<a href="#ACSSearchResponseCrtech">ACSSearchResponseCrtech</a> `json:&#34;value&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSSearchResponseStructLSdyna">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L133">ACSSearchResponseStructLSdyna</a>
+				<a class="permalink" href="#ACSSearchResponseStructLSdyna">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSSearchResponseStruct represents the response structure for the Azure Cognitive Search for lsdyna-documentation-r14.
+
+			<pre>type ACSSearchResponseStructLSdyna struct {
+<span id="ACSSearchResponseStructLSdyna.OdataContext"></span>    OdataContext <a href="https://pkg.go.dev/builtin/#string">string</a>                    `json:&#34;@odata.context&#34;`
+<span id="ACSSearchResponseStructLSdyna.OdataCount"></span>    OdataCount   <a href="https://pkg.go.dev/builtin/#int">int</a>                       `json:&#34;@odata.count&#34;`
+<span id="ACSSearchResponseStructLSdyna.Value"></span>    Value        []<a href="#ACSSearchResponseLSdyna">ACSSearchResponseLSdyna</a> `json:&#34;value&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="ACSVectorQuery">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L80">ACSVectorQuery</a>
+				<a class="permalink" href="#ACSVectorQuery">&#xb6;</a>
+				
+				
+			</h2>
+			<p>ACSVectorQuery represents the vector query structure for the Azure Cognitive Search.
+
+			<pre>type ACSVectorQuery struct {
+<span id="ACSVectorQuery.Kind"></span>    Kind   <a href="https://pkg.go.dev/builtin/#string">string</a>    `json:&#34;kind&#34;`
+<span id="ACSVectorQuery.K"></span>    K      <a href="https://pkg.go.dev/builtin/#int">int</a>       `json:&#34;k&#34;`
+<span id="ACSVectorQuery.Vector"></span>    Vector []<a href="https://pkg.go.dev/builtin/#float32">float32</a> `json:&#34;vector&#34;`
+<span id="ACSVectorQuery.Fields"></span>    Fields <a href="https://pkg.go.dev/builtin/#string">string</a>    `json:&#34;fields&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="AppendMessageHistoryRole">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/llmhandler.go#L542">AppendMessageHistoryRole</a>
+				<a class="permalink" href="#AppendMessageHistoryRole">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type AppendMessageHistoryRole <a href="https://pkg.go.dev/builtin/#string">string</a></pre>
+
+			
+				
+				<pre>const (
+    <span id="user">user</span>      <a href="#AppendMessageHistoryRole">AppendMessageHistoryRole</a> = &#34;user&#34;
+    <span id="assistant">assistant</span> <a href="#AppendMessageHistoryRole">AppendMessageHistoryRole</a> = &#34;assistant&#34;
+    <span id="system">system</span>    <a href="#AppendMessageHistoryRole">AppendMessageHistoryRole</a> = &#34;system&#34;
+)</pre>
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DataExtractionBranch">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L180">DataExtractionBranch</a>
+				<a class="permalink" href="#DataExtractionBranch">&#xb6;</a>
+				
+				
+			</h2>
+			<p>DataExtractionBranch represents the branch structure for the data extraction.
+
+			<pre>type DataExtractionBranch struct {
+<span id="DataExtractionBranch.Text"></span>    Text             <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="DataExtractionBranch.ChildDataObjects"></span>    ChildDataObjects []*<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>
+<span id="DataExtractionBranch.ChildDataIds"></span>    ChildDataIds     []<a href="https://pkg.go.dev/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DataExtractionLLMInputChannelItem">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L187">DataExtractionLLMInputChannelItem</a>
+				<a class="permalink" href="#DataExtractionLLMInputChannelItem">&#xb6;</a>
+				
+				
+			</h2>
+			<p>DataExtractionLLMInputChannelItem represents the input channel item for the data extraction llm handler workers.
+
+			<pre>type DataExtractionLLMInputChannelItem struct {
+<span id="DataExtractionLLMInputChannelItem.Data"></span>    Data                *<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>
+<span id="DataExtractionLLMInputChannelItem.Adapter"></span>    Adapter             <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="DataExtractionLLMInputChannelItem.ChatRequestType"></span>    ChatRequestType     <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="DataExtractionLLMInputChannelItem.MaxNumberOfKeywords"></span>    MaxNumberOfKeywords <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>
+
+<span id="DataExtractionLLMInputChannelItem.InstructionSequenceWaitGroup"></span>    InstructionSequenceWaitGroup *<a href="https://pkg.go.dev/sync/">sync</a>.<a href="https://pkg.go.dev/sync/#WaitGroup">WaitGroup</a>
+<span id="DataExtractionLLMInputChannelItem.Lock"></span>    Lock                         *<a href="https://pkg.go.dev/sync/">sync</a>.<a href="https://pkg.go.dev/sync/#Mutex">Mutex</a>
+
+<span id="DataExtractionLLMInputChannelItem.EmbeddingVector"></span>    EmbeddingVector []<a href="https://pkg.go.dev/builtin/#float32">float32</a>
+<span id="DataExtractionLLMInputChannelItem.Summary"></span>    Summary         <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="DataExtractionLLMInputChannelItem.Keywords"></span>    Keywords        []<a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="DataExtractionLLMInputChannelItem.CollectionName"></span>    CollectionName  <a href="https://pkg.go.dev/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="dataExtractionNewLlmInputChannelItem">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/privatefunctions.go#L1256">dataExtractionNewLlmInputChannelItem</a>
+					<a class="permalink" href="#dataExtractionNewLlmInputChannelItem">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func dataExtractionNewLlmInputChannelItem(data *<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbData">DbData</a>, instructionSequenceWaitGroup *<a href="https://pkg.go.dev/sync/">sync</a>.<a href="https://pkg.go.dev/sync/#WaitGroup">WaitGroup</a>, adapter <a href="https://pkg.go.dev/builtin/#string">string</a>, chatRequestType <a href="https://pkg.go.dev/builtin/#string">string</a>, maxNumberOfKeywords <a href="https://pkg.go.dev/builtin/#uint32">uint32</a>, lock *<a href="https://pkg.go.dev/sync/">sync</a>.<a href="https://pkg.go.dev/sync/#Mutex">Mutex</a>) *<a href="#DataExtractionLLMInputChannelItem">DataExtractionLLMInputChannelItem</a></pre>
+				<p>dataExtractionNewLlmInputChannelItem creates a new llm input channel item.
+<p>Parameters:
+<ul>
+<li>data: data.
+<li>instructionSequenceWaitGroup: instruction sequence wait group.
+<li>adapter: adapter.
+<li>chatRequestType: chat request type.
+<li>maxNumberOfKeywords: max number of keywords.
+<li>lock: lock.
+</ul>
+<p>Returns:
+<ul>
+<li>llmInputChannelItem: llm input channel item.
+</ul>
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="DataExtractionSplitterServiceRequest">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L202">DataExtractionSplitterServiceRequest</a>
+				<a class="permalink" href="#DataExtractionSplitterServiceRequest">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type DataExtractionSplitterServiceRequest struct {
+<span id="DataExtractionSplitterServiceRequest.DocumentContent"></span>    DocumentContent []<a href="https://pkg.go.dev/builtin/#byte">byte</a> `json:&#34;document_content&#34;`
+<span id="DataExtractionSplitterServiceRequest.ChunkSize"></span>    ChunkSize       <a href="https://pkg.go.dev/builtin/#int">int</a>    `json:&#34;chunk_size&#34;`
+<span id="DataExtractionSplitterServiceRequest.ChunkOverlap"></span>    ChunkOverlap    <a href="https://pkg.go.dev/builtin/#int">int</a>    `json:&#34;chunk_overlap&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="DataExtractionSplitterServiceResponse">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L208">DataExtractionSplitterServiceResponse</a>
+				<a class="permalink" href="#DataExtractionSplitterServiceResponse">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type DataExtractionSplitterServiceResponse struct {
+<span id="DataExtractionSplitterServiceResponse.Chunks"></span>    Chunks []<a href="https://pkg.go.dev/builtin/#string">string</a> `json:&#34;chunks&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="queryInput">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L35">queryInput</a>
+				<a class="permalink" href="#queryInput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>queryInput represents the input for the query function.
+
+			<pre>type queryInput struct {
+<span id="queryInput.CollectionName"></span>    CollectionName    <a href="https://pkg.go.dev/builtin/#string">string</a>                `json:&#34;collection_name&#34; description:&#34;Name of the collection to which the data objects will be added. Required for adding data.&#34; required:&#34;true&#34;`
+<span id="queryInput.MaxRetrievalCount"></span>    MaxRetrievalCount <a href="https://pkg.go.dev/builtin/#int">int</a>                   `json:&#34;max_retrieval_count&#34; description:&#34;Maximum number of results to be retrieved. If not specified, the default value is retrieve all database. If the number of results is too big for the database, the request will be cancelled. Optional.&#34; required:&#34;false&#34;`
+<span id="queryInput.OutputFields"></span>    OutputFields      []<a href="https://pkg.go.dev/builtin/#string">string</a>              `json:&#34;output_fields&#34; description:&#34;Fields to be included in the output. If not specified all fields will be retrieved.Optional&#34; required:&#34;false&#34;`
+<span id="queryInput.Filters"></span>    Filters           <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbFilters">DbFilters</a> `json:&#34;filters&#34; description:&#34;Filter for the query. At least one filter must be defined.&#34; required:&#34;true&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="queryOutput">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L43">queryOutput</a>
+				<a class="permalink" href="#queryOutput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>queryOutput represents the output for the query function.
+
+			<pre>type queryOutput struct {
+<span id="queryOutput.QueryResult"></span>    QueryResult []<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a> `json:&#34;queryResult&#34; description:&#34;Returns the results of the query.&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="retrieveDependenciesInput">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L48">retrieveDependenciesInput</a>
+				<a class="permalink" href="#retrieveDependenciesInput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>retrieveDependenciesInput represents the input for the retrieveDependencies function.
+
+			<pre>type retrieveDependenciesInput struct {
+<span id="retrieveDependenciesInput.CollectionName"></span>    CollectionName        <a href="https://pkg.go.dev/builtin/#string">string</a>                    `json:&#34;collection_name&#34; description:&#34;Name of the collection to which the data objects will be added. Required for adding data.&#34; required:&#34;true&#34;`
+<span id="retrieveDependenciesInput.RelationshipName"></span>    RelationshipName      <a href="https://pkg.go.dev/builtin/#string">string</a>                    `json:&#34;relationship_name&#34; description:&#34;Name of the relationship to retrieve dependencies for. Required for retrieving dependencies.&#34; required:&#34;true&#34;`
+<span id="retrieveDependenciesInput.RelationshipDirection"></span>    RelationshipDirection <a href="https://pkg.go.dev/builtin/#string">string</a>                    `json:&#34;relationship_direction&#34; description:&#34;Direction of the relationship to retrieve dependencies for. It can be either &#39;in&#39;, &#39;out&#39; or &#39;both&#39;. Required for retrieving dependencies.&#34; required:&#34;true&#34;`
+<span id="retrieveDependenciesInput.SourceDocumentId"></span>    SourceDocumentId      <a href="https://pkg.go.dev/builtin/#string">string</a>                    `json:&#34;source_document_id&#34; description:&#34;Document ID of the source node. Required for retrieving dependencies.&#34; required:&#34;true&#34;`
+<span id="retrieveDependenciesInput.NodeTypesFilter"></span>    NodeTypesFilter       <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a> `json:&#34;node_types_filter&#34; description:&#34;Filter based on node types. Use MilvusArrayFilter for specifying node type filtering criteria. Optional.&#34; required:&#34;false&#34;`
+<span id="retrieveDependenciesInput.DocumentTypesFilter"></span>    DocumentTypesFilter   []<a href="https://pkg.go.dev/builtin/#string">string</a>                  `json:&#34;document_types_filter&#34; description:&#34;Filter based on document types. Use MilvusArrayFilter for specifying document type filtering criteria. Optional.&#34; required:&#34;false&#34;`
+<span id="retrieveDependenciesInput.MaxHopsNumber"></span>    MaxHopsNumber         <a href="https://pkg.go.dev/builtin/#int">int</a>                       `json:&#34;max_hops_number&#34; description:&#34;Maximum number of hops to traverse. Optional.&#34; required:&#34;true&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="retrieveDependenciesOutput">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L59">retrieveDependenciesOutput</a>
+				<a class="permalink" href="#retrieveDependenciesOutput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>retrieveDependenciesOutput represents the output for the retrieveDependencies function.
+
+			<pre>type retrieveDependenciesOutput struct {
+<span id="retrieveDependenciesOutput.Success"></span>    Success         <a href="https://pkg.go.dev/builtin/#bool">bool</a>     `json:&#34;success&#34; description:&#34;Returns true if the collections were listed successfully. Returns false or an error if not.&#34;`
+<span id="retrieveDependenciesOutput.DependenciesIds"></span>    DependenciesIds []<a href="https://pkg.go.dev/builtin/#string">string</a> `json:&#34;dependencies_ids&#34; description:&#34;A list of document IDs that are dependencies of the specified source node.&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="similarityElement">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L10">similarityElement</a>
+				<a class="permalink" href="#similarityElement">&#xb6;</a>
+				
+				
+			</h2>
+			<p>similarityElement represents a single element in the similarity search result.
+
+			<pre>type similarityElement struct {
+<span id="similarityElement.Score"></span>    Score <a href="https://pkg.go.dev/builtin/#float64">float64</a>                `json:&#34;distance&#34;`
+<span id="similarityElement.Data"></span>    Data  <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbResponse">DbResponse</a> `json:&#34;data&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="similaritySearchInput">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L16">similaritySearchInput</a>
+				<a class="permalink" href="#similaritySearchInput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>similaritySearchInput represents the input for the similarity search function.
+
+			<pre>type similaritySearchInput struct {
+<span id="similaritySearchInput.CollectionName"></span>    CollectionName    <a href="https://pkg.go.dev/builtin/#string">string</a>                `json:&#34;collection_name&#34; description:&#34;Name of the collection to which the data objects will be added. Required for adding data.&#34; required:&#34;true&#34;`
+<span id="similaritySearchInput.EmbeddedVector"></span>    EmbeddedVector    []<a href="https://pkg.go.dev/builtin/#float32">float32</a>             `json:&#34;embedded_vector&#34; description:&#34;Embedded vector used for searching. Required for retrieval.&#34; required:&#34;true&#34;`
+<span id="similaritySearchInput.MaxRetrievalCount"></span>    MaxRetrievalCount <a href="https://pkg.go.dev/builtin/#int">int</a>                   `json:&#34;max_retrieval_count&#34; description:&#34;Maximum number of results to be retrieved. If it is not specified, the default value is milvus.MaxSearchRetrievalCount. Optional.&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.OutputFields"></span>    OutputFields      []<a href="https://pkg.go.dev/builtin/#string">string</a>              `json:&#34;output_fields&#34; description:&#34;Fields to be included in the output. If not specified all fields will be retrieved.Optional&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.Filters"></span>    Filters           <a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/allie-sharedtypes/pkg/sharedtypes/#DbFilters">DbFilters</a> `json:&#34;filters&#34; description:&#34;Filter for the query. Optional.&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.MinScore"></span>    MinScore          <a href="https://pkg.go.dev/builtin/#float64">float64</a>               `json:&#34;min_score&#34; description:&#34;Filter objects with a score higher than the specified minimum. Optional.&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.GetLeafNodes"></span>    GetLeafNodes      <a href="https://pkg.go.dev/builtin/#bool">bool</a>                  `json:&#34;get_leaf_nodes&#34; description:&#34;Flag to indicate whether to retrieve all the leaf nodes in the result node branch. Set to true to include the leaf nodes. Optional.&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.GetSiblings"></span>    GetSiblings       <a href="https://pkg.go.dev/builtin/#bool">bool</a>                  `json:&#34;get_siblings&#34; description:&#34;Flag to indicate whether to retrieve the previous and next node to the result nodes. Set to true to include the siblings. Optional.&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.GetParent"></span>    GetParent         <a href="https://pkg.go.dev/builtin/#bool">bool</a>                  `json:&#34;get_parent&#34; description:&#34;Flag to indicate whether to retrieve the parent object. Set to true to include the parent object. Optional.&#34; required:&#34;false&#34;`
+<span id="similaritySearchInput.GetChildren"></span>    GetChildren       <a href="https://pkg.go.dev/builtin/#bool">bool</a>                  `json:&#34;get_children&#34; description:&#34;Flag to indicate whether to retrieve the children objects. Set to true to include the children objects. Optional.&#34; required:&#34;false&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="similaritySearchOutput">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L30">similaritySearchOutput</a>
+				<a class="permalink" href="#similaritySearchOutput">&#xb6;</a>
+				
+				
+			</h2>
+			<p>similaritySearchOutput represents the output for the similarity search function.
+
+			<pre>type similaritySearchOutput struct {
+<span id="similaritySearchOutput.SimilarityResult"></span>    SimilarityResult []similarityElement `json:&#34;similarity_result&#34; description:&#34;Similarity Result&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="summaryCounters">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/externalfunctions/types.go#L65">summaryCounters</a>
+				<a class="permalink" href="#summaryCounters">&#xb6;</a>
+				
+				
+			</h2>
+			<p>summaryCounters represents the summary counters structure for the Neo4j query.
+
+			<pre>type summaryCounters struct {
+<span id="summaryCounters.NodesCreated"></span>    NodesCreated         <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;nodes_created&#34;`
+<span id="summaryCounters.NodesDeleted"></span>    NodesDeleted         <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;nodes_deleted&#34;`
+<span id="summaryCounters.RelationshipsCreated"></span>    RelationshipsCreated <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;relationships_created&#34;`
+<span id="summaryCounters.RelationshipsDeleted"></span>    RelationshipsDeleted <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;relationships_deleted&#34;`
+<span id="summaryCounters.PropertiesSet"></span>    PropertiesSet        <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;properties_set&#34;`
+<span id="summaryCounters.LabelsAdded"></span>    LabelsAdded          <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;labels_added&#34;`
+<span id="summaryCounters.LabelsRemoved"></span>    LabelsRemoved        <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;labels_removed&#34;`
+<span id="summaryCounters.IndexesAdded"></span>    IndexesAdded         <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;indexes_added&#34;`
+<span id="summaryCounters.IndexesRemoved"></span>    IndexesRemoved       <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;indexes_removed&#34;`
+<span id="summaryCounters.ConstraintsAdded"></span>    ConstraintsAdded     <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;constraints_added&#34;`
+<span id="summaryCounters.ConstraintsRemoved"></span>    ConstraintsRemoved   <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;constraints_removed&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.21.13.<br>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"> 
+<div class="tocsection editthispage">
+  <a href="None">
+    <i class="fa-solid fa-pencil"></i>
+       Edit
+    on GitHub  
+  </a>
+</div>
+
+</div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../../_sources/api_reference/test/index.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+<link rel="stylesheet" href="../../_static/css/fuse-search.css">
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+
+
+
+
+
+
+
+
+<script>
+var theme_static_search = JSON.parse('{"ignoreLocation": "False", "keys": ["title", "text"], "shouldSort": "True", "threshold": 0.5, "useExtendedSearch": "True"}');
+var theme_limit = "10";
+var min_chars_for_search = "1";
+var searchPath = "../../_static/search.json";
+
+</script>
+
+<script src="../../_static/js/fuse_search.js"></script>
+<script src="../../_static/js/fuse_extension.js"></script>
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright (c) 2024 ANSYS, Inc. All rights reserved.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.0.2.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the
+  <a href="https://sphinxdocs.ansys.com/version/stable/index.html"
+    >Ansys Sphinx Theme</a
+  >
+  1.1.2. <br />Last updated on
+  <span id="date"></span>
+</p>
+<script>
+  var options = { day: "numeric", month: "long", year: "numeric" };
+  var lastModifiedDate = new Date(document.lastModified);
+  var date = lastModifiedDate.toLocaleDateString("en-US", options);
+  document.getElementById("date").innerHTML = date;
+</script></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
