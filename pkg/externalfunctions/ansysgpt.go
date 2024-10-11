@@ -353,7 +353,7 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 		switch indexGroup {
 		case "Ansys Learning":
 			indexList = append(indexList, "granular-ansysgpt")
-			indexList = append(indexList, "ansysgpt-alh")
+			// indexList = append(indexList, "ansysgpt-alh")
 		case "Ansys Products":
 			indexList = append(indexList, "lsdyna-documentation-r14")
 			indexList = append(indexList, "ansysgpt-documentation-2023r2")
@@ -584,7 +584,7 @@ func AisReturnIndexList(accessPoint string) (indexList []string) {
 		indexList = append(indexList, "lsdyna-documentation-r14")
 		indexList = append(indexList, "scade-documentation-2023r2")
 		indexList = append(indexList, "external-marketing")
-		indexList = append(indexList, "ansysgpt-alh")
+		// indexList = append(indexList, "ansysgpt-alh")
 	case "ansysgpt-scbu":
 		indexList = append(indexList, "ansysgpt-scbu")
 	default:
