@@ -57,7 +57,7 @@ func transferDatafromResponseToStreamChannel(
 		if response.Type == "error" {
 			logging.Log.Errorf(internalstates.Ctx, "Error in request %v: %v\n", response.InstructionGuid, response.Error.Message)
 			// send the error message to the stream channel and exit function
-			*streamChannel <- fmt.Sprintf("$$error$$:$$%v$$", response.Error.Message)
+			*streamChannel <- fmt.Sprintf("$&$error$&$:$&$%v$&$", response.Error.Message)
 			return
 		}
 
@@ -79,18 +79,18 @@ func transferDatafromResponseToStreamChannel(
 				if err != nil {
 					logging.Log.Errorf(internalstates.Ctx, "Error getting token count: %v\n", err)
 					// send the error message to the stream channel and exit function
-					*streamChannel <- fmt.Sprintf("$$error$$:$$Error getting token count: %v$$", err)
+					*streamChannel <- fmt.Sprintf("$&$error$&$:$&$Error getting token count: %v$&$", err)
 				}
 				totalOuputTokenCount := previousOutputTokenCount + outputTokenCount
 
 				// append the token count message to the final message
-				finalMessage += fmt.Sprintf("$$input_token_count$$:$$%d$$;$$output_token_count$$:$$%d$$;", previousInputTokenCount, totalOuputTokenCount)
+				finalMessage += fmt.Sprintf("$&$input_token_count$&$:$&$%d$&$;$&$output_token_count$&$:$&$%d$&$;", previousInputTokenCount, totalOuputTokenCount)
 			}
 
 			// check for contex
 			if sendContex {
 				// append context to the final message
-				finalMessage += fmt.Sprintf("$$context$$:$$%s$$;", contex)
+				finalMessage += fmt.Sprintf("$&$context$&$:$&$%s$&$;", contex)
 			}
 
 			// check for code validation
@@ -108,12 +108,12 @@ func transferDatafromResponseToStreamChannel(
 					} else {
 						if valid {
 							if warnings {
-								finalMessage += "$$code_validation$$:$$warning$$;"
+								finalMessage += "$&$code_validation$&$:$&$warning$&$;"
 							} else {
-								finalMessage += "$$code_validation$$:$$valid$$;"
+								finalMessage += "$&$code_validation$&$:$&$valid$&$;"
 							}
 						} else {
-							finalMessage += "$$code_validation$$:$$invalid$$;"
+							finalMessage += "$&$code_validation$&$:$&$invalid$&$;"
 						}
 					}
 				}
@@ -121,6 +121,7 @@ func transferDatafromResponseToStreamChannel(
 
 			// send the final message to the stream channel
 			if finalMessage != "" {
+				fmt.Println("finalMessage: ", finalMessage)
 				*streamChannel <- finalMessage
 			}
 
