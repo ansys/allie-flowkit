@@ -709,12 +709,14 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	for _, example := range context {
 		json, err := json.Marshal(example)
 		if err != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v\n", err)
+			logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v", err)
 			return "", nil
 		}
-		contextString += fmt.Sprintf("\"chunk %v\": %v", chunkNr, string(json)) + "\n"
+		contextString += fmt.Sprintf("\"chunk %v\": %v", chunkNr, string(json)) + ", "
 		chunkNr++
 	}
+	// remove last comma, then add closing bracket
+	contextString = contextString[:len(contextString)-2]
 	contextString += "}"
 
 	// create string from prohibited words
