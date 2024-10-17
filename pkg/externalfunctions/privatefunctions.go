@@ -42,7 +42,9 @@ func transferDatafromResponseToStreamChannel(
 	sendTokenCount bool,
 	previousInputTokenCount int,
 	previousOutputTokenCount int,
-	tokenCountModelName string) {
+	tokenCountModelName string,
+	sendContex bool,
+	contex string) {
 
 	// Defer the closing of the channels
 	defer close(*responseChannel)
@@ -85,6 +87,12 @@ func transferDatafromResponseToStreamChannel(
 				finalMessage += fmt.Sprintf("$$input_token_count$$:$$%d$$;$$output_token_count$$:$$%d$$;", previousInputTokenCount, totalOuputTokenCount)
 			}
 
+			// check for contex
+			if sendContex {
+				// append context to the final message
+				finalMessage += fmt.Sprintf("$$context$$:$$%s$$;", contex)
+			}
+
 			// check for code validation
 			if validateCode {
 				// Extract the code from the response
@@ -100,7 +108,7 @@ func transferDatafromResponseToStreamChannel(
 					} else {
 						if valid {
 							if warnings {
-								finalMessage += "$$code_validation$$:$$warnings$$;"
+								finalMessage += "$$code_validation$$:$$warning$$;"
 							} else {
 								finalMessage += "$$code_validation$$:$$valid$$;"
 							}
@@ -132,7 +140,7 @@ func transferDatafromResponseToStreamChannel(
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
 func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSearch uint32, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions) chan sharedtypes.HandlerResponse {
-	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelIds, options)
+	return sendChatRequest(data, chatRequestType, nil, maxKeywordsSearch, "", llmHandlerEndpoint, modelIds, options, nil)
 }
 
 // sendChatRequest sends a chat request to LLM
@@ -145,7 +153,7 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
-func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions) chan sharedtypes.HandlerResponse {
+func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions, images []string) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelChat := make(chan []byte, 400)
 	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
@@ -155,7 +163,7 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 	go listener(c, responseChannel)
 	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options, images)
 
 	return responseChannel // Return the response channel
 }
@@ -178,7 +186,7 @@ func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, modelIds
 	go listener(c, responseChannel)
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds, nil)
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds, nil, nil)
 	return responseChannel // Return the response channel
 }
 
@@ -350,11 +358,12 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions) {
+func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions, images []string) {
 	request := sharedtypes.HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
 		Data:            data,
+		Images:          images,
 	}
 
 	// check for modelId
@@ -1484,7 +1493,7 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, options)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, options, nil)
 
 	// If isStream is true, create a stream channel and return asap.
 	if isStream {
@@ -1492,7 +1501,7 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel.
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
 
 		// Return the stream channel.
 		return "", &streamChannel, nil
@@ -1743,7 +1752,15 @@ func createPayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 	return nil, 0
 }
 
-// TokenCount takes a model name and a message string, returns the token count.
+// openAiTokenCount returns the number of tokens in a message for a given model.
+//
+// Parameters:
+//   - modelName: the model name.
+//   - message: the message.
+//
+// Returns:
+//   - int: the number of tokens.
+//   - error: an error if any.
 func openAiTokenCount(modelName string, message string) (int, error) {
 	// get model from model name
 	var encoding tokenizer.Encoding

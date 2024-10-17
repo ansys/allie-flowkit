@@ -298,7 +298,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.Historic
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil)
+	responseChannel := sendChatRequest(finalQuery, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -306,7 +306,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.Historic
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -704,15 +704,18 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	}
 
 	// create json string from context
-	contextString := ""
+	contextString := "{"
+	chunkNr := 1
 	for _, example := range context {
 		json, err := json.Marshal(example)
 		if err != nil {
 			logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v\n", err)
 			return "", nil
 		}
-		contextString += fmt.Sprintf("%v", string(json)) + "\n"
+		contextString += fmt.Sprintf("\"chunk %v\": %v", chunkNr, string(json)) + "\n"
+		chunkNr++
 	}
+	contextString += "}"
 
 	// create string from prohibited words
 	prohibitedWordsString := ""
@@ -759,7 +762,7 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request.
-	responseChannel := sendChatRequest(userPrompt, "general", nil, 0, systemPrompt, llmHandlerEndpoint, nil, options)
+	responseChannel := sendChatRequest(userPrompt, "general", nil, 0, systemPrompt, llmHandlerEndpoint, nil, options, nil)
 
 	// Create a stream channel
 	streamChannel := make(chan string, 400)
@@ -772,7 +775,7 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	totalInputTokenCount := previousInputTokenCount + inputTokenCount
 
 	// Start a goroutine to transfer the data from the response channel to the stream channel.
-	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, true, totalInputTokenCount, previousOutputTokenCount, tokenCountModelName)
+	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, true, totalInputTokenCount, previousOutputTokenCount, tokenCountModelName, true, contextString)
 
 	return "", &streamChannel
 }

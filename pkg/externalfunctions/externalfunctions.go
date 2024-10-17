@@ -6,6 +6,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PerformBatchEmbeddingRequest":        PerformBatchEmbeddingRequest,
 	"PerformKeywordExtractionRequest":     PerformKeywordExtractionRequest,
 	"PerformGeneralRequest":               PerformGeneralRequest,
+	"PerformGeneralRequestWithImages":     PerformGeneralRequestWithImages,
 	"PerformGeneralRequestSpecificModel":  PerformGeneralRequestSpecificModel,
 	"PerformCodeLLMRequest":               PerformCodeLLMRequest,
 	"BuildLibraryContext":                 BuildLibraryContext,
