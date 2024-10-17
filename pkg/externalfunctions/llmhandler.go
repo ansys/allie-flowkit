@@ -249,14 +249,71 @@ func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil, nil)
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
 		// Create a stream channel
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
+
+		// Return the stream channel
+		return "", &streamChannel
+	}
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil
+}
+
+// PerformGeneralRequestWithImages performs a general request to LLM with images
+//
+// Tags:
+//   - @displayName: General LLM Request (with Images)
+//
+// Parameters:
+//   - input: the user input
+//   - history: the conversation history
+//   - isStream: the flag to indicate whether the response should be streamed
+//   - systemPrompt: the system prompt
+//   - images: the images
+//
+// Returns:
+//   - message: the response message
+//   - stream: the stream channel
+func PerformGeneralRequestWithImages(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string, images []string) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil, images)
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -306,7 +363,7 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil)
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -314,7 +371,7 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -362,7 +419,7 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send chat request
-	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil, nil)
+	responseChannel := sendChatRequest(input, "code", history, 0, "", llmHandlerEndpoint, nil, nil, nil)
 
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
@@ -370,7 +427,7 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, validateCode, false, 0, 0, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, validateCode, false, 0, 0, "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
