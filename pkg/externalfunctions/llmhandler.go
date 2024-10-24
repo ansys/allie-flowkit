@@ -256,7 +256,7 @@ func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -313,7 +313,7 @@ func PerformGeneralRequestWithImages(input string, history []sharedtypes.Histori
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -371,7 +371,7 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -427,7 +427,7 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, validateCode, false, 0, 0, "", false, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, validateCode, false, "", 0, 0, "", "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
