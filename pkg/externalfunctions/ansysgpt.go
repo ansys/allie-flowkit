@@ -306,7 +306,7 @@ func AnsysGPTPerformLLMRequest(finalQuery string, history []sharedtypes.Historic
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, 0, 0, "", false, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", false, "")
 
 		// Return the stream channel
 		return "", &streamChannel
@@ -685,10 +685,12 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	prohibitedWords []string,
 	errorList1 []string,
 	errorList2 []string,
+	tokenCountEndpoint string,
 	previousInputTokenCount int,
 	previousOutputTokenCount int,
 	tokenCountModelName string,
-	isStream bool) (message string, stream *chan string) {
+	isStream bool,
+	userEmail string) (message string, stream *chan string) {
 
 	logging.Log.Debugf(internalstates.Ctx, "Performing LLM final request")
 
@@ -777,7 +779,7 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	totalInputTokenCount := previousInputTokenCount + inputTokenCount
 
 	// Start a goroutine to transfer the data from the response channel to the stream channel.
-	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, true, totalInputTokenCount, previousOutputTokenCount, tokenCountModelName, true, contextString)
+	go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, true, tokenCountEndpoint, totalInputTokenCount, previousOutputTokenCount, tokenCountModelName, userEmail, true, contextString)
 
 	return "", &streamChannel
 }

@@ -208,3 +208,10 @@ type DataExtractionSplitterServiceRequest struct {
 type DataExtractionSplitterServiceResponse struct {
 	Chunks []string `json:"chunks"`
 }
+
+type TokenCountUpdateRequest struct {
+	Email       string `json:"email"`
+	InputToken  int    `json:"input_token"`
+	OutputToken int    `json:"output_token"`
+	Plattform   string `json:"plattform"`
+}
