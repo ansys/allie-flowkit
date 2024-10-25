@@ -134,7 +134,6 @@ func transferDatafromResponseToStreamChannel(
 
 			// send the final message to the stream channel
 			if finalMessage != "" {
-				fmt.Println("finalMessage: ", finalMessage)
 				*streamChannel <- finalMessage
 			}
 
