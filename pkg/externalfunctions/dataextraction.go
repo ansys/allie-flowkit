@@ -41,6 +41,10 @@ import (
 func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, githubAccessToken string, githubFileExtensions []string,
 	githubFilteredDirectories []string, githubExcludedDirectories []string) (githubFilesToExtract []string) {
+	// If github repo name is empty, return empty list.
+	if githubRepoName == "" {
+		return githubFilesToExtract
+	}
 
 	client, ctx := dataExtractNewGithubClient(githubAccessToken)
 
@@ -89,6 +93,11 @@ func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 //   - localFilesToExtract: local files to extract.
 func GetLocalFilesToExtract(localPath string, localFileExtensions []string,
 	localFilteredDirectories []string, localExcludedDirectories []string) (localFilesToExtract []string) {
+	// If local path is empty, return empty list.
+	if localPath == "" {
+		return localFilesToExtract
+	}
+
 	// Check if the local path exists.
 	if _, err := os.Stat(localPath); os.IsNotExist(err) {
 		errMessage := fmt.Sprintf("Local path does not exist: %s", localPath)
