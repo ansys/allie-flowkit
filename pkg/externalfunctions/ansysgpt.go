@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
@@ -396,6 +397,9 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 // Returns:
 //   - output: the search results
 func AnsysGPTACSSemanticHybridSearchs(
+	acsEndpoint string,
+	acsApiKey string,
+	acsApiVersion string,
 	query string,
 	embeddedQuery []float32,
 	indexList []string,
@@ -404,7 +408,7 @@ func AnsysGPTACSSemanticHybridSearchs(
 
 	output = make([]sharedtypes.ACSSearchResponse, 0)
 	for _, indexName := range indexList {
-		partOutput := ansysGPTACSSemanticHybridSearch(query, embeddedQuery, indexName, filter, topK, false, nil)
+		partOutput := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, indexName, filter, topK, false, nil)
 		output = append(output, partOutput...)
 	}
 
@@ -610,17 +614,45 @@ func AisReturnIndexList(accessPoint string) (indexList []string) {
 // Returns:
 //   - output: the search results
 func AisAcsSemanticHybridSearchs(
+	acsEndpoint string,
+	acsApiKey string,
+	acsApiVersion string,
 	query string,
 	embeddedQuery []float32,
 	indexList []string,
 	physics []string,
-	topK int) (output []sharedtypes.ACSSearchResponse) {
+	topK int) []sharedtypes.ACSSearchResponse {
 
-	output = make([]sharedtypes.ACSSearchResponse, 0)
+	// Create a channel to collect results
+	resultChan := make(chan []sharedtypes.ACSSearchResponse, len(indexList))
+
+	// Create a WaitGroup to ensure all goroutines complete
+	var wg sync.WaitGroup
+	wg.Add(len(indexList))
+
+	// Launch a goroutine for each index
 	for _, indexName := range indexList {
-		partOutput := ansysGPTACSSemanticHybridSearch(query, embeddedQuery, indexName, nil, topK, true, physics)
-		output = append(output, partOutput...)
+		go func(idx string) {
+			defer wg.Done()
+			// Run the search for this index
+			result := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, idx, nil, topK, true, physics)
+			resultChan <- result
+		}(indexName)
 	}
+
+	// Launch a goroutine to close the channel once all searches are complete
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+
+	// Collect all results
+	var output []sharedtypes.ACSSearchResponse
+	for results := range resultChan {
+		output = append(output, results...)
+	}
+
+	fmt.Println(len(output))
 
 	return output
 }
