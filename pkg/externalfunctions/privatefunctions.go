@@ -701,6 +701,9 @@ func formatTemplate(template string, data map[string]string) string {
 // Returns:
 //   - output: the search results
 func ansysGPTACSSemanticHybridSearch(
+	acsEndpoint string,
+	acsApiKey string,
+	acsApiVersion string,
 	query string,
 	embeddedQuery []float32,
 	indexName string,
@@ -708,11 +711,6 @@ func ansysGPTACSSemanticHybridSearch(
 	topK int,
 	isAis bool,
 	physics []string) (output []sharedtypes.ACSSearchResponse) {
-
-	// get credentials
-	acsEndpoint := config.GlobalConfig.ACS_ENDPOINT
-	acsApiKey := config.GlobalConfig.ACS_API_KEY
-	acsApiVersion := config.GlobalConfig.ACS_API_VERSION
 
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)

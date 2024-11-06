@@ -34,7 +34,13 @@ func TestAnsysGPTACSSearchIndex(indexName string, query string) {
 	// indexNames := []string{"granular-ansysgpt", "ansysgpt-documentation-2023r2", "scade-documentation-2023r2", "ansys-dot-com-marketing", "ibp-app-brief", "ansysgpt-alh", "ansysgpt-scbu", "lsdyna-documentation-r14"}
 	indexNames := []string{indexName}
 
+	// ACS endpoint, API key, and API version
+	acsEndpoint := ""
+	acsApiKey := ""
+	acsApiVersion := ""
+
+	// Extract fields from the query
 	filter := externalfunctions.AnsysGPTExtractFieldsFromQuery(query, filedValues, defaultFields)
-	output := externalfunctions.AnsysGPTACSSemanticHybridSearchs(query, embeddedQuery, indexNames, filter, 10)
+	output := externalfunctions.AnsysGPTACSSemanticHybridSearchs(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, indexNames, filter, 10)
 	fmt.Println(len(output))
 }
