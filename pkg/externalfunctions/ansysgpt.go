@@ -652,8 +652,6 @@ func AisAcsSemanticHybridSearchs(
 		output = append(output, results...)
 	}
 
-	fmt.Println(len(output))
-
 	return output
 }
 
@@ -738,20 +736,23 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	}
 
 	// create json string from context
-	contextString := "{"
-	chunkNr := 1
-	for _, example := range context {
-		json, err := json.Marshal(example)
-		if err != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v", err)
-			return "", nil
+	contextString := ""
+	if len(context) != 0 {
+		contextString += "{"
+		chunkNr := 1
+		for _, example := range context {
+			json, err := json.Marshal(example)
+			if err != nil {
+				logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v", err)
+				return "", nil
+			}
+			contextString += fmt.Sprintf("\"chunk %v\": %v", chunkNr, string(json)) + ", "
+			chunkNr++
 		}
-		contextString += fmt.Sprintf("\"chunk %v\": %v", chunkNr, string(json)) + ", "
-		chunkNr++
+		// remove last comma, then add closing bracket
+		contextString = contextString[:len(contextString)-2]
+		contextString += "}"
 	}
-	// remove last comma, then add closing bracket
-	contextString = contextString[:len(contextString)-2]
-	contextString += "}"
 
 	// create string from prohibited words
 	prohibitedWordsString := ""

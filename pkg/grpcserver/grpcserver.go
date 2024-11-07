@@ -145,7 +145,7 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 		var err error
 		inputs[i], err = typeconverters.ConvertStringToGivenType(input.Value, functionDefinition.Input[i].GoType)
 		if err != nil {
-			return nil, fmt.Errorf("error converting input %s to type %s: %v", input.Name, functionDefinition.Input[i].GoType, err)
+			return nil, fmt.Errorf("error converting input '%s' of function '%s' to type '%s': %v", input.Name, req.Name, functionDefinition.Input[i].GoType, err)
 		}
 
 		// check for option sets and convert values
@@ -153,7 +153,7 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 			// convert value to correct type
 			inputs[i], err = convertOptionSetValues(functionDefinition.Name, input.Name, inputs[i])
 			if err != nil {
-				return nil, fmt.Errorf("error converting input %s to type %s: %v", input.Name, functionDefinition.Input[i].GoType, err)
+				return nil, fmt.Errorf("error converting option set input '%s' of function '%s' to type '%s': %v", input.Name, req.Name, functionDefinition.Input[i].GoType, err)
 			}
 		}
 	}
@@ -230,7 +230,7 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 		var err error
 		inputs[i], err = typeconverters.ConvertStringToGivenType(input.Value, functionDefinition.Input[i].GoType)
 		if err != nil {
-			return fmt.Errorf("error converting input %s to type %s: %v", input.Name, functionDefinition.Input[i].GoType, err)
+			return fmt.Errorf("error converting input '%s' of function '%s' to type '%s': %v", input.Name, req.Name, functionDefinition.Input[i].GoType, err)
 		}
 
 		// check for option sets and convert values
@@ -238,7 +238,7 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 			// convert value to correct type
 			inputs[i], err = convertOptionSetValues(functionDefinition.Name, input.Name, inputs[i])
 			if err != nil {
-				return fmt.Errorf("error converting input %s to type %s: %v", input.Name, functionDefinition.Input[i].GoType, err)
+				return fmt.Errorf("error converting option set input '%s' of function '%s' to type '%s': %v", input.Name, req.Name, functionDefinition.Input[i].GoType, err)
 			}
 		}
 	}
