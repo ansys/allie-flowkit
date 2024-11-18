@@ -5,6 +5,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -542,4 +544,121 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	llmHandlerWaitGroup.Wait()
 
 	return returnedDocumentData
+}
+
+func LoadMechanicalObjectDefinitions(path string) (functions []CodeGenerationFunction, parameters []CodeGenerationClassParameter) {
+	// Read file from local path.
+	content, err := os.ReadFile(path)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	// Create object definition document.
+	objectDefinitionDoc := MechanicalObjectDefinitionDocument{}
+
+	// Unmarshal the XML content into the object definition document.
+	err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	for _, objectDefinition := range objectDefinitionDoc.Members {
+		// if name starts with p is a parameter
+		if strings.HasPrefix(objectDefinition.Name, "P") {
+			parameters = append(parameters, mechanicalFunctionToCodeGenerationClassParameter(objectDefinition))
+		} else if strings.HasPrefix(objectDefinition.Name, "M") {
+			functions = append(functions, mechanicalFunctionToCodeGenerationFunction(objectDefinition))
+		}
+	}
+
+	return functions, parameters
+}
+
+func GeneratePseudocodeFromCodeGenerationFunctions(functions []CodeGenerationFunction, pseudoCodeGenPrompt string, systemPrompt string) (completeFunctionDefinitions []CodeGenerationFunction) {
+	llmChannel := make(chan CodeGenerationFunction, len(functions)) // Channel for functions to process
+	errorChannel := make(chan error, 1)
+	llmWaitGroup := sync.WaitGroup{}
+
+	// Start LLM Handler workers.
+	for i := 0; i < 4; i++ {
+		llmWaitGroup.Add(1)
+		go func() {
+			defer llmWaitGroup.Done()
+			for function := range llmChannel {
+				// prompt formatting depending on function
+				parametersJSON, err := json.Marshal(function.Parameters)
+				if err != nil {
+					errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
+					logging.Log.Error(internalstates.Ctx, errMessage)
+					errorChannel <- fmt.Errorf(errMessage)
+				}
+
+				valuesToFormat := map[string]string{
+					"functionName":       function.Signature,
+					"functionParameters": string(parametersJSON),
+					"summary":            function.Summary,
+				}
+
+				prompt := formatTemplate(pseudoCodeGenPrompt, valuesToFormat)
+
+				response, _, err := performGeneralRequest(prompt, []sharedtypes.HistoricMessage{}, false, systemPrompt, &sharedtypes.ModelOptions{})
+				if err != nil {
+					errorChannel <- err // Report errors
+				}
+
+				// unmarshall the response from yaml and append modify the function
+				function.Description = response
+				function.SignaturePseudocode = response
+				function.Dependencies = []string{}
+
+				completeFunctionDefinitions = append(completeFunctionDefinitions, function)
+			}
+		}()
+	}
+
+	// Add all functions to the channel.
+	for _, function := range functions {
+		llmChannel <- function
+	}
+	close(llmChannel) // Close the channel to signal workers no more items are coming
+
+	// Wait for all workers to finish.
+	llmWaitGroup.Wait()
+
+	// Check for errors if needed.
+	close(errorChannel)
+	for err := range errorChannel {
+		errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	return completeFunctionDefinitions
+}
+
+func mechanicalFunctionToCodeGenerationFunction(function MechanicalAssemblyMember) (codeGenerationFunction CodeGenerationFunction) {
+	// create guid brand new
+	codeGenerationFunction = CodeGenerationFunction{
+		Guid:       "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+		Signature:  function.Name,
+		Example:    function.Example,
+		Parameters: function.Params,
+		Summary:    function.Summary,
+	}
+
+	return codeGenerationFunction
+}
+
+func mechanicalFunctionToCodeGenerationClassParameter(parameter MechanicalAssemblyMember) (codeGenerationParameter CodeGenerationClassParameter) {
+	// create guid brand new
+	codeGenerationParameter = CodeGenerationClassParameter{
+		Guid: "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+		Name: parameter.Name,
+	}
+
+	return codeGenerationParameter
 }

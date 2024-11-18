@@ -1,6 +1,7 @@
 package externalfunctions
 
 import (
+	"encoding/xml"
 	"sync"
 
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
@@ -214,4 +215,55 @@ type TokenCountUpdateRequest struct {
 	InputToken  int    `json:"input_token"`
 	OutputToken int    `json:"output_token"`
 	Plattform   string `json:"plattform"`
+}
+
+// Structs representing the XML structure
+type MechanicalObjectDefinitionDocument struct {
+	XMLName  xml.Name                   `xml:"doc"`
+	Assembly MechanicalAssembly         `xml:"assembly"`
+	Members  []MechanicalAssemblyMember `xml:"members>member"`
+}
+
+type MechanicalAssembly struct {
+	Name string `xml:"name"`
+}
+
+type MechanicalAssemblyMember struct {
+	Name    string                  `xml:"name,attr"`
+	Summary string                  `xml:"summary"`
+	Params  []MechanicalMemberParam `xml:"param"`             // Handles multiple <param> elements
+	Example MechanicalMemberExample `xml:"example,omitempty"` // Optional <example> element
+}
+
+type MechanicalMemberParam struct {
+	Name        string `xml:"name,attr" json:"name"`        // Attribute for <param>
+	Description string `xml:",chardata" json:"description"` // Text content of <param>
+}
+
+type MechanicalMemberExample struct {
+	Description string                      `xml:",chardata" json:"description"` // Text content of <example>
+	Code        MechanicalMemberExampleCode `xml:"code,omitempty" json:"code"`   // Optional <code> element
+}
+
+type MechanicalMemberExampleCode struct {
+	Type string `xml:"type,attr" json:"type"` // Attribute for <code>
+	Text string `xml:",chardata" json:"text"` // Text content of <code>
+}
+
+type CodeGenerationFunction struct {
+	Guid                string                  `json:"guid"`
+	SignaturePseudocode string                  `json:"signature_pseudocode"`
+	Description         string                  `json:"description"`
+	Dependencies        []string                `json:"dependencies"`
+	Signature           string                  `json:"signature"`
+	Summary             string                  `json:"summary"`
+	Example             MechanicalMemberExample `json:"example"`
+	Parameters          []MechanicalMemberParam `json:"parameters"`
+}
+
+type CodeGenerationClassParameter struct {
+	Guid         string   `json:"guid"`
+	Name         string   `json:"name"`
+	Description  string   `json:"description"`
+	Dependencies []string `json:"dependencies"`
 }
