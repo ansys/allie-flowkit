@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
@@ -375,8 +376,10 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 				case "info":
 					logging.Log.Infof(internalstates.Ctx, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
 					stopListener = false
+					continue
 				default:
 					logging.Log.Warn(internalstates.Ctx, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
+					continue
 				}
 				// Send the response to the channel
 				responseChannel <- response
@@ -1588,6 +1591,11 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 			return "", nil, fmt.Errorf("error in general llm request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
 		}
 
+		if response.Type == "info" {
+			logging.Log.Infof(internalstates.Ctx, "Received info message for general llm request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			continue
+		}
+
 		// Accumulate the responses.
 		responseAsStr += *(response.ChatData)
 
@@ -1860,4 +1868,40 @@ func openAiTokenCount(modelName string, message string) (int, error) {
 
 	// Return the number of tokens
 	return len(tokens), nil
+}
+
+// codeGenerationProcessBatchEmbeddings processes the data extraction batch embeddings.
+//
+// Parameters:
+//   - documentData: the document data.
+//   - maxBatchSize: the max batch size.
+//
+// Returns:
+//   - error: an error if any
+func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerationElement, maxBatchSize int) (elementEmbeddings [][]float32, err error) {
+	// Process data in batches
+	for i := 0; i < len(elements); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(elements) {
+			end = len(elements)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := elements[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.Name
+		}
+
+		// Perform vector embedding request to LLM handler
+		batchEmbeddings, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed)
+		if err != nil {
+			return nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		elementEmbeddings = append(elementEmbeddings, batchEmbeddings...)
+	}
+
+	return elementEmbeddings, nil
 }

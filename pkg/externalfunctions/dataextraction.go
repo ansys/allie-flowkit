@@ -14,6 +14,9 @@ import (
 	"sync"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
@@ -546,7 +549,7 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	return returnedDocumentData
 }
 
-func LoadMechanicalObjectDefinitions(path string) (functions []CodeGenerationFunction, parameters []CodeGenerationClassParameter) {
+func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.CodeGenerationElement) {
 	// Read file from local path.
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -556,7 +559,7 @@ func LoadMechanicalObjectDefinitions(path string) (functions []CodeGenerationFun
 	}
 
 	// Create object definition document.
-	objectDefinitionDoc := MechanicalObjectDefinitionDocument{}
+	objectDefinitionDoc := codegeneration.MechanicalObjectDefinitionDocument{}
 
 	// Unmarshal the XML content into the object definition document.
 	err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
@@ -567,28 +570,90 @@ func LoadMechanicalObjectDefinitions(path string) (functions []CodeGenerationFun
 	}
 
 	for _, objectDefinition := range objectDefinitionDoc.Members {
-		// if name starts with p is a parameter
-		if strings.HasPrefix(objectDefinition.Name, "P") {
-			parameters = append(parameters, mechanicalFunctionToCodeGenerationClassParameter(objectDefinition))
-		} else if strings.HasPrefix(objectDefinition.Name, "M") {
-			functions = append(functions, mechanicalFunctionToCodeGenerationFunction(objectDefinition))
+		// If object name contains `` ignore it.
+		if strings.Contains(objectDefinition.Name, "``") {
+			continue
 		}
+
+		// Extract the prefix and name from the object definition.
+		prefix := strings.Split(objectDefinition.Name, ":")[0]
+		name := strings.Split(objectDefinition.Name, ":")[1]
+
+		// Create the code generation element.
+		element := codegeneration.CodeGenerationElement{
+			Guid:       "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Name:       name,
+			Summary:    objectDefinition.Summary,
+			ReturnType: objectDefinition.ReturnType,
+			Example:    objectDefinition.Example,
+			Parameters: objectDefinition.Params,
+			Remarks:    objectDefinition.Remarks,
+		}
+
+		switch prefix {
+		case "M":
+			element.Type = codegeneration.CodeGenerationType(codegeneration.Method)
+
+			// Extract dependencies for method.
+			dependencies := strings.Split(element.Name, "(")
+			dependencies = strings.Split(dependencies[0], ".")
+			element.Dependencies = dependencies
+
+		case "P":
+			element.Type = codegeneration.CodeGenerationType(codegeneration.Parameter)
+
+			// Extract dependencies for parameter.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		case "F":
+			element.Type = codegeneration.CodeGenerationType(codegeneration.Function)
+
+			// Extract dependencies for function.
+			dependencies := strings.Split(element.Name, "(")
+			dependencies = strings.Split(dependencies[0], ".")
+			element.Dependencies = dependencies
+
+		case "T":
+			element.Type = codegeneration.CodeGenerationType(codegeneration.Class)
+
+			// Extract dependencies for class.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		case "E":
+			// Ignore for now.
+
+		default:
+			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		elements = append(elements, element)
 	}
 
-	return functions, parameters
+	return elements
 }
 
-func GeneratePseudocodeFromCodeGenerationFunctions(functions []CodeGenerationFunction, pseudoCodeGenPrompt string, systemPrompt string) (completeFunctionDefinitions []CodeGenerationFunction) {
-	llmChannel := make(chan CodeGenerationFunction, len(functions)) // Channel for functions to process
+func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.CodeGenerationElement, pseudoCodeGenPrompt string, systemPrompt string, workers int) (completeElementDefinitions []codegeneration.CodeGenerationElement) {
+	llmChannel := make(chan codegeneration.CodeGenerationElement, len(functions)) // Channel for functions to process
 	errorChannel := make(chan error, 1)
 	llmWaitGroup := sync.WaitGroup{}
 
 	// Start LLM Handler workers.
-	for i := 0; i < 4; i++ {
+	for i := 0; i < workers; i++ {
 		llmWaitGroup.Add(1)
 		go func() {
 			defer llmWaitGroup.Done()
 			for function := range llmChannel {
+				// If type is not "function" or "method", ignore it.
+				if function.Type != codegeneration.Function && function.Type != codegeneration.Method {
+					continue
+				}
+
 				// prompt formatting depending on function
 				parametersJSON, err := json.Marshal(function.Parameters)
 				if err != nil {
@@ -597,10 +662,18 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []CodeGenerationFun
 					errorChannel <- fmt.Errorf(errMessage)
 				}
 
+				exampleJSON, err := json.Marshal(function.Example)
+				if err != nil {
+					errMessage := fmt.Sprintf("Error marshalling function example: %v", err)
+					logging.Log.Error(internalstates.Ctx, errMessage)
+					errorChannel <- fmt.Errorf(errMessage)
+				}
+
 				valuesToFormat := map[string]string{
-					"functionName":       function.Signature,
-					"functionParameters": string(parametersJSON),
-					"summary":            function.Summary,
+					"name":       function.Name,
+					"parameters": string(parametersJSON),
+					"summary":    function.Summary,
+					"example":    string(exampleJSON),
 				}
 
 				prompt := formatTemplate(pseudoCodeGenPrompt, valuesToFormat)
@@ -610,17 +683,46 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []CodeGenerationFun
 					errorChannel <- err // Report errors
 				}
 
-				// unmarshall the response from yaml and append modify the function
-				function.Description = response
-				function.SignaturePseudocode = response
-				function.Dependencies = []string{}
+				jsonContent := response
+				// // Extract the start and end positions of the JSON content
+				// start := strings.Index(response, "```json")
+				// end := strings.LastIndex(response, "```")
+				// fmt.Println("Start: ", start)
+				// fmt.Println("Response: " + response)
 
-				completeFunctionDefinitions = append(completeFunctionDefinitions, function)
+				// if start == -1 || end == -1 || start >= end {
+				// 	errMessage := fmt.Sprintf("Error extracting JSON content from response: %v", err)
+				// 	logging.Log.Error(internalstates.Ctx, errMessage)
+				// 	errorChannel <- fmt.Errorf(errMessage)
+				// }
+
+				// // Extract JSON content between the ```json block
+				// jsonContent := response[start+len("```json") : end]
+				// jsonContent = codegeneration.RemoveEmptyLines(jsonContent)
+				// fmt.Println("JSON Content: ")
+				// fmt.Println(jsonContent)
+				// fmt.Println("-----------------")
+
+				// Unmarshal the extracted JSON content
+				codeGenerationPseudocodeResponse := codegeneration.CodeGenerationPseudocodeResponse{}
+				err = json.Unmarshal([]byte(jsonContent), &codeGenerationPseudocodeResponse)
+				if err != nil {
+					errMessage := fmt.Sprintf("Error unmarshalling response: %v", err)
+					logging.Log.Error(internalstates.Ctx, errMessage)
+					errorChannel <- fmt.Errorf(errMessage)
+				}
+
+				// assign new signature and description to function
+				function.Name = codeGenerationPseudocodeResponse.Signature
+				function.Description = codeGenerationPseudocodeResponse.Description
+
+				completeElementDefinitions = append(completeElementDefinitions, function)
 			}
 		}()
 	}
 
 	// Add all functions to the channel.
+	fmt.Println("Functions: ", len(functions))
 	for _, function := range functions {
 		llmChannel <- function
 	}
@@ -637,28 +739,99 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []CodeGenerationFun
 		panic(errMessage)
 	}
 
-	return completeFunctionDefinitions
+	return completeElementDefinitions
 }
 
-func mechanicalFunctionToCodeGenerationFunction(function MechanicalAssemblyMember) (codeGenerationFunction CodeGenerationFunction) {
-	// create guid brand new
-	codeGenerationFunction = CodeGenerationFunction{
-		Guid:       "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
-		Signature:  function.Name,
-		Example:    function.Example,
-		Parameters: function.Params,
-		Summary:    function.Summary,
+func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationElement, elementsCollectionName string, batchSize int) error {
+	// Set default batch size if not provided.
+	if batchSize <= 0 {
+		batchSize = 500
 	}
 
-	return codeGenerationFunction
-}
-
-func mechanicalFunctionToCodeGenerationClassParameter(parameter MechanicalAssemblyMember) (codeGenerationParameter CodeGenerationClassParameter) {
-	// create guid brand new
-	codeGenerationParameter = CodeGenerationClassParameter{
-		Guid: "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
-		Name: parameter.Name,
+	// Generate the embeddings for the elements
+	embeddings, err := codeGenerationProcessBatchEmbeddings(elements, batchSize)
+	if err != nil {
+		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
 	}
 
-	return codeGenerationParameter
+	// Create the vector database objects.
+	vectorElements := make([]codegeneration.VectorDatabaseElement, len(elements))
+	for i, element := range elements {
+		// Create a new vector database object.
+		vectorElement := codegeneration.VectorDatabaseElement{
+			Guid:           element.Guid,
+			Vector:         embeddings[i],
+			NamePseudocode: element.NamePseudocode,
+			Description:    element.Description,
+			Type:           string(element.Type),
+		}
+
+		// Add the new vector database object to the list.
+		vectorElements = append(vectorElements, vectorElement)
+	}
+
+	// Initialize the vector database.
+	milvusClient, err := milvus.Initialize()
+	if err != nil {
+		errMessage := "error initializing the vector database"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the schema for this collection
+	schemaFields := []milvus.SchemaField{
+		{
+			Name:       "guid",
+			Type:       "string",
+			PrimaryKey: true,
+		},
+		{
+			Name:      "vector",
+			Type:      "float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name: "type",
+			Type: "string",
+		},
+		{
+			Name: "name_pseudocode",
+			Type: "string",
+		},
+		{
+			Name: "description",
+			Type: "string",
+		},
+	}
+
+	schema, err := milvus.CreateCustomSchema(elementsCollectionName, schemaFields, "collection for code generation elements")
+	if err != nil {
+		errMessage := "error creating the schema"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the collection.
+	err = milvus.CreateCollection(schema, milvusClient)
+	if err != nil {
+		errMessage := "error creating the collection"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	elementsAsInterface := make([]interface{}, len(vectorElements))
+	for i, v := range vectorElements {
+		elementsAsInterface[i] = v
+	}
+
+	// Insert the elements into the vector database.
+	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
+	if err != nil {
+		errMessage := "error inserting data into the vector database"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	return nil
 }
