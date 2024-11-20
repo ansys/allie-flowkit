@@ -651,6 +651,9 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 			for function := range llmChannel {
 				// If type is not "function" or "method", ignore it.
 				if function.Type != codegeneration.Function && function.Type != codegeneration.Method {
+					function.NamePseudocode = function.Name
+					function.Description = function.Summary
+					completeElementDefinitions = append(completeElementDefinitions, function)
 					continue
 				}
 
@@ -713,7 +716,7 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 				}
 
 				// assign new signature and description to function
-				function.Name = codeGenerationPseudocodeResponse.Signature
+				function.NamePseudocode = codeGenerationPseudocodeResponse.Signature
 				function.Description = codeGenerationPseudocodeResponse.Description
 
 				completeElementDefinitions = append(completeElementDefinitions, function)
@@ -722,7 +725,6 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 	}
 
 	// Add all functions to the channel.
-	fmt.Println("Functions: ", len(functions))
 	for _, function := range functions {
 		llmChannel <- function
 	}
@@ -738,6 +740,8 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
+
+	logging.Log.Infof(internalstates.Ctx, "Finished generating pseudocode for functions \n")
 
 	return completeElementDefinitions
 }
@@ -755,7 +759,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	}
 
 	// Create the vector database objects.
-	vectorElements := make([]codegeneration.VectorDatabaseElement, len(elements))
+	vectorElements := []codegeneration.VectorDatabaseElement{}
 	for i, element := range elements {
 		// Create a new vector database object.
 		vectorElement := codegeneration.VectorDatabaseElement{
@@ -781,13 +785,12 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
-			Name:       "guid",
-			Type:       "string",
-			PrimaryKey: true,
+			Name: "guid",
+			Type: "string",
 		},
 		{
 			Name:      "vector",
-			Type:      "float32",
+			Type:      "[]float32",
 			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
 		},
 		{
@@ -820,13 +823,13 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	}
 
 	// Convert []VectorDatabaseElement to []interface{}
-	elementsAsInterface := make([]interface{}, len(vectorElements))
-	for i, v := range vectorElements {
-		elementsAsInterface[i] = v
-	}
+	// elementsAsInterface := make([]interface{}, len(vectorElements))
+	// for i, v := range vectorElements {
+	// 	elementsAsInterface[i] = v
+	// }
 
 	// Insert the elements into the vector database.
-	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
+	err = milvus.InsertData(elementsCollectionName, vectorElements)
 	if err != nil {
 		errMessage := "error inserting data into the vector database"
 		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)

@@ -1890,7 +1890,7 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 		batchData := elements[i:end]
 		batchTextToEmbed := make([]string, len(batchData))
 		for j, data := range batchData {
-			batchTextToEmbed[j] = data.Name
+			batchTextToEmbed[j] = data.NamePseudocode
 		}
 
 		// Perform vector embedding request to LLM handler
@@ -1902,6 +1902,8 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 		// Add the embeddings to the list
 		elementEmbeddings = append(elementEmbeddings, batchEmbeddings...)
 	}
+
+	logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", len(elements))
 
 	return elementEmbeddings, nil
 }

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/generic"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -211,7 +212,23 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 			return
 		}
 	}()
-	err := milvusClient.CreateCollection(
+	// Check if the collection already exists
+	hasColl, err := milvusClient.HasCollection(
+		context.Background(),  // ctx
+		schema.CollectionName, // CollectionName
+	)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Error during HasCollection: %v", err)
+		return err
+	}
+
+	if hasColl {
+		logging.Log.Infof(internalstates.Ctx, "Collection already exists: %s\n", schema.CollectionName)
+		return nil
+	}
+
+	// Create collection if it does not exist
+	err = milvusClient.CreateCollection(
 		context.Background(), // ctx
 		schema,
 		2, // shardNum
@@ -221,7 +238,121 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 		return err
 	}
 
+	// Get the vector field name from the schema
+	var vectorFieldName string
+	for _, field := range schema.Fields {
+		if field.DataType == entity.FieldTypeFloatVector || field.DataType == entity.FieldTypeBinaryVector {
+			vectorFieldName = field.Name
+			break
+		}
+	}
+
+	// Create index on the collection
+	err = CreateIndexes(schema.CollectionName, milvusClient, "guid", vectorFieldName)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Error during CreateIndexes: %v", err)
+		return err
+	}
+
+	// Load the collection
+	err = loadCollection(schema.CollectionName, milvusClient)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Error during LoadCollection: %v", err)
+		return err
+	}
+
 	logging.Log.Infof(internalstates.Ctx, "Created collection: %s\n", schema.CollectionName)
+
+	return nil
+}
+
+// CreateIndexes creates indexes for the Milvus DB.
+// Firstly, a scalar index is created for the guid field. Secondly, a vector index is created for the embeddings field.
+//
+// Parameters:
+//   - collectionName: Name of the collection to create the indexes for.
+//   - milvusClient: Milvus client.
+//
+// Returns:
+//   - error: Error if any issue occurs during creating the indexes.
+func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldName string, vectorFieldName string) (funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Panic in CreateIndexes: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	/////////////////////////////////////////
+	// 1. Create Scalar Index
+	/////////////////////////////////////////
+	err := milvusClient.CreateIndex(
+		context.Background(), // ctx
+		collectionName,       // CollectionName
+		guidFieldName,
+		entity.NewScalarIndex(),
+		false,
+	)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to create index: %s", err.Error())
+		return err
+	}
+
+	logging.Log.Info(internalstates.Ctx, "Scalar index created")
+
+	///////////////////////////////////////////
+	// 2. Create Vector Index
+	///////////////////////////////////////////
+
+	var idx entity.Index
+	var metricType entity.MetricType
+
+	// Determine the type of metric based on the configuration
+	switch config.GlobalConfig.MILVUS_METRIC_TYPE {
+	case "l2":
+		metricType = entity.L2
+	case "ip":
+		metricType = entity.IP
+	case "cosine":
+		metricType = entity.COSINE
+	default:
+		metricType = entity.COSINE
+	}
+
+	// Determine the type of vector index based on the configuration
+	switch config.GlobalConfig.MILVUS_INDEX_TYPE {
+	case "flat":
+		idx, err = entity.NewIndexFlat(metricType)
+	case "ivfFlat":
+		idx, err = entity.NewIndexIvfFlat(
+			metricType, // metricType
+			1024,       // ConstructParams
+		)
+	default:
+		err = errors.New("unknown vector index")
+	}
+
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Failed to create %v index: %s", idx.IndexType(), err.Error())
+		return err
+	}
+
+	// Create a vector index for the vectorFieldName field
+	err = milvusClient.CreateIndex(
+		context.Background(), // ctx
+		collectionName,       // CollectionName
+		vectorFieldName,
+		idx,
+		false,
+	)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to create index: %s", err.Error())
+		return err
+	}
+
+	logging.Log.Infof(internalstates.Ctx, "Vector index of type %v created", idx.IndexType())
 
 	return nil
 }
@@ -247,12 +378,12 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 		case "float64":
 			fieldSchema.DataType = entity.FieldTypeDouble
 		case "string":
-			fieldSchema.DataType = entity.FieldTypeString
+			fieldSchema.DataType = entity.FieldTypeVarChar
 		case "bool":
 			fieldSchema.DataType = entity.FieldTypeBool
-		case "float_vector":
+		case "[]float32":
 			fieldSchema.DataType = entity.FieldTypeFloatVector
-		case "binary_vector":
+		case "[]bool":
 			fieldSchema.DataType = entity.FieldTypeBinaryVector
 		default:
 			return nil, fmt.Errorf("unsupported field type: %s", field.Type)
@@ -266,6 +397,12 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.AutoID = true
 		}
 
+		// Set maximum length for string fields
+		maxLength := 40000
+		if fieldSchema.DataType == entity.FieldTypeVarChar {
+			fieldSchema.TypeParams = map[string]string{"max_length": strconv.Itoa(maxLength)}
+		}
+
 		// Set dimension for vector fields
 		if fieldSchema.DataType == entity.FieldTypeFloatVector || fieldSchema.DataType == entity.FieldTypeBinaryVector {
 			if field.Dimension <= 0 {
@@ -276,6 +413,15 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 
 		schemaFields = append(schemaFields, fieldSchema)
 	}
+
+	// Add auto ID field if not already present
+	schemaFields = append(schemaFields, &entity.Field{
+		Name:        "id",
+		DataType:    entity.FieldTypeInt64,
+		Description: "Auto-generated ID field",
+		PrimaryKey:  true,
+		AutoID:      true,
+	})
 
 	schema := &entity.Schema{
 		CollectionName: collectionName,
@@ -295,7 +441,7 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 //
 // Returns:
 //   - error: Error if any issue occurs during sending the data to the Milvus DB.
-func InsertData(collectionName string, dataToSend []interface{}) (funcError error) {
+func InsertData(collectionName string, dataToSend []codegeneration.VectorDatabaseElement) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -313,6 +459,9 @@ func InsertData(collectionName string, dataToSend []interface{}) (funcError erro
 
 	startIndex := 0
 	stopIndex := 0
+
+	// Put the data to send in the string json format
+	fmt.Println(len(dataToSend[0].Vector))
 
 	// Send data to insert in batches of CallsBatchSize
 	for stopIndex < len(dataToSend) {
