@@ -16,6 +16,7 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/neo4j"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
@@ -597,6 +598,7 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 			// Extract dependencies for method.
 			dependencies := strings.Split(element.Name, "(")
 			dependencies = strings.Split(dependencies[0], ".")
+			dependencies = dependencies[:len(dependencies)-1]
 			element.Dependencies = dependencies
 
 		case "P":
@@ -613,6 +615,7 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 			// Extract dependencies for function.
 			dependencies := strings.Split(element.Name, "(")
 			dependencies = strings.Split(dependencies[0], ".")
+			dependencies = dependencies[:len(dependencies)-1]
 			element.Dependencies = dependencies
 
 		case "T":
@@ -625,6 +628,7 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 
 		case "E":
 			// Ignore for now.
+			continue
 
 		default:
 			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)
@@ -710,9 +714,8 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 				codeGenerationPseudocodeResponse := codegeneration.CodeGenerationPseudocodeResponse{}
 				err = json.Unmarshal([]byte(jsonContent), &codeGenerationPseudocodeResponse)
 				if err != nil {
-					errMessage := fmt.Sprintf("Error unmarshalling response: %v", err)
-					logging.Log.Error(internalstates.Ctx, errMessage)
-					errorChannel <- fmt.Errorf(errMessage)
+					logging.Log.Warnf(internalstates.Ctx, "Error unmarshalling JSON content, retrying: %v", err)
+					llmChannel <- function
 				}
 
 				// assign new signature and description to function
@@ -835,6 +838,19 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
+
+	return nil
+}
+
+func StoreElementsInGraphDatabase(elements []codegeneration.CodeGenerationElement) error {
+	// Initialize the graph database.
+	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+
+	// Add the elements to the graph database.
+	neo4j.Neo4j_Driver.AddNodes(elements)
+
+	// Add the dependencies to the graph database.
+	neo4j.Neo4j_Driver.CreateRelationships(elements)
 
 	return nil
 }

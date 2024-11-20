@@ -77,3 +77,16 @@ type VectorDatabaseElement struct {
 	NamePseudocode string    `json:"name_pseudocode"`
 	Description    string    `json:"description"`
 }
+
+type GraphDatabaseElement struct {
+	Guid           string                  `json:"guid"`
+	Type           string                  `json:"type"`
+	NamePseudocode string                  `json:"name_pseudocode"`
+	Description    string                  `json:"description"`
+	Summary        string                  `json:"summary"`
+	Examples       string                  `json:"examples"`
+	Parameters     []MechanicalMemberParam `json:"parameters"`
+	Dependencies   []string                `json:"dependencies"`
+	ReturnType     string                  `json:"returnType"`
+	Remarks        string                  `json:"remarks"`
+}
