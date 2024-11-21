@@ -1890,7 +1890,7 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 		batchData := elements[i:end]
 		batchTextToEmbed := make([]string, len(batchData))
 		for j, data := range batchData {
-			batchTextToEmbed[j] = data.NamePseudocode
+			batchTextToEmbed[j] = "Name: " + data.Name + "\nDescription: " + data.Description
 		}
 
 		// Perform vector embedding request to LLM handler
@@ -1906,4 +1906,108 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 	logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", len(elements))
 
 	return elementEmbeddings, nil
+}
+
+// codeGenerationProcessHybridSearchEmbeddings processes the data extraction batch embeddings.
+//
+// Parameters:
+//   - elements: the elements.
+//   - maxBatchSize: the max batch size.
+//
+// Returns:
+//   - error: an error if any
+func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeGenerationElement, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+	// Process data in batches
+	for i := 0; i < len(elements); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(elements) {
+			end = len(elements)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := elements[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.Name + " " + data.Description
+		}
+
+		// Send http request
+		batchDenseEmbeddings, batchLexicalWeights, _, err := CreateEmbeddings(true, true, false, false, batchTextToEmbed)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
+		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
+	}
+
+	logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", len(elements))
+
+	return denseEmbeddings, lexicalWeights, nil
+}
+
+type pythonEmbeddingRequest struct {
+	Passages          []string `json:"passages"`
+	ReturnDense       bool     `json:"return_dense"`
+	ReturnSparse      bool     `json:"return_sparse"`
+	ReturnColbertVecs bool     `json:"return_colbert_vecs"`
+	IsDocument        bool     `json:"is_document"`
+}
+
+type pythonEmbeddingResponse struct {
+	ColbertVecs    [][][]float32      `json:"colbert_vecs"`
+	LexicalWeights []map[uint]float32 `json:"lexical_weights"`
+	DenseVecs      [][]float32        `json:"dense_vecs"`
+}
+
+func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, passages []string) (dense_vector [][]float32, lexical_weights []map[uint]float32, colbert_vecs [][][]float32, func_error error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Panic occured in CreateEmbeddings: %v", r)
+			func_error = r.(error)
+		}
+	}()
+
+	// create embeddings
+	url := "http://localhost:8000/embedding"
+
+	request := pythonEmbeddingRequest{
+		Passages:          passages,
+		ReturnDense:       dense,
+		ReturnSparse:      sparse,
+		ReturnColbertVecs: colbert,
+		IsDocument:        isDocument,
+	}
+
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Error marshalling request: %v", err)
+		return nil, nil, nil, err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewReader(jsonData))
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Error sending request to python helper server extract-text: %v", err)
+		return nil, nil, nil, err
+	}
+	defer resp.Body.Close()
+
+	// read response
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+
+	responseBody := buf.String()
+
+	// parse response
+	var response pythonEmbeddingResponse
+	err = json.Unmarshal([]byte(responseBody), &response)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "Error unmarshalling response: %v", err)
+		return nil, nil, nil, err
+	}
+
+	return response.DenseVecs, response.LexicalWeights, response.ColbertVecs, nil
+
 }

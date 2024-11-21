@@ -25,7 +25,8 @@ type MilvusRequest struct {
 	Offset       *int     `json:"offset,omitempty"`
 
 	// Search request
-	Vector []float32 `json:"vector,omitempty"`
+	DenseVector  []float32        `json:"dense_vector,omitempty"`
+	SparseVector map[uint]float32 `json:"sparse_vector,omitempty"`
 
 	// Delete entry request
 	AutoIds []AutoIdFlex `json:"id,omitempty"`

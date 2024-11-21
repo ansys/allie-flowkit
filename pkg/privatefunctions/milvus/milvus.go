@@ -239,16 +239,25 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 	}
 
 	// Get the vector field name from the schema
-	var vectorFieldName string
+	var denseVectorFieldName string
 	for _, field := range schema.Fields {
 		if field.DataType == entity.FieldTypeFloatVector || field.DataType == entity.FieldTypeBinaryVector {
-			vectorFieldName = field.Name
+			denseVectorFieldName = field.Name
+			break
+		}
+	}
+
+	// Get the sparse vector field name from the schema
+	var sparseVectorFieldName string
+	for _, field := range schema.Fields {
+		if field.DataType == entity.FieldTypeSparseVector {
+			sparseVectorFieldName = field.Name
 			break
 		}
 	}
 
 	// Create index on the collection
-	err = CreateIndexes(schema.CollectionName, milvusClient, "guid", vectorFieldName)
+	err = CreateIndexes(schema.CollectionName, milvusClient, "guid", denseVectorFieldName, sparseVectorFieldName)
 	if err != nil {
 		logging.Log.Errorf(internalstates.Ctx, "Error during CreateIndexes: %v", err)
 		return err
@@ -275,7 +284,7 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 //
 // Returns:
 //   - error: Error if any issue occurs during creating the indexes.
-func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldName string, vectorFieldName string) (funcError error) {
+func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldName string, denseVectorFieldName string, sparseVectorFieldName string) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -306,7 +315,7 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	// 2. Create Vector Index
 	///////////////////////////////////////////
 
-	var idx entity.Index
+	var denseIdx entity.Index
 	var metricType entity.MetricType
 
 	// Determine the type of metric based on the configuration
@@ -324,9 +333,9 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	// Determine the type of vector index based on the configuration
 	switch config.GlobalConfig.MILVUS_INDEX_TYPE {
 	case "flat":
-		idx, err = entity.NewIndexFlat(metricType)
+		denseIdx, err = entity.NewIndexFlat(metricType)
 	case "ivfFlat":
-		idx, err = entity.NewIndexIvfFlat(
+		denseIdx, err = entity.NewIndexIvfFlat(
 			metricType, // metricType
 			1024,       // ConstructParams
 		)
@@ -335,16 +344,16 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	}
 
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Failed to create %v index: %s", idx.IndexType(), err.Error())
+		logging.Log.Errorf(internalstates.Ctx, "Failed to create %v index: %s", denseIdx.IndexType(), err.Error())
 		return err
 	}
 
-	// Create a vector index for the vectorFieldName field
+	// Create a vector index for the denseVectorFieldName field
 	err = milvusClient.CreateIndex(
 		context.Background(), // ctx
 		collectionName,       // CollectionName
-		vectorFieldName,
-		idx,
+		denseVectorFieldName,
+		denseIdx,
 		false,
 	)
 	if err != nil {
@@ -352,7 +361,23 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 		return err
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Vector index of type %v created", idx.IndexType())
+	// Create a vector index for the sparseVectorFieldName field
+	sparseIdx, err := entity.NewIndexSparseInverted(entity.IP, 0)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to create index %v", err.Error())
+		return err
+	}
+	err = milvusClient.CreateIndex(
+		context.Background(),
+		collectionName,
+		sparseVectorFieldName,
+		sparseIdx,
+		false,
+	)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to create index %v", err.Error())
+		return err
+	}
 
 	return nil
 }
@@ -383,6 +408,8 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.DataType = entity.FieldTypeBool
 		case "[]float32":
 			fieldSchema.DataType = entity.FieldTypeFloatVector
+		case "map[uint]float32":
+			fieldSchema.DataType = entity.FieldTypeSparseVector
 		case "[]bool":
 			fieldSchema.DataType = entity.FieldTypeBinaryVector
 		default:
@@ -459,9 +486,6 @@ func InsertData(collectionName string, dataToSend []codegeneration.VectorDatabas
 
 	startIndex := 0
 	stopIndex := 0
-
-	// Put the data to send in the string json format
-	fmt.Println(len(dataToSend[0].Vector))
 
 	// Send data to insert in batches of CallsBatchSize
 	for stopIndex < len(dataToSend) {
@@ -605,3 +629,137 @@ func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, fu
 
 	return response, nil
 }
+
+func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimension int) (sparseEmbeddings []entity.SparseEmbedding, err error) {
+	sparsePositions := make([]uint32, 0)
+	sparseValues := make([]float32, 0)
+	var sparseEmbedding entity.SparseEmbedding
+
+	for _, weightMap := range lexicalWeights {
+		for key, value := range weightMap {
+			sparsePositions = append(sparsePositions, uint32(key))
+			sparseValues = append(sparseValues, value)
+		}
+
+		// Now create the sparse embedding
+		sparseEmbedding, err = entity.NewSliceSparseEmbedding(sparsePositions, sparseValues)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create sparse embedding: %w", err)
+		}
+
+		// Append the sparse embedding to the list
+		sparseEmbeddings = append(sparseEmbeddings, sparseEmbedding)
+	}
+
+	return sparseEmbeddings, nil
+}
+
+// // Returns nil if threshhold is not reached
+// func SearchMilvusCollection(request MilvusRequest, milvusClient client.Client) (response *MilvusSearchResponse, func_error error) {
+// 	defer func() {
+// 		r := recover()
+// 		if r != nil {
+// 			logging.Log.Errorf(internalstates.Ctx, "Panic occured in SearchMilvusCollection: %v", r)
+// 			func_error = r.(error)
+// 		}
+// 	}()
+
+// 	sub_requests := []*client.ANNSearchRequest{}
+
+// 	// Define Sparse Vecot Search Request (if defined)
+// 	if request.SparseVector != nil {
+// 		positions := make([]uint32, 0, len(request.SparseVector))
+// 		values := make([]float32, 0, len(request.SparseVector))
+
+// 		for key, value := range request.SparseVector {
+// 			positions = append(positions, uint32(key))
+// 			values = append(values, value)
+// 		}
+
+// 		sparse_vector_formatted, err := entity.NewSliceSparseEmbedding(positions, values)
+// 		if err != nil {
+// 			logging.Log.Errorf(internalstates.Ctx, "failed to create sparse embedding %v", err.Error())
+// 			return nil, err
+// 		}
+// 		sparse_search_params, err := entity.NewIndexSparseInvertedSearchParam(0)
+// 		if err != nil {
+// 			logging.Log.Errorf(internalstates.Ctx, "failed to create search params %v", err.Error())
+// 			return nil, err
+// 		}
+
+// 		sparse_search_request := client.NewANNSearchRequest("sparse_vector", entity.IP, "", []entity.Vector{sparse_vector_formatted}, sparse_search_params, 100)
+
+// 		sub_requests = append(sub_requests, sparse_search_request)
+// 	}
+
+// 	// Define Dense Vecot Search Request (if defined)
+// 	if request.DenseVector != nil {
+// 		dense_vectors := []entity.Vector{entity.FloatVector(request.DenseVector)}
+// 		dense_search_params, err := entity.NewIndexFlatSearchParam()
+// 		if err != nil {
+// 			logging.Log.Errorf(internalstates.Ctx, "failed to create search params %v", err.Error())
+// 			return nil, err
+// 		}
+// 		dense_vector_search_request := client.NewANNSearchRequest("dense_vector", entity.COSINE, filter_expression, dense_vectors, dense_search_params, 100)
+
+// 		sub_requests = append(sub_requests, dense_vector_search_request)
+// 	}
+
+// 	// create reranker
+// 	reranker_weights := []float64{0.5, 0.5}
+// 	if request.SparseVector == nil || request.DenseVector == nil {
+// 		reranker_weights = []float64{1.0}
+// 	}
+// 	reranker := client.NewWeightedReranker(reranker_weights)
+
+// 	// construct search request
+// 	output_fields := []string{"document_id", "file_id", "text", "page_number", "html", "summary"}
+
+// 	opt := client.SearchQueryOptionFunc(func(option *client.SearchQueryOption) {
+// 		option.Offset = 0
+// 	})
+
+// 	search_result, err := milvusClient.HybridSearch(context.TODO(), request.ProjectId, []string{}, 300, output_fields, reranker, sub_requests, opt)
+// 	if err != nil {
+// 		logging.Log.Errorf(internalstates.Ctx, "failed to search collection %v", err.Error())
+// 		return nil, err
+// 	}
+
+// 	documents := []*data_structs.Document{}
+// 	if len(search_result) > 0 {
+
+// 		qr := search_result[0]
+
+// 		// check whether threshold has been reached
+// 		final_position := -1
+// 		for position, result := range qr.Scores {
+// 			if result >= request.Threshold {
+// 				documents = append(documents, &data_structs.Document{
+// 					ProjectId:        request.ProjectId,
+// 					SimilarityResult: result,
+// 				})
+// 				final_position = position
+// 				continue
+// 			}
+// 			break
+// 		}
+
+// 		// exit if final_position == -1 as no value qualified
+// 		if final_position == -1 {
+// 			return nil, nil
+// 		}
+
+// 		// create document for every result, filter by threshold right away
+// 		for _, field := range qr.Fields {
+// 			if field.Name == "guid" {
+// 				for i, document := range documents {
+// 					document.DocumentId = field.Values[i].(int64)
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	return &SimilaritySearchResponse{
+// 		OrderedDocuments: documents,
+// 	}, nil
+// }

@@ -1,6 +1,8 @@
 package codegeneration
 
-import "encoding/xml"
+import (
+	"encoding/xml"
+)
 
 // Structs representing the XML structure
 type MechanicalObjectDefinitionDocument struct {
@@ -71,11 +73,13 @@ type CodeGenerationPseudocodeResponse struct {
 }
 
 type VectorDatabaseElement struct {
-	Guid           string    `json:"guid"`
-	Vector         []float32 `json:"vector"`
-	Type           string    `json:"type"`
-	NamePseudocode string    `json:"name_pseudocode"`
-	Description    string    `json:"description"`
+	Guid           string           `json:"guid"`
+	DenseVector    []float32        `json:"dense_vector"`
+	SparseVector   map[uint]float32 `json:"sparse_vector"`
+	Type           string           `json:"type"`
+	Name           string           `json:"name"`
+	NamePseudocode string           `json:"name_pseudocode"`
+	Description    string           `json:"description"`
 }
 
 type GraphDatabaseElement struct {

@@ -636,13 +636,17 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 			panic(errMessage)
 		}
 
+		// Remove the prefix from the name.
+		prefixNamePseudocode := strings.Join(element.Dependencies, ".") + "."
+		element.NamePseudocode = element.Name[len(prefixNamePseudocode):]
+
 		elements = append(elements, element)
 	}
 
 	return elements
 }
 
-func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.CodeGenerationElement, pseudoCodeGenPrompt string, systemPrompt string, workers int) (completeElementDefinitions []codegeneration.CodeGenerationElement) {
+func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.CodeGenerationElement, functionPrompt string, parameterPrompt string, systemPrompt string, workers int) (completeElementDefinitions []codegeneration.CodeGenerationElement) {
 	llmChannel := make(chan codegeneration.CodeGenerationElement, len(functions)) // Channel for functions to process
 	errorChannel := make(chan error, 1)
 	llmWaitGroup := sync.WaitGroup{}
@@ -653,12 +657,10 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 		go func() {
 			defer llmWaitGroup.Done()
 			for function := range llmChannel {
+				pseudoCodePrompt := functionPrompt
 				// If type is not "function" or "method", ignore it.
 				if function.Type != codegeneration.Function && function.Type != codegeneration.Method {
-					function.NamePseudocode = function.Name
-					function.Description = function.Summary
-					completeElementDefinitions = append(completeElementDefinitions, function)
-					continue
+					pseudoCodePrompt = parameterPrompt
 				}
 
 				// prompt formatting depending on function
@@ -681,59 +683,19 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 					"parameters": string(parametersJSON),
 					"summary":    function.Summary,
 					"example":    string(exampleJSON),
+					"type":       string(function.Type),
+					"returnType": function.ReturnType,
 				}
 
-				prompt := formatTemplate(pseudoCodeGenPrompt, valuesToFormat)
+				prompt := formatTemplate(pseudoCodePrompt, valuesToFormat)
 
 				response, _, err := performGeneralRequest(prompt, []sharedtypes.HistoricMessage{}, false, systemPrompt, &sharedtypes.ModelOptions{})
 				if err != nil {
 					errorChannel <- err // Report errors
 				}
 
-				jsonContent := response
-				// // Extract the start and end positions of the JSON content
-				// start := strings.Index(response, "```json")
-				// end := strings.LastIndex(response, "```")
-				// fmt.Println("Start: ", start)
-				// fmt.Println("Response: " + response)
-
-				// if start == -1 || end == -1 || start >= end {
-				// 	errMessage := fmt.Sprintf("Error extracting JSON content from response: %v", err)
-				// 	logging.Log.Error(internalstates.Ctx, errMessage)
-				// 	errorChannel <- fmt.Errorf(errMessage)
-				// }
-
-				// // Extract JSON content between the ```json block
-				// jsonContent := response[start+len("```json") : end]
-				// jsonContent = codegeneration.RemoveEmptyLines(jsonContent)
-				// fmt.Println("JSON Content: ")
-				// fmt.Println(jsonContent)
-				// fmt.Println("-----------------")
-
-				// Unmarshal the extracted JSON content
-				codeGenerationPseudocodeResponse := codegeneration.CodeGenerationPseudocodeResponse{}
-				err = json.Unmarshal([]byte(jsonContent), &codeGenerationPseudocodeResponse)
-				if err != nil {
-					logging.Log.Warnf(internalstates.Ctx, "Error unmarshalling JSON content, retrying: %v", err)
-
-					// Retry performing the request
-					response, _, err = performGeneralRequest(prompt, []sharedtypes.HistoricMessage{}, false, systemPrompt, &sharedtypes.ModelOptions{})
-					if err != nil {
-						errorChannel <- err // Report errors
-					}
-
-					// Extract the start and end positions of the JSON content
-					err = json.Unmarshal([]byte(response), &codeGenerationPseudocodeResponse)
-					if err != nil {
-						errMessage := fmt.Sprintf("Error unmarshalling JSON content: %v", err)
-						logging.Log.Error(internalstates.Ctx, errMessage)
-						continue
-					}
-				}
-
-				// assign new signature and description to function
-				function.NamePseudocode = codeGenerationPseudocodeResponse.Signature
-				function.Description = codeGenerationPseudocodeResponse.Description
+				// assign the description to the function
+				function.Description = response
 
 				completeElementDefinitions = append(completeElementDefinitions, function)
 			}
@@ -769,10 +731,13 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	}
 
 	// Generate the embeddings for the elements
-	embeddings, err := codeGenerationProcessBatchEmbeddings(elements, batchSize)
-	if err != nil {
-		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
-	}
+	// embeddings, err := codeGenerationProcessBatchEmbeddings(elements, batchSize)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	// }
+
+	// Generate dense and sparse embeddings
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
 
 	// Create the vector database objects.
 	vectorElements := []codegeneration.VectorDatabaseElement{}
@@ -780,7 +745,9 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 		// Create a new vector database object.
 		vectorElement := codegeneration.VectorDatabaseElement{
 			Guid:           element.Guid,
-			Vector:         embeddings[i],
+			DenseVector:    denseEmbeddings[i],
+			SparseVector:   sparseEmbeddings[i],
+			Name:           element.Name,
 			NamePseudocode: element.NamePseudocode,
 			Description:    element.Description,
 			Type:           string(element.Type),
@@ -805,12 +772,21 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 			Type: "string",
 		},
 		{
-			Name:      "vector",
+			Name:      "dense_vector",
 			Type:      "[]float32",
 			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
 		},
 		{
+			Name:      "sparse_vector",
+			Type:      "map[uint]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
 			Name: "type",
+			Type: "string",
+		},
+		{
+			Name: "name",
 			Type: "string",
 		},
 		{
