@@ -715,7 +715,20 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 				err = json.Unmarshal([]byte(jsonContent), &codeGenerationPseudocodeResponse)
 				if err != nil {
 					logging.Log.Warnf(internalstates.Ctx, "Error unmarshalling JSON content, retrying: %v", err)
-					llmChannel <- function
+
+					// Retry performing the request
+					response, _, err = performGeneralRequest(prompt, []sharedtypes.HistoricMessage{}, false, systemPrompt, &sharedtypes.ModelOptions{})
+					if err != nil {
+						errorChannel <- err // Report errors
+					}
+
+					// Extract the start and end positions of the JSON content
+					err = json.Unmarshal([]byte(response), &codeGenerationPseudocodeResponse)
+					if err != nil {
+						errMessage := fmt.Sprintf("Error unmarshalling JSON content: %v", err)
+						logging.Log.Error(internalstates.Ctx, errMessage)
+						continue
+					}
 				}
 
 				// assign new signature and description to function
