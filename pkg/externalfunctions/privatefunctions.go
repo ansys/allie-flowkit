@@ -1917,6 +1917,8 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 // Returns:
 //   - error: an error if any
 func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeGenerationElement, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+	processedEmbeddings := 0
+
 	// Process data in batches
 	for i := 0; i < len(elements); i += maxBatchSize {
 		end := i + maxBatchSize
@@ -1940,9 +1942,10 @@ func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeG
 		// Add the embeddings to the list
 		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
-	}
 
-	logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", len(elements))
+		processedEmbeddings += len(batchData)
+		logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", processedEmbeddings)
+	}
 
 	return denseEmbeddings, lexicalWeights, nil
 }

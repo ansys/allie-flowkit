@@ -650,6 +650,7 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 	llmChannel := make(chan codegeneration.CodeGenerationElement, len(functions)) // Channel for functions to process
 	errorChannel := make(chan error, 1)
 	llmWaitGroup := sync.WaitGroup{}
+	processedInstructionsCounter := 0
 
 	// Start LLM Handler workers.
 	for i := 0; i < workers; i++ {
@@ -697,6 +698,11 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 				// assign the description to the function
 				function.Description = response
 
+				processedInstructionsCounter++
+				if processedInstructionsCounter%10 == 0 {
+					logging.Log.Infof(internalstates.Ctx, "Processed %v elements \n", processedInstructionsCounter)
+				}
+
 				completeElementDefinitions = append(completeElementDefinitions, function)
 			}
 		}()
@@ -727,7 +733,7 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationElement, elementsCollectionName string, batchSize int) error {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
-		batchSize = 500
+		batchSize = 200
 	}
 
 	// Generate the embeddings for the elements
@@ -738,6 +744,10 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	}
 
 	// Create the vector database objects.
 	vectorElements := []codegeneration.VectorDatabaseElement{}

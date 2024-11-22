@@ -6,6 +6,7 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 
+	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
 	"github.com/ansys/allie-flowkit/pkg/functiondefinitions"
 	"github.com/ansys/allie-flowkit/pkg/grpcserver"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
@@ -69,7 +70,43 @@ func main() {
 	// Log the version of the system
 	logging.Log.Info(internalstates.Ctx, "Launching Allie Flowkit")
 
+	TestCodeGen()
+
 	// start the gRPC server
 	grpcserver.StartServer()
 	logging.Log.Fatalf(internalstates.Ctx, "Error in gRPC server. Exiting application.")
+}
+
+func TestCodeGen() {
+	path := "./mechanical_def_complete.xml"
+
+	// Load mechanical object definitions
+	e := externalfunctions.LoadMechanicalObjectDefinitions(path)
+
+	functionPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
+	Signature: {name}
+	Summary: {summary}
+	Parameters: {parameters}
+	Example: {example}
+	ReturnType: {returnType}
+
+	I want you to generate a short description of the function.
+	`
+	parameterPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
+	Name: {name}
+	Summary: {summary}
+	Type: {returnType}
+	
+	I want you to generate a short description of the parameter.
+	`
+
+	systemPrompt := `You are a really helpful assistant`
+
+	// generate pseudo code
+	functionDef := externalfunctions.GeneratePseudocodeFromCodeGenerationFunctions(e, functionPrompt, parameterPrompt, systemPrompt, 20)
+
+	// store in database
+	embeddingsBatchSize := 200
+	externalfunctions.StoreElementsInVectorDatabase(functionDef, "mechanical_elements_collection", embeddingsBatchSize)
+	externalfunctions.StoreElementsInGraphDatabase(functionDef)
 }
