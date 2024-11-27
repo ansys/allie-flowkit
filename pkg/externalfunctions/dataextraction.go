@@ -1112,15 +1112,15 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	return nil
 }
 
-// func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationElement) error {
-// 	// Initialize the graph database.
-// 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationExample) error {
+	// Initialize the graph database.
+	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
-// 	// Add the elements to the graph database.
-// 	neo4j.Neo4j_Driver.AddNodes(elements)
+	// Add the elements to the graph database.
+	neo4j.Neo4j_Driver.AddExampleNodes(elements)
 
-// 	// Add the dependencies to the graph database.
-// 	neo4j.Neo4j_Driver.CreateRelationships(elements)
+	// Add the dependencies to the graph database.
+	neo4j.Neo4j_Driver.CreateExampleRelationships(elements)
 
-// 	return nil
-// }
+	return nil
+}

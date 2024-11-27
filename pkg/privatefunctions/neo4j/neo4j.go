@@ -168,6 +168,150 @@ func (neo4j_context *neo4j_Context) AddNodes(nodes []codegeneration.CodeGenerati
 	return nil
 }
 
+// AddExampleNodes adds nodes to neo4j database.
+//
+// Parameters:
+//   - nodes: List of nodes to be added.
+//
+// Returns:
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeGenerationExample) (funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Panic AddNodes: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(db_ctx)
+
+	counter := 0
+
+	// Add nodes
+	_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
+		for _, node := range nodes {
+			// Convert the node object to a map
+			nodeType := "Example"
+			nodeName := node.Name
+			nodeMap := make(map[string]any)
+			nodeJSON, err := json.Marshal(node) // Convert struct to JSON
+			if err != nil {
+				logging.Log.Errorf(internalstates.Ctx, "Error serializing node to JSON: %v", err)
+				return false, err
+			}
+			err = json.Unmarshal(nodeJSON, &nodeMap) // Convert JSON to map
+			if err != nil {
+				logging.Log.Errorf(internalstates.Ctx, "Error deserializing JSON to map: %v", err)
+				return false, err
+			}
+
+			delete(nodeMap, "name")
+			delete(nodeMap, "chunks")
+
+			// Add dependency equivalences map as a json string
+			delete(nodeMap, "dependency_equivalences")
+			dependencyEquivalencesJSON, err := json.Marshal(node.DependencyEquivalences)
+			if err != nil {
+				logging.Log.Errorf(internalstates.Ctx, "Error serializing dependency equivalences to JSON: %v", err)
+				return false, err
+			}
+			nodeMap["dependency_equivalences"] = string(dependencyEquivalencesJSON)
+
+			// Create node dynamically using the map
+			_, err = transaction.Run(db_ctx,
+				"MERGE (n:"+nodeType+" {Name: $name}) SET n += $properties",
+				map[string]any{
+					"name":       nodeName,
+					"properties": nodeMap,
+				},
+			)
+			if err != nil {
+				logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+				return false, err
+			}
+
+			counter++
+		}
+		return true, nil
+	})
+	if err != nil {
+		log.Printf("Error during session.ExecuteWrite: %v", err)
+		return err
+	}
+
+	log.Printf("Added %v documents to neo4j", counter)
+	return nil
+}
+
+// CreateExampleRelationships creates relationships between nodes in neo4j database.
+//
+// Parameters:
+//   - relationships: List of relationships to be created.
+//
+// Returns:
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegeneration.CodeGenerationExample) (funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Panic CreateRelationships: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(db_ctx)
+
+	// Create relationships in batches
+	maxBatchSize := 1000
+	for i := 0; i < len(nodes); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(nodes) {
+			end = len(nodes)
+		}
+
+		// Create batch of nodes
+		batch := nodes[i:end]
+
+		logging.Log.Infof(internalstates.Ctx, "Creating relationships for batch %v-%v", i, end)
+
+		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
+			for _, node := range batch {
+				// Create relationships between each of the dependencies and the adjacent dependency
+				for _, dependency := range node.Dependencies {
+					_, err := transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:USES]->(b)",
+						map[string]any{
+							"a": node.Name,
+							"b": dependency,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+				}
+			}
+			return true, nil
+		})
+		if err != nil {
+			log.Printf("Error during session.ExecuteWrite: %v", err)
+			return
+		}
+	}
+
+	logging.Log.Infof(internalstates.Ctx, "Created relationships for %v nodes", len(nodes))
+	return nil
+}
+
 // CreateRelationships creates relationships between nodes in neo4j database.
 //
 // Parameters:

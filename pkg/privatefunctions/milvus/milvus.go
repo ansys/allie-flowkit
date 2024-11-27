@@ -403,6 +403,8 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.DataType = entity.FieldTypeDouble
 		case "string":
 			fieldSchema.DataType = entity.FieldTypeVarChar
+		case "[]string":
+			fieldSchema.DataType = entity.FieldTypeArray
 		case "bool":
 			fieldSchema.DataType = entity.FieldTypeBool
 		case "[]float32":
