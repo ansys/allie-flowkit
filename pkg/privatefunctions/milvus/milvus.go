@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/generic"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -416,6 +415,8 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			return nil, fmt.Errorf("unsupported field type: %s", field.Type)
 		}
 
+		// *Note: Array of strings are not supported by Milvus schema, those fields will be added dynamically
+
 		// Set primary key and auto ID options
 		if field.PrimaryKey {
 			fieldSchema.PrimaryKey = true
@@ -468,7 +469,7 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 //
 // Returns:
 //   - error: Error if any issue occurs during sending the data to the Milvus DB.
-func InsertData(collectionName string, dataToSend []codegeneration.VectorDatabaseElement) (funcError error) {
+func InsertData(collectionName string, dataToSend []interface{}) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {

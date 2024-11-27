@@ -825,13 +825,13 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	}
 
 	// Convert []VectorDatabaseElement to []interface{}
-	// elementsAsInterface := make([]interface{}, len(vectorElements))
-	// for i, v := range vectorElements {
-	// 	elementsAsInterface[i] = v
-	// }
+	elementsAsInterface := make([]interface{}, len(vectorElements))
+	for i, v := range vectorElements {
+		elementsAsInterface[i] = v
+	}
 
 	// Insert the elements into the vector database.
-	err = milvus.InsertData(elementsCollectionName, vectorElements)
+	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
 	if err != nil {
 		errMessage := "error inserting data into the vector database"
 		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
@@ -932,7 +932,7 @@ func LoadAndCheckExampleDependencies(
 							// Update dependency and equivalences.
 							checkedDependencies = append(checkedDependencies, truncatedDependency)
 							if original, ok := equivalences[dependency]; ok {
-								checkedEquivalences[truncatedDependency] = original
+								checkedEquivalences[truncatedDependency] = original[:strings.LastIndex(original, ".")]
 							}
 							matchFound = true
 							break
@@ -982,3 +982,145 @@ func LoadAndCheckExampleDependencies(
 
 	return checkedDependenciesMap, equivalencesMap
 }
+
+func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExample, examplesCollectionName string, batchSize int) error {
+	// Set default batch size if not provided.
+	if batchSize <= 0 {
+		batchSize = 200
+	}
+
+	// Initialize the vector database.
+	milvusClient, err := milvus.Initialize()
+	if err != nil {
+		errMessage := "error initializing the vector database"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the schema for this collection
+	schemaFields := []milvus.SchemaField{
+		{
+			Name: "guid",
+			Type: "string",
+		},
+		{
+			Name: "document_name",
+			Type: "string",
+		},
+		{
+			Name: "previous_chunk",
+			Type: "string",
+		},
+		{
+			Name: "next_chunk",
+			Type: "string",
+		},
+		{
+			Name:      "dense_vector",
+			Type:      "[]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name:      "sparse_vector",
+			Type:      "map[uint]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name: "text",
+			Type: "string",
+		},
+	}
+
+	schema, err := milvus.CreateCustomSchema(examplesCollectionName, schemaFields, "collection for code generation examples")
+	if err != nil {
+		errMessage := "error creating the schema"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the collection.
+	err = milvus.CreateCollection(schema, milvusClient)
+	if err != nil {
+		errMessage := "error creating the collection"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the vector database objects.
+	vectorExamples := []codegeneration.VectorDatabaseExample{}
+	for _, element := range elements {
+		chunkGuids := make([]string, len(element.Chunks)) // Track GUIDs for all chunks in the current element
+
+		// Generate GUIDs for each chunk in advance.
+		for j := 0; j < len(element.Chunks); j++ {
+			guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
+			chunkGuids[j] = guid
+		}
+
+		// Create vector database objects and assign PreviousChunk and NextChunk.
+		for j := 0; j < len(element.Chunks); j++ {
+			vectorExample := codegeneration.VectorDatabaseExample{
+				Guid:                   chunkGuids[j], // Current chunk's GUID
+				DocumentName:           element.Name,
+				PreviousChunk:          "", // Default empty
+				NextChunk:              "", // Default empty
+				Dependencies:           element.Dependencies,
+				DependencyEquivalences: element.DependencyEquivalences,
+				Text:                   element.Chunks[j],
+			}
+
+			// Assign PreviousChunk and NextChunk GUIDs.
+			if j > 0 {
+				vectorExample.PreviousChunk = chunkGuids[j-1]
+			}
+			if j < len(element.Chunks)-1 {
+				vectorExample.NextChunk = chunkGuids[j+1]
+			}
+
+			// Add the new vector database object to the list.
+			vectorExamples = append(vectorExamples, vectorExample)
+		}
+	}
+
+	// Generate dense and sparse embeddings
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForExamples(vectorExamples, batchSize)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	}
+
+	// Assign embeddings to the vector database objects.
+	for i := range vectorExamples {
+		vectorExamples[i].DenseVector = denseEmbeddings[i]
+		vectorExamples[i].SparseVector = sparseEmbeddings[i]
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	elementsAsInterface := make([]interface{}, len(vectorExamples))
+	for i, v := range vectorExamples {
+		elementsAsInterface[i] = v
+	}
+
+	// Insert the elements into the vector database.
+	err = milvus.InsertData(examplesCollectionName, elementsAsInterface)
+	if err != nil {
+		errMessage := "error inserting data into the vector database"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	return nil
+}
+
+// func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationElement) error {
+// 	// Initialize the graph database.
+// 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+
+// 	// Add the elements to the graph database.
+// 	neo4j.Neo4j_Driver.AddNodes(elements)
+
+// 	// Add the dependencies to the graph database.
+// 	neo4j.Neo4j_Driver.CreateRelationships(elements)
+
+// 	return nil
+// }

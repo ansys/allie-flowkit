@@ -82,6 +82,18 @@ type VectorDatabaseElement struct {
 	Description    string           `json:"description"`
 }
 
+type VectorDatabaseExample struct {
+	Guid                   string            `json:"guid"`
+	DenseVector            []float32         `json:"dense_vector"`
+	SparseVector           map[uint]float32  `json:"sparse_vector"`
+	DocumentName           string            `json:"document_name"`
+	Dependencies           []string          `json:"dependencies"`
+	DependencyEquivalences map[string]string `json:"dependency_equivalences"`
+	Text                   string            `json:"text"`
+	PreviousChunk          string            `json:"previous_chunk"`
+	NextChunk              string            `json:"next_chunk"`
+}
+
 type GraphDatabaseElement struct {
 	Guid           string                  `json:"guid"`
 	Type           string                  `json:"type"`

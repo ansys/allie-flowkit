@@ -1,7 +1,5 @@
 package milvus
 
-import "github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
-
 type SchemaField struct {
 	Name        string
 	Type        string
@@ -16,7 +14,7 @@ type MilvusRequest struct {
 	CollectionName string `json:"collectionName"`
 
 	// Insert request
-	Data []codegeneration.VectorDatabaseElement `json:"data,omitempty"`
+	Data []interface{} `json:"data,omitempty"`
 
 	// Search and Query request
 	OutputFields []string `json:"outputFields,omitempty"`
