@@ -94,3 +94,11 @@ type GraphDatabaseElement struct {
 	ReturnType     string                  `json:"returnType"`
 	Remarks        string                  `json:"remarks"`
 }
+
+type CodeGenerationExample struct {
+	Guid                   string            `json:"guid"`
+	Name                   string            `json:"name"`
+	Dependencies           []string          `json:"dependencies"`
+	DependencyEquivalences map[string]string `json:"dependency_equivalences"`
+	Chunks                 []string          `json:"chunks"`
+}

@@ -659,12 +659,12 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 			defer llmWaitGroup.Done()
 			for function := range llmChannel {
 				pseudoCodePrompt := functionPrompt
-				// If type is not "function" or "method", ignore it.
+				// If type is not "function" or "method", use parameter prompt.
 				if function.Type != codegeneration.Function && function.Type != codegeneration.Method {
 					pseudoCodePrompt = parameterPrompt
 				}
 
-				// prompt formatting depending on function
+				// Prompt formatting depending on function
 				parametersJSON, err := json.Marshal(function.Parameters)
 				if err != nil {
 					errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
@@ -695,7 +695,7 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 					errorChannel <- err // Report errors
 				}
 
-				// assign the description to the function
+				// Assign the description to the function
 				function.Description = response
 
 				processedInstructionsCounter++
@@ -852,4 +852,133 @@ func StoreElementsInGraphDatabase(elements []codegeneration.CodeGenerationElemen
 	neo4j.Neo4j_Driver.CreateRelationships(elements)
 
 	return nil
+}
+
+func LoadAndCheckExampleDependencies(
+	path string,
+	functions []codegeneration.CodeGenerationElement,
+) (checkedDependenciesMap map[string][]string, equivalencesMap map[string]map[string]string) {
+	// Read file from local path.
+	content, err := os.ReadFile(path)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	// Unmarshal the JSON content into the dependencies map.
+	var dependenciesMap map[string][]string
+	err = json.Unmarshal(content, &dependenciesMap)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error unmarshalling dependencies: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	// Initialize maps.
+	checkedDependenciesMap = make(map[string][]string)
+	equivalencesMap = make(map[string]map[string]string)
+
+	// Function to replace ExtAPI dependencies.
+	replaceExtAPI := func(dependencies []string) ([]string, map[string]string) {
+		updatedDependencies := make([]string, 0, len(dependencies))
+		equivalences := make(map[string]string)
+		for _, dependency := range dependencies {
+			original := dependency
+			for _, key := range codegeneration.ReplacementPriorityList { // Iterate over keys in the desired priority order
+				value := codegeneration.MechanicalInstancesReplaceDict[key]
+				if strings.HasPrefix(dependency, key) {
+					dependency = strings.Replace(dependency, key, value, 1) // Replace only the prefix
+					break                                                   // Stop after the first match since keys are prefixes
+				}
+			}
+			if original != dependency {
+				equivalences[dependency] = original
+			}
+			updatedDependencies = append(updatedDependencies, dependency)
+		}
+		return updatedDependencies, equivalences
+	}
+
+	// Process dependencies.
+	for key, dependencies := range dependenciesMap {
+		updatedDependencies, equivalences := replaceExtAPI(dependencies)
+
+		// Filter checked dependencies and populate the equivalences map accordingly.
+		checkedDependencies := []string{}
+		checkedEquivalences := make(map[string]string)
+		for _, dependency := range updatedDependencies {
+			matchFound := false
+
+			// Check if the exact dependency exists in functions.
+			for _, function := range functions {
+				if function.Name == dependency {
+					checkedDependencies = append(checkedDependencies, dependency)
+					if original, ok := equivalences[dependency]; ok {
+						checkedEquivalences[dependency] = original
+					}
+					matchFound = true
+					break
+				}
+			}
+
+			// If no match, check for dependency without the last `.whatever` part.
+			if !matchFound {
+				lastDotIndex := strings.LastIndex(dependency, ".")
+				if lastDotIndex != -1 {
+					truncatedDependency := dependency[:lastDotIndex]
+					for _, function := range functions {
+						if function.Name == truncatedDependency {
+							// Update dependency and equivalences.
+							checkedDependencies = append(checkedDependencies, truncatedDependency)
+							if original, ok := equivalences[dependency]; ok {
+								checkedEquivalences[truncatedDependency] = original
+							}
+							matchFound = true
+							break
+						}
+					}
+				}
+			}
+
+			// If still no match, dependency remains unvalidated.
+			if !matchFound {
+				continue
+			}
+		}
+
+		checkedDependenciesMap[key] = checkedDependencies
+		equivalencesMap[key] = checkedEquivalences
+	}
+
+	// Final Step: Remove duplicates from both maps.
+	deduplicate := func(slice []string) []string {
+		unique := make(map[string]bool)
+		result := []string{}
+		for _, item := range slice {
+			if !unique[item] {
+				unique[item] = true
+				result = append(result, item)
+			}
+		}
+		return result
+	}
+
+	for key := range checkedDependenciesMap {
+		checkedDependenciesMap[key] = deduplicate(checkedDependenciesMap[key])
+	}
+
+	for key, equivalences := range equivalencesMap {
+		uniqueEquivalences := make(map[string]string)
+		seen := make(map[string]bool)
+		for newDep, original := range equivalences {
+			if !seen[newDep] {
+				seen[newDep] = true
+				uniqueEquivalences[newDep] = original
+			}
+		}
+		equivalencesMap[key] = uniqueEquivalences
+	}
+
+	return checkedDependenciesMap, equivalencesMap
 }
