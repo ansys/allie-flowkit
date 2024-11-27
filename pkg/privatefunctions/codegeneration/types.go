@@ -43,7 +43,8 @@ type CodeGenerationElement struct {
 	Guid string             `json:"guid"`
 	Type CodeGenerationType `json:"type"`
 
-	NamePseudocode string `json:"name_pseudocode"`
+	NamePseudocode string `json:"name_pseudocode"` // Function name without dependencies
+	NameFormatted  string `json:"name_formatted"`  // Name of the function with spaces and without parameters
 	Description    string `json:"description"`
 
 	Name         string   `json:"name"`
@@ -79,6 +80,7 @@ type VectorDatabaseElement struct {
 	Type           string           `json:"type"`
 	Name           string           `json:"name"`
 	NamePseudocode string           `json:"name_pseudocode"`
+	NameFormatted  string           `json:"name_formatted"`
 	Description    string           `json:"description"`
 }
 

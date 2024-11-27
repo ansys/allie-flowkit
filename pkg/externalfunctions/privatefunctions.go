@@ -1930,7 +1930,7 @@ func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeG
 		batchData := elements[i:end]
 		batchTextToEmbed := make([]string, len(batchData))
 		for j, data := range batchData {
-			batchTextToEmbed[j] = data.Name + " " + data.Description
+			batchTextToEmbed[j] = data.NameFormatted + "\n" + data.NamePseudocode + "\n" + data.Summary
 		}
 
 		// Send http request

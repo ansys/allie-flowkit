@@ -639,6 +639,13 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 		// Remove the prefix from the name.
 		prefixNamePseudocode := strings.Join(element.Dependencies, ".") + "."
 		element.NamePseudocode = element.Name[len(prefixNamePseudocode):]
+		element.NamePseudocode = strings.Split(element.NamePseudocode, "(")[0]
+
+		// Add space before capital letters.
+		element.NameFormatted = codegeneration.SplitByCapitalLetters(element.NamePseudocode)
+		if element.NameFormatted == "" {
+			element.NameFormatted = element.NamePseudocode
+		}
 
 		elements = append(elements, element)
 	}
@@ -759,6 +766,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 			SparseVector:   sparseEmbeddings[i],
 			Name:           element.Name,
 			NamePseudocode: element.NamePseudocode,
+			NameFormatted:  element.NameFormatted,
 			Description:    element.Description,
 			Type:           string(element.Type),
 		}
@@ -801,6 +809,10 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 		},
 		{
 			Name: "name_pseudocode",
+			Type: "string",
+		},
+		{
+			Name: "name_formatted",
 			Type: "string",
 		},
 		{

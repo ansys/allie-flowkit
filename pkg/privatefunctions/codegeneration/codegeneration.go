@@ -1,6 +1,7 @@
 package codegeneration
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -37,4 +38,10 @@ func RemoveEmptyLines(input string) string {
 	}
 	// Join the non-empty lines back together
 	return strings.Join(nonEmptyLines, "\n")
+}
+
+func SplitByCapitalLetters(s string) string {
+	re := regexp.MustCompile(`[A-Z]+[a-z]*|[A-Z]+`)
+	words := re.FindAllString(s, -1)
+	return strings.Join(words, " ")
 }

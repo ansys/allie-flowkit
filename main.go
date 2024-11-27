@@ -2,6 +2,8 @@ package main
 
 import (
 	_ "embed"
+	"fmt"
+	"path/filepath"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -10,6 +12,7 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/functiondefinitions"
 	"github.com/ansys/allie-flowkit/pkg/grpcserver"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 )
 
 //go:embed pkg/externalfunctions/externalfunctions.go
@@ -70,43 +73,91 @@ func main() {
 	// Log the version of the system
 	logging.Log.Info(internalstates.Ctx, "Launching Allie Flowkit")
 
-	TestCodeGen()
+	TestCodeGenElements()
+	TestCodeGenExamples()
 
 	// start the gRPC server
 	grpcserver.StartServer()
 	logging.Log.Fatalf(internalstates.Ctx, "Error in gRPC server. Exiting application.")
 }
 
-func TestCodeGen() {
+func TestCodeGenElements() {
 	path := "./mechanical_def_complete.xml"
 
 	// Load mechanical object definitions
 	e := externalfunctions.LoadMechanicalObjectDefinitions(path)
 
-	functionPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
-	Signature: {name}
-	Summary: {summary}
-	Parameters: {parameters}
-	Example: {example}
-	ReturnType: {returnType}
+	// functionPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
+	// Signature: {name}
+	// Summary: {summary}
+	// Parameters: {parameters}
+	// Example: {example}
+	// ReturnType: {returnType}
 
-	I want you to generate a short description of the function.
-	`
-	parameterPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
-	Name: {name}
-	Summary: {summary}
-	Type: {returnType}
-	
-	I want you to generate a short description of the parameter.
-	`
+	// I want you to generate a short description of the function.
+	// `
+	// parameterPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
+	// Name: {name}
+	// Summary: {summary}
+	// Type: {returnType}
 
-	systemPrompt := `You are a really helpful assistant`
+	// I want you to generate a short description of the parameter.
+	// `
 
-	// generate pseudo code
-	functionDef := externalfunctions.GeneratePseudocodeFromCodeGenerationFunctions(e, functionPrompt, parameterPrompt, systemPrompt, 20)
+	// systemPrompt := `You are a really helpful assistant`
+
+	// // generate pseudo code
+	// functionDef := externalfunctions.GeneratePseudocodeFromCodeGenerationFunctions(e, functionPrompt, parameterPrompt, systemPrompt, 20)
 
 	// store in database
 	embeddingsBatchSize := 200
-	externalfunctions.StoreElementsInVectorDatabase(functionDef, "mechanical_elements_collection", embeddingsBatchSize)
-	externalfunctions.StoreElementsInGraphDatabase(functionDef)
+	externalfunctions.StoreElementsInVectorDatabase(e, "mechanical_elements_collection", embeddingsBatchSize)
+	externalfunctions.StoreElementsInGraphDatabase(e)
+}
+
+func TestCodeGenExamples() {
+	path := "./mechanical_def_complete.xml"
+
+	// Load mechanical object definitions
+	e := externalfunctions.LoadMechanicalObjectDefinitions(path)
+
+	// Load examples dependencies
+	dependenciesPath := "./example_dependencies.json"
+	dependencies, equivalencesMap := externalfunctions.LoadAndCheckExampleDependencies(dependenciesPath, e)
+
+	// Get examples to extract
+	pathToExamples := "./examples"
+	documentType := "py"
+	chunkSize := 500
+	chunkOverlap := 40
+	examplesToExtract := externalfunctions.GetLocalFilesToExtract(pathToExamples, []string{documentType}, []string{}, []string{})
+
+	// Create the CodeGenerationExample objects
+	var codeGenerationExamples []codegeneration.CodeGenerationExample
+	for _, example := range examplesToExtract {
+		// Get local file content
+		_, content := externalfunctions.GetLocalFileContent(example)
+
+		// Split the content into chunks
+		chunks := externalfunctions.LangchainSplitter(content, documentType, chunkSize, chunkOverlap)
+
+		// The name should be only the file name
+		fileName := filepath.Base(example)
+		fmt.Println("Extracting example: ", fileName)
+
+		// Create the object
+		codeGenerationExample := codegeneration.CodeGenerationExample{
+			Chunks:                 chunks,
+			Name:                   fileName,
+			Dependencies:           dependencies[fileName],
+			DependencyEquivalences: equivalencesMap[fileName],
+		}
+
+		codeGenerationExamples = append(codeGenerationExamples, codeGenerationExample)
+	}
+
+	// store in database
+	embeddingsBatchSize := 200
+	externalfunctions.StoreExamplesInVectorDatabase(codeGenerationExamples, "mechanical_examples_collection", embeddingsBatchSize)
+	externalfunctions.StoreExamplesInGraphDatabase(codeGenerationExamples)
 }
