@@ -6,6 +6,8 @@ import (
 )
 
 var MechanicalInstancesReplaceDict = map[string]string{
+	"Model.Mesh":                      "Ansys.ACT.Automation.Mechanical.MeshControls.Mesh",
+	"Model.CoordinateSystems":         "Ansys.ACT.Automation.Mechanical.CoordinateSystems",
 	"Model.Analyses.AnalysisSettings": "Ansys.ACT.Automation.Mechanical.AnalysisSettings.ANSYSAnalysisSettings",
 	"Model.Analyses.Solution":         "Ansys.ACT.Automation.Mechanical.Solution",
 	"Model.Analyses":                  "Ansys.ACT.Automation.Mechanical.Analysis",
