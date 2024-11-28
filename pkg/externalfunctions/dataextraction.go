@@ -926,7 +926,7 @@ func LoadAndCheckExampleDependencies(
 			for _, function := range functions {
 				functionNameNoParams := strings.Split(function.Name, "(")[0]
 				if functionNameNoParams == dependency {
-					checkedDependencies = append(checkedDependencies, dependency)
+					checkedDependencies = append(checkedDependencies, function.Name)
 					if original, ok := equivalences[dependency]; ok {
 						checkedEquivalences[dependency] = original
 					}
@@ -944,7 +944,7 @@ func LoadAndCheckExampleDependencies(
 						functionNameNoParams := strings.Split(function.Name, "(")[0]
 						if functionNameNoParams == truncatedDependency {
 							// Update dependency and equivalences.
-							checkedDependencies = append(checkedDependencies, truncatedDependency)
+							checkedDependencies = append(checkedDependencies, function.Name)
 							if original, ok := equivalences[dependency]; ok {
 								checkedEquivalences[truncatedDependency] = original[:strings.LastIndex(original, ".")]
 							}
