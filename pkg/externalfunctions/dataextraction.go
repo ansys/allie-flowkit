@@ -924,7 +924,8 @@ func LoadAndCheckExampleDependencies(
 
 			// Check if the exact dependency exists in functions.
 			for _, function := range functions {
-				if function.Name == dependency {
+				functionNameNoParams := strings.Split(function.Name, "(")[0]
+				if functionNameNoParams == dependency {
 					checkedDependencies = append(checkedDependencies, dependency)
 					if original, ok := equivalences[dependency]; ok {
 						checkedEquivalences[dependency] = original
@@ -940,7 +941,8 @@ func LoadAndCheckExampleDependencies(
 				if lastDotIndex != -1 {
 					truncatedDependency := dependency[:lastDotIndex]
 					for _, function := range functions {
-						if function.Name == truncatedDependency {
+						functionNameNoParams := strings.Split(function.Name, "(")[0]
+						if functionNameNoParams == truncatedDependency {
 							// Update dependency and equivalences.
 							checkedDependencies = append(checkedDependencies, truncatedDependency)
 							if original, ok := equivalences[dependency]; ok {
