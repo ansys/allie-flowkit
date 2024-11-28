@@ -18,6 +18,8 @@ var MechanicalInstancesReplaceDict = map[string]string{
 }
 
 var ReplacementPriorityList = []string{
+	"Model.Mesh",
+	"Model.CoordinateSystems",
 	"Model.Analyses.AnalysisSettings",
 	"Model.Analyses.Solution",
 	"Model.Analyses",
