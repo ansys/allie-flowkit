@@ -2016,7 +2016,7 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 	}()
 
 	// create embeddings
-	url := "http://localhost:8000/embedding"
+	url := "http://20.61.171.221:8000/embedding"
 
 	request := pythonEmbeddingRequest{
 		Passages:          passages,

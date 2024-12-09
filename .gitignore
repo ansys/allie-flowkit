@@ -28,3 +28,5 @@ dist
 doc/_build
 /config.yaml
 error.log
+
+examples/

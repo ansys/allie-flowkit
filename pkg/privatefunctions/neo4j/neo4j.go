@@ -212,6 +212,7 @@ func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeG
 
 			delete(nodeMap, "name")
 			delete(nodeMap, "chunks")
+			delete(nodeMap, "guid")
 
 			// Add dependency equivalences map as a json string
 			delete(nodeMap, "dependency_equivalences")
