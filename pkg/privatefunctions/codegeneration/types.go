@@ -120,6 +120,7 @@ type CodeGenerationExample struct {
 type CodeGenerationUserGuideSection struct {
 	Name            string   `json:"name"`
 	DocumentName    string   `json:"document_name"`
+	Parent          string   `json:"parent"`
 	Content         string   `json:"content"`
 	Level           int      `json:"level"`
 	Link            string   `json:"link"`
@@ -128,13 +129,14 @@ type CodeGenerationUserGuideSection struct {
 }
 
 type VectorDatabaseUserGuideSection struct {
-	Guid          string           `json:"guid"`
-	SectionName   string           `json:"section_name"`
-	DocumentName  string           `json:"document_name"`
-	Text          string           `json:"text"`
-	Level         int              `json:"level"`
-	PreviousChunk string           `json:"previous_chunk"`
-	NextChunk     string           `json:"next_chunk"`
-	DenseVector   []float32        `json:"dense_vector"`
-	SparseVector  map[uint]float32 `json:"sparse_vector"`
+	Guid              string           `json:"guid"`
+	SectionName       string           `json:"section_name"`
+	DocumentName      string           `json:"document_name"`
+	ParentSectionName string           `json:"parent_section_name"`
+	Text              string           `json:"text"`
+	Level             int              `json:"level"`
+	PreviousChunk     string           `json:"previous_chunk"`
+	NextChunk         string           `json:"next_chunk"`
+	DenseVector       []float32        `json:"dense_vector"`
+	SparseVector      map[uint]float32 `json:"sparse_vector"`
 }

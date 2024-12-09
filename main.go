@@ -176,5 +176,5 @@ func TestCodeGenUserGuide() {
 
 	// store in database
 	embeddingsBatchSize := 200
-	externalfunctions.StoreUserGuideSectionsInVectorDatabase(sections[:2], "mechanical_user_guide_collection", embeddingsBatchSize)
+	externalfunctions.StoreUserGuideSectionsInVectorDatabase(sections, "mechanical_user_guide_collection", embeddingsBatchSize)
 }

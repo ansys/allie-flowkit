@@ -1195,6 +1195,10 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 			Type: "string",
 		},
 		{
+			Name: "parent_section_name",
+			Type: "string",
+		},
+		{
 			Name: "previous_chunk",
 			Type: "string",
 		},
@@ -1237,7 +1241,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	vectorUserGuideSectionChunks := []codegeneration.VectorDatabaseUserGuideSection{}
 	for _, section := range sections {
 		// Create the chunks for the current element.
-		chunks, err := dataExtractionPerformSplitterRequest([]byte(section.Content), "txt", 500, 40)
+		chunks, err := dataExtractionTextSplitter(section.Content, 500, 40)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
 			logging.Log.Error(internalstates.Ctx, errMessage)
@@ -1256,13 +1260,14 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 		// Create vector database objects and assign PreviousChunk and NextChunk.
 		for j := 0; j < len(section.Chunks); j++ {
 			vectorUserGuideSectionChunk := codegeneration.VectorDatabaseUserGuideSection{
-				Guid:          chunkGuids[j], // Current chunk's GUID
-				SectionName:   section.Name,
-				DocumentName:  section.Name,
-				Level:         section.Level,
-				PreviousChunk: "", // Default empty
-				NextChunk:     "", // Default empty
-				Text:          section.Chunks[j],
+				Guid:              chunkGuids[j], // Current chunk's GUID
+				SectionName:       section.Name,
+				DocumentName:      section.Name,
+				ParentSectionName: section.Parent,
+				Level:             section.Level,
+				PreviousChunk:     "", // Default empty
+				NextChunk:         "", // Default empty
+				Text:              section.Chunks[j],
 			}
 
 			// Assign PreviousChunk and NextChunk GUIDs.
@@ -1279,16 +1284,26 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	}
 
 	// Generate dense and sparse embeddings
-	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
-	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
-		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	// denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
+	// if err != nil {
+	// 	logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+	// 	return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	// }
+
+	dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
+	for i := range dummyDenseVector {
+		dummyDenseVector[i] = 0.5
+	}
+
+	dummySparseVector := make(map[uint]float32)
+	for i := 0; i < config.GlobalConfig.EMBEDDINGS_DIMENSIONS; i++ {
+		dummySparseVector[uint(i)] = 0.5
 	}
 
 	// Assign embeddings to the vector database objects.
 	for i := range vectorUserGuideSectionChunks {
-		vectorUserGuideSectionChunks[i].DenseVector = denseEmbeddings[i]
-		vectorUserGuideSectionChunks[i].SparseVector = sparseEmbeddings[i]
+		vectorUserGuideSectionChunks[i].DenseVector = dummyDenseVector
+		vectorUserGuideSectionChunks[i].SparseVector = dummySparseVector
 	}
 
 	// Convert []VectorDatabaseElement to []interface{}

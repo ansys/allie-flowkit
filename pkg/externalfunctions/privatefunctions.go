@@ -26,6 +26,9 @@ import (
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/tiktoken-go/tokenizer"
+	"github.com/tmc/langchaingo/documentloaders"
+	"github.com/tmc/langchaingo/schema"
+	"github.com/tmc/langchaingo/textsplitter"
 	"golang.org/x/oauth2"
 	"nhooyr.io/websocket"
 )
@@ -2089,4 +2092,31 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 
 	return response.DenseVecs, response.LexicalWeights, response.ColbertVecs, nil
 
+}
+
+func dataExtractionTextSplitter(input string, chunkSize int, chunkOverlap int) (chunks []string, err error) {
+	var splittedChunks []schema.Document
+
+	// Creating a reader from the content of the file.
+	reader := bytes.NewReader([]byte(input))
+
+	// Creating a splitter with the chunk size and overlap specified in the config file.
+	splitterOptions := []textsplitter.Option{}
+	splitterOptions = append(splitterOptions, textsplitter.WithChunkSize(chunkSize))
+	splitterOptions = append(splitterOptions, textsplitter.WithChunkOverlap(chunkOverlap))
+	splitter := textsplitter.NewTokenSplitter(splitterOptions...)
+
+	txtLoader := documentloaders.NewText(reader)
+	splittedChunks, err = txtLoader.LoadAndSplit(context.Background(), splitter)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		return nil, err
+	}
+
+	for _, chunk := range splittedChunks {
+		chunks = append(chunks, chunk.PageContent)
+	}
+
+	return chunks, err
 }
