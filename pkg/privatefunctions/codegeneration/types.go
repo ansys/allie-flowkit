@@ -116,3 +116,25 @@ type CodeGenerationExample struct {
 	DependencyEquivalences map[string]string `json:"dependency_equivalences"`
 	Chunks                 []string          `json:"chunks"`
 }
+
+type CodeGenerationUserGuideSection struct {
+	Name            string   `json:"name"`
+	DocumentName    string   `json:"document_name"`
+	Content         string   `json:"content"`
+	Level           int      `json:"level"`
+	Link            string   `json:"link"`
+	ReferencedLinks []string `json:"referenced_links"`
+	Chunks          []string `json:"chunks"`
+}
+
+type VectorDatabaseUserGuideSection struct {
+	Guid          string           `json:"guid"`
+	SectionName   string           `json:"section_name"`
+	DocumentName  string           `json:"document_name"`
+	Text          string           `json:"text"`
+	Level         int              `json:"level"`
+	PreviousChunk string           `json:"previous_chunk"`
+	NextChunk     string           `json:"next_chunk"`
+	DenseVector   []float32        `json:"dense_vector"`
+	SparseVector  map[uint]float32 `json:"sparse_vector"`
+}

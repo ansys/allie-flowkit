@@ -1992,6 +1992,40 @@ func codeGenerationProcessHybridSearchEmbeddingsForExamples(elements []codegener
 	return denseEmbeddings, lexicalWeights, nil
 }
 
+func codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(sections []codegeneration.VectorDatabaseUserGuideSection, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+	processedEmbeddings := 0
+
+	// Process data in batches
+	for i := 0; i < len(sections); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(sections) {
+			end = len(sections)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := sections[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.Text
+		}
+
+		// Send http request
+		batchDenseEmbeddings, batchLexicalWeights, _, err := CreateEmbeddings(true, true, false, false, batchTextToEmbed)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
+		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
+
+		processedEmbeddings += len(batchData)
+		logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", processedEmbeddings)
+	}
+
+	return denseEmbeddings, lexicalWeights, nil
+}
+
 type pythonEmbeddingRequest struct {
 	Passages          []string `json:"passages"`
 	ReturnDense       bool     `json:"return_dense"`

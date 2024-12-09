@@ -1138,3 +1138,172 @@ func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationExampl
 
 	return nil
 }
+
+func LoadMechanicalUserGuideSections(path string) (sections []codegeneration.CodeGenerationUserGuideSection) {
+	// Read file from local path.
+	content, err := os.ReadFile(path)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	// Initialize the sections.
+	sections = []codegeneration.CodeGenerationUserGuideSection{}
+
+	// Unmarshal the JSON content into the sections.
+	err = json.Unmarshal(content, &sections)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error unmarshalling user guide sections: %v", err)
+		logging.Log.Error(internalstates.Ctx, errMessage)
+		panic(errMessage)
+	}
+
+	return sections
+}
+
+func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int) error {
+	// Set default batch size if not provided.
+	if batchSize <= 0 {
+		batchSize = 200
+	}
+
+	// Initialize the vector database.
+	milvusClient, err := milvus.Initialize()
+	if err != nil {
+		errMessage := "error initializing the vector database"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the schema for this collection
+	schemaFields := []milvus.SchemaField{
+		{
+			Name: "guid",
+			Type: "string",
+		},
+		{
+			Name: "section_name",
+			Type: "string",
+		},
+		{
+			Name: "level",
+			Type: "string",
+		},
+		{
+			Name: "document_name",
+			Type: "string",
+		},
+		{
+			Name: "previous_chunk",
+			Type: "string",
+		},
+		{
+			Name: "next_chunk",
+			Type: "string",
+		},
+		{
+			Name:      "dense_vector",
+			Type:      "[]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name:      "sparse_vector",
+			Type:      "map[uint]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name: "text",
+			Type: "string",
+		},
+	}
+
+	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation examples")
+	if err != nil {
+		errMessage := "error creating the schema"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the collection.
+	err = milvus.CreateCollection(schema, milvusClient)
+	if err != nil {
+		errMessage := "error creating the collection"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	// Create the vector database objects.
+	vectorUserGuideSectionChunks := []codegeneration.VectorDatabaseUserGuideSection{}
+	for _, section := range sections {
+		// Create the chunks for the current element.
+		chunks, err := dataExtractionPerformSplitterRequest([]byte(section.Content), "txt", 500, 40)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+		section.Chunks = chunks
+
+		chunkGuids := make([]string, len(section.Chunks)) // Track GUIDs for all chunks in the current element
+
+		// Generate GUIDs for each chunk in advance.
+		for j := 0; j < len(section.Chunks); j++ {
+			guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
+			chunkGuids[j] = guid
+		}
+
+		// Create vector database objects and assign PreviousChunk and NextChunk.
+		for j := 0; j < len(section.Chunks); j++ {
+			vectorUserGuideSectionChunk := codegeneration.VectorDatabaseUserGuideSection{
+				Guid:          chunkGuids[j], // Current chunk's GUID
+				SectionName:   section.Name,
+				DocumentName:  section.Name,
+				Level:         section.Level,
+				PreviousChunk: "", // Default empty
+				NextChunk:     "", // Default empty
+				Text:          section.Chunks[j],
+			}
+
+			// Assign PreviousChunk and NextChunk GUIDs.
+			if j > 0 {
+				vectorUserGuideSectionChunk.PreviousChunk = chunkGuids[j-1]
+			}
+			if j < len(section.Chunks)-1 {
+				vectorUserGuideSectionChunk.NextChunk = chunkGuids[j+1]
+			}
+
+			// Add the new vector database object to the list.
+			vectorUserGuideSectionChunks = append(vectorUserGuideSectionChunks, vectorUserGuideSectionChunk)
+		}
+	}
+
+	// Generate dense and sparse embeddings
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	}
+
+	// Assign embeddings to the vector database objects.
+	for i := range vectorUserGuideSectionChunks {
+		vectorUserGuideSectionChunks[i].DenseVector = denseEmbeddings[i]
+		vectorUserGuideSectionChunks[i].SparseVector = sparseEmbeddings[i]
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	elementsAsInterface := make([]interface{}, len(vectorUserGuideSectionChunks))
+	for i, v := range vectorUserGuideSectionChunks {
+		elementsAsInterface[i] = v
+	}
+
+	// Insert the elements into the vector database.
+	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface)
+	if err != nil {
+		errMessage := "error inserting data into the vector database"
+		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		return fmt.Errorf("%s: %v", errMessage, err)
+	}
+
+	return nil
+}

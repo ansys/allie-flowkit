@@ -73,8 +73,9 @@ func main() {
 	// Log the version of the system
 	logging.Log.Info(internalstates.Ctx, "Launching Allie Flowkit")
 
-	TestCodeGenElements()
+	// TestCodeGenElements()
 	// TestCodeGenExamples()
+	TestCodeGenUserGuide()
 
 	// start the gRPC server
 	grpcserver.StartServer()
@@ -160,4 +161,20 @@ func TestCodeGenExamples() {
 	embeddingsBatchSize := 200
 	externalfunctions.StoreExamplesInVectorDatabase(codeGenerationExamples, "mechanical_examples_collection", embeddingsBatchSize)
 	externalfunctions.StoreExamplesInGraphDatabase(codeGenerationExamples)
+}
+
+func TestCodeGenUserGuide() {
+	path := "./user_guide_structured"
+
+	// Initialize the sections
+	sections := []codegeneration.CodeGenerationUserGuideSection{}
+
+	for _, file := range externalfunctions.GetLocalFilesToExtract(path, []string{"json"}, []string{}, []string{}) {
+		// Load the section
+		sections = append(sections, externalfunctions.LoadMechanicalUserGuideSections(file)...)
+	}
+
+	// store in database
+	embeddingsBatchSize := 200
+	externalfunctions.StoreUserGuideSectionsInVectorDatabase(sections[:2], "mechanical_user_guide_collection", embeddingsBatchSize)
 }
