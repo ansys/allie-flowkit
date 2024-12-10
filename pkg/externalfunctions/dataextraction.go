@@ -1262,7 +1262,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 			vectorUserGuideSectionChunk := codegeneration.VectorDatabaseUserGuideSection{
 				Guid:              chunkGuids[j], // Current chunk's GUID
 				SectionName:       section.Name,
-				DocumentName:      section.Name,
+				DocumentName:      section.DocumentName,
 				ParentSectionName: section.Parent,
 				Level:             section.Level,
 				PreviousChunk:     "", // Default empty
@@ -1284,26 +1284,26 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	}
 
 	// Generate dense and sparse embeddings
-	// denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
-	// if err != nil {
-	// 	logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
-	// 	return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
+	if err != nil {
+		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+	}
+
+	// dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
+	// for i := range dummyDenseVector {
+	// 	dummyDenseVector[i] = 0.5
 	// }
 
-	dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
-	for i := range dummyDenseVector {
-		dummyDenseVector[i] = 0.5
-	}
-
-	dummySparseVector := make(map[uint]float32)
-	for i := 0; i < config.GlobalConfig.EMBEDDINGS_DIMENSIONS; i++ {
-		dummySparseVector[uint(i)] = 0.5
-	}
+	// dummySparseVector := make(map[uint]float32)
+	// for i := 0; i < config.GlobalConfig.EMBEDDINGS_DIMENSIONS; i++ {
+	// 	dummySparseVector[uint(i)] = 0.5
+	// }
 
 	// Assign embeddings to the vector database objects.
 	for i := range vectorUserGuideSectionChunks {
-		vectorUserGuideSectionChunks[i].DenseVector = dummyDenseVector
-		vectorUserGuideSectionChunks[i].SparseVector = dummySparseVector
+		vectorUserGuideSectionChunks[i].DenseVector = denseEmbeddings[i]
+		vectorUserGuideSectionChunks[i].SparseVector = sparseEmbeddings[i]
 	}
 
 	// Convert []VectorDatabaseElement to []interface{}
@@ -1319,6 +1319,19 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
+
+	return nil
+}
+
+func StoreUserGuideSectionsInGraphDatabase(elements []codegeneration.CodeGenerationUserGuideSection) error {
+	// Initialize the graph database.
+	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+
+	// Add the elements to the graph database.
+	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(elements)
+
+	// Add the dependencies to the graph database.
+	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(elements)
 
 	return nil
 }
