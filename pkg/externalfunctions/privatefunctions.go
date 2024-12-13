@@ -710,7 +710,7 @@ func ansysGPTACSSemanticHybridSearch(
 	filter map[string]string,
 	topK int,
 	isAis bool,
-	physics []string) (output []sharedtypes.ACSSearchResponse) {
+	physics []string) (output []sharedtypes.ACSSearchResponse, err error) {
 
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
@@ -784,17 +784,17 @@ func ansysGPTACSSemanticHybridSearch(
 	// Marshal the search request
 	requestBody, err := json.Marshal(searchRequest)
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to marshal search request to ACS: %v", err)
+		errMessage := fmt.Errorf("failed to marshal search request to ACS: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		return nil, errMessage
 	}
 
 	// Create the HTTP request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to create POST request for ACS: %v", err)
+		errMessage := fmt.Errorf("failed to create POST request for ACS: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		return nil, errMessage
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -804,25 +804,25 @@ func ansysGPTACSSemanticHybridSearch(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to send POST request to ACS: %v", err)
+		errMessage := fmt.Errorf("failed to send POST request to ACS: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		return nil, errMessage
 	}
 	defer resp.Body.Close()
 
 	// Read and return the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to read response body from ACS: %v", err)
+		errMessage := fmt.Errorf("failed to read response body from ACS: %v", err)
 		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		return nil, errMessage
 	}
 
 	// check if the reponse is an error
 	if resp.StatusCode != 200 {
-		errMessage := fmt.Sprintf("Error in ACS semantic hybrid search for index %v: %s", indexName, string(body))
+		errMessage := fmt.Errorf("error in ACS semantic hybrid search for index %v: %s", indexName, string(body))
 		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		return nil, errMessage
 	}
 
 	// extract and convert the response
@@ -836,7 +836,7 @@ func ansysGPTACSSemanticHybridSearch(
 		output[i].IndexName = indexName
 	}
 
-	return output
+	return output, nil
 }
 
 // getFieldsAndReturnProperties returns the searchedEmbeddedFields and returnedProperties based on the index name
@@ -870,6 +870,12 @@ func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields stri
 	case "external-crtech-thermal-desktop":
 		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
 		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, bridge_id, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "external-learning-hub", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub":
+		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "scbu-data-except-alh":
+		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, index_connection_id, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
 		logging.Log.Error(internalstates.Ctx, errMessage)
@@ -951,7 +957,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 			})
 		}
 
-	case "external-crtech-thermal-desktop":
+	case "external-learning-hub", "external-crtech-thermal-desktop", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub", "scbu-data-except-alh":
 		respObjectCrtech := ACSSearchResponseStructCrtech{}
 		err := json.Unmarshal(body, &respObjectCrtech)
 		if err != nil {

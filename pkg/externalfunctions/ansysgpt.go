@@ -408,7 +408,11 @@ func AnsysGPTACSSemanticHybridSearchs(
 
 	output = make([]sharedtypes.ACSSearchResponse, 0)
 	for _, indexName := range indexList {
-		partOutput := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, indexName, filter, topK, false, nil)
+		partOutput, err := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, indexName, filter, topK, false, nil)
+		if err != nil {
+			logging.Log.Errorf(internalstates.Ctx, "Error in semantic hybrid search: %v", err)
+			panic(err)
+		}
 		output = append(output, partOutput...)
 	}
 
@@ -588,9 +592,15 @@ func AisReturnIndexList(accessPoint string) (indexList []string) {
 		indexList = append(indexList, "lsdyna-documentation-r14")
 		indexList = append(indexList, "scade-documentation-2023r2")
 		indexList = append(indexList, "external-marketing")
+		indexList = append(indexList, "external-learning-hub")
+		indexList = append(indexList, "external-crtech-thermal-desktop")
+		indexList = append(indexList, "external-release-notes")
+		indexList = append(indexList, "external-zemax-websites")
 		// indexList = append(indexList, "ansysgpt-alh")
 	case "ansysgpt-scbu":
 		indexList = append(indexList, "ansysgpt-scbu")
+		indexList = append(indexList, "external-scbu-learning-hub")
+		indexList = append(indexList, "scbu-data-except-alh")
 	default:
 		logging.Log.Errorf(internalstates.Ctx, "Invalid accessPoint: %v\n", accessPoint)
 		return
@@ -635,7 +645,11 @@ func AisAcsSemanticHybridSearchs(
 		go func(idx string) {
 			defer wg.Done()
 			// Run the search for this index
-			result := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, idx, nil, topK, true, physics)
+			result, err := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, idx, nil, topK, true, physics)
+			if err != nil {
+				logging.Log.Errorf(internalstates.Ctx, "Error in semantic hybrid search: %v", err)
+				return
+			}
 			resultChan <- result
 		}(indexName)
 	}
