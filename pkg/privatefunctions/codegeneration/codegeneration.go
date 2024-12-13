@@ -49,3 +49,20 @@ func SplitByCapitalLetters(s string) string {
 	words := re.FindAllString(s, -1)
 	return strings.Join(words, " ")
 }
+
+func CreateReturnListMechanical(returnString string) (returnElementList []string, err error) {
+	// Split the string by comma
+	returnList := strings.Split(returnString, " ")
+	// Trim the spaces from the strings
+	for _, returnElement := range returnList {
+		// Check if the string contains 'Ansys.'
+		if strings.Contains(returnElement, "Ansys.") {
+			// Start the string when the 'Ansys.' appears and remove the last ']' if it exists
+			returnElement = returnElement[strings.Index(returnElement, "Ansys."):]
+			returnElement = strings.TrimSuffix(returnElement, "]")
+			// Add the element to the list
+			returnElementList = append(returnElementList, returnElement)
+		}
+	}
+	return returnElementList, nil
+}

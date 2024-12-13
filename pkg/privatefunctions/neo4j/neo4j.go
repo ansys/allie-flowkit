@@ -463,6 +463,21 @@ func (neo4j_context *neo4j_Context) CreateRelationships(nodes []codegeneration.C
 						return false, err
 					}
 				}
+
+				// Create relationships between the node and its return values
+				for _, returnElement := range node.ReturnElementList {
+					_, err := transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:RETURNS]->(b)",
+						map[string]any{
+							"a": node.Name,
+							"b": returnElement,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+				}
 			}
 			return true, nil
 		})

@@ -591,6 +591,14 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 			Remarks:    objectDefinition.Remarks,
 		}
 
+		// Create a list with all the return types of the element.
+		element.ReturnElementList, err = codegeneration.CreateReturnListMechanical(objectDefinition.ReturnType)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error creating return element list: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
 		switch prefix {
 		case "M":
 			element.Type = codegeneration.CodeGenerationType(codegeneration.Method)
@@ -627,8 +635,15 @@ func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.Cod
 			element.Dependencies = dependencies
 
 		case "E":
-			// Ignore for now.
-			continue
+			element.Type = codegeneration.CodeGenerationType(codegeneration.Enum)
+
+			// Extract dependencies for enum.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+			// Extract enum values.
+			element.EnumValues = strings.Split(objectDefinition.ReturnType, ", ")
 
 		default:
 			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)

@@ -47,15 +47,19 @@ type CodeGenerationElement struct {
 	NameFormatted  string `json:"name_formatted"`  // Name of the function with spaces and without parameters
 	Description    string `json:"description"`
 
-	Name         string   `json:"name"`
-	Dependencies []string `json:"dependencies"`
-	Summary      string   `json:"summary"`
-	ReturnType   string   `json:"return"`
-	Remarks      string   `json:"remarks"`
+	Name              string   `json:"name"`
+	Dependencies      []string `json:"dependencies"`
+	Summary           string   `json:"summary"`
+	ReturnType        string   `json:"return"`
+	ReturnElementList []string `json:"return_element_list"`
+	Remarks           string   `json:"remarks"`
 
 	// Only for type "function" or "method"
 	Parameters []MechanicalMemberParam `json:"parameters"`
 	Example    MechanicalMemberExample `json:"example"`
+
+	// Only for type "enum"
+	EnumValues []string `json:"enum_values"`
 }
 
 // Enum values for CodeGenerationType
@@ -66,6 +70,7 @@ const (
 	Method    CodeGenerationType = "Method"
 	Class     CodeGenerationType = "Class"
 	Parameter CodeGenerationType = "Parameter"
+	Enum      CodeGenerationType = "Enum"
 )
 
 type CodeGenerationPseudocodeResponse struct {

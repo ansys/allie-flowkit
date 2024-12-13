@@ -73,8 +73,8 @@ func main() {
 	// Log the version of the system
 	logging.Log.Info(internalstates.Ctx, "Launching Allie Flowkit")
 
-	// TestCodeGenElements()
-	// TestCodeGenExamples()
+	TestCodeGenElements()
+	TestCodeGenExamples()
 	TestCodeGenUserGuide()
 
 	// start the gRPC server
