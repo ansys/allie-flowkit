@@ -550,7 +550,7 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	return returnedDocumentData
 }
 
-func LoadMechanicalObjectDefinitions(path string) (elements []codegeneration.CodeGenerationElement) {
+func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGenerationElement) {
 	// Read file from local path.
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -1012,6 +1012,47 @@ func LoadAndCheckExampleDependencies(
 	return checkedDependenciesMap, equivalencesMap
 }
 
+func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[string][]string, equivalencesMap map[string]map[string]string, chunkSize int, chunkOverlap int) (examples []codegeneration.CodeGenerationExample) {
+	// Initialize the examples slice.
+	examples = []codegeneration.CodeGenerationExample{}
+
+	// Load the examples from the provided paths.
+	for _, examplePath := range examplesToExtract {
+		// Read file from local path.
+		content, err := os.ReadFile(examplePath)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		// Create the chunks for the current element.
+		chunks, err := dataExtractionTextSplitter(string(content), chunkSize, chunkOverlap)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		// The name should be only the file name
+		fileName := filepath.Base(examplePath)
+		fmt.Println("Extracting example: ", fileName)
+
+		// Create the object
+		example := codegeneration.CodeGenerationExample{
+			Chunks:                 chunks,
+			Name:                   fileName,
+			Dependencies:           dependencies[fileName],
+			DependencyEquivalences: equivalencesMap[fileName],
+		}
+
+		// Add the example to the examples slice.
+		examples = append(examples, example)
+	}
+
+	return examples
+}
+
 func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExample, examplesCollectionName string, batchSize int) error {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
@@ -1154,30 +1195,38 @@ func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationExampl
 	return nil
 }
 
-func LoadMechanicalUserGuideSections(path string) (sections []codegeneration.CodeGenerationUserGuideSection) {
-	// Read file from local path.
-	content, err := os.ReadFile(path)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
-	}
-
+func LoadUserGuideSections(paths []string) (sections []codegeneration.CodeGenerationUserGuideSection) {
 	// Initialize the sections.
 	sections = []codegeneration.CodeGenerationUserGuideSection{}
 
-	// Unmarshal the JSON content into the sections.
-	err = json.Unmarshal(content, &sections)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling user guide sections: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+	for _, path := range paths {
+		// Read file from local path.
+		content, err := os.ReadFile(path)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		// Initialize the sections.
+		newSections := []codegeneration.CodeGenerationUserGuideSection{}
+
+		// Unmarshal the JSON content into the sections.
+		err = json.Unmarshal(content, &newSections)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error unmarshalling user guide sections: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+		// Add the new sections to the sections.
+		sections = append(sections, newSections...)
 	}
 
 	return sections
 }
 
-func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int) error {
+func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int) error {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 200
@@ -1256,7 +1305,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	vectorUserGuideSectionChunks := []codegeneration.VectorDatabaseUserGuideSection{}
 	for _, section := range sections {
 		// Create the chunks for the current element.
-		chunks, err := dataExtractionTextSplitter(section.Content, 500, 40)
+		chunks, err := dataExtractionTextSplitter(section.Content, chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
 			logging.Log.Error(internalstates.Ctx, errMessage)

@@ -60,4 +60,17 @@ var ExternalFunctionsMap = map[string]interface{}{
 	// generic
 	"AssignStringToString": AssignStringToString,
 	"SendRestAPICall":      SendRestAPICall,
+
+	// code generation
+	"LoadObjectDefinitions":           LoadObjectDefinitions,
+	"LoadCodeGenerationExamples":      LoadCodeGenerationExamples,
+	"LoadAndCheckExampleDependencies": LoadAndCheckExampleDependencies,
+	"LoadUserGuideSections":           LoadUserGuideSections,
+
+	"StoreElementsInVectorDatabase":          StoreElementsInVectorDatabase,
+	"StoreElementsInGraphDatabase":           StoreElementsInGraphDatabase,
+	"StoreExamplesInVectorDatabase":          StoreExamplesInVectorDatabase,
+	"StoreExamplesInGraphDatabase":           StoreExamplesInGraphDatabase,
+	"StoreUserGuideSectionsInVectorDatabase": StoreUserGuideSectionsInVectorDatabase,
+	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
 }

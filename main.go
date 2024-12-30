@@ -2,8 +2,6 @@ package main
 
 import (
 	_ "embed"
-	"fmt"
-	"path/filepath"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -12,7 +10,6 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/functiondefinitions"
 	"github.com/ansys/allie-flowkit/pkg/grpcserver"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 )
 
 //go:embed pkg/externalfunctions/externalfunctions.go
@@ -86,7 +83,7 @@ func TestCodeGenElements() {
 	path := "./mechanical_def_complete.xml"
 
 	// Load mechanical object definitions
-	e := externalfunctions.LoadMechanicalObjectDefinitions(path)
+	e := externalfunctions.LoadObjectDefinitions(path)
 
 	// functionPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
 	// Signature: {name}
@@ -120,7 +117,7 @@ func TestCodeGenExamples() {
 	path := "./mechanical_def_complete.xml"
 
 	// Load mechanical object definitions
-	e := externalfunctions.LoadMechanicalObjectDefinitions(path)
+	e := externalfunctions.LoadObjectDefinitions(path)
 
 	// Load examples dependencies
 	dependenciesPath := "./example_dependencies.json"
@@ -134,28 +131,7 @@ func TestCodeGenExamples() {
 	examplesToExtract := externalfunctions.GetLocalFilesToExtract(pathToExamples, []string{documentType}, []string{}, []string{})
 
 	// Create the CodeGenerationExample objects
-	var codeGenerationExamples []codegeneration.CodeGenerationExample
-	for _, example := range examplesToExtract {
-		// Get local file content
-		_, content := externalfunctions.GetLocalFileContent(example)
-
-		// Split the content into chunks
-		chunks := externalfunctions.LangchainSplitter(content, documentType, chunkSize, chunkOverlap)
-
-		// The name should be only the file name
-		fileName := filepath.Base(example)
-		fmt.Println("Extracting example: ", fileName)
-
-		// Create the object
-		codeGenerationExample := codegeneration.CodeGenerationExample{
-			Chunks:                 chunks,
-			Name:                   fileName,
-			Dependencies:           dependencies[fileName],
-			DependencyEquivalences: equivalencesMap[fileName],
-		}
-
-		codeGenerationExamples = append(codeGenerationExamples, codeGenerationExample)
-	}
+	codeGenerationExamples := externalfunctions.LoadCodeGenerationExamples(examplesToExtract, dependencies, equivalencesMap, chunkSize, chunkOverlap)
 
 	// store in database
 	embeddingsBatchSize := 200
@@ -166,16 +142,16 @@ func TestCodeGenExamples() {
 func TestCodeGenUserGuide() {
 	path := "./user_guide_structured"
 
-	// Initialize the sections
-	sections := []codegeneration.CodeGenerationUserGuideSection{}
+	// Get the files to extract
+	paths := externalfunctions.GetLocalFilesToExtract(path, []string{"json"}, []string{}, []string{})
 
-	for _, file := range externalfunctions.GetLocalFilesToExtract(path, []string{"json"}, []string{}, []string{}) {
-		// Load the section
-		sections = append(sections, externalfunctions.LoadMechanicalUserGuideSections(file)...)
-	}
+	// Load the sections for all the files
+	sections := externalfunctions.LoadUserGuideSections(paths)
 
 	// store in database
 	embeddingsBatchSize := 200
-	externalfunctions.StoreUserGuideSectionsInVectorDatabase(sections, "mechanical_user_guide_collection", embeddingsBatchSize)
+	chunkSize := 500
+	chunkOverlap := 40
+	externalfunctions.StoreUserGuideSectionsInVectorDatabase(sections, "mechanical_user_guide_collection", embeddingsBatchSize, chunkSize, chunkOverlap)
 	externalfunctions.StoreUserGuideSectionsInGraphDatabase(sections)
 }
