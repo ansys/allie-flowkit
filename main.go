@@ -112,7 +112,7 @@ func TestCodeGenElements() {
 
 	// store in database
 	embeddingsBatchSize := 200
-	externalfunctions.StoreElementsInVectorDatabase(e, "test", embeddingsBatchSize)
+	externalfunctions.StoreElementsInVectorDatabase(e, "mechanical_elements_collection", embeddingsBatchSize)
 	externalfunctions.StoreElementsInGraphDatabase(e)
 }
 

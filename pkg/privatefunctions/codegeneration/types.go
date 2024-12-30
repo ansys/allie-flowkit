@@ -124,6 +124,10 @@ type CodeGenerationExample struct {
 
 type CodeGenerationUserGuideSection struct {
 	Name            string   `json:"name"`
+	Title           string   `json:"title"`
+	IsFirstChild    bool     `json:"is_first_child"`
+	NextSibling     string   `json:"next_sibling"`
+	NextParent      string   `json:"next_parent"`
 	DocumentName    string   `json:"document_name"`
 	Parent          string   `json:"parent"`
 	Content         string   `json:"content"`

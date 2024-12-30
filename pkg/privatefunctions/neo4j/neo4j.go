@@ -294,6 +294,9 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 			delete(nodeMap, "name")
 			delete(nodeMap, "content")
 			delete(nodeMap, "chunks")
+			delete(nodeMap, "is_first_child")
+			delete(nodeMap, "next_sibling")
+			delete(nodeMap, "next_parent")
 
 			// Create node dynamically using the map
 			_, err = transaction.Run(db_ctx,
@@ -548,17 +551,52 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 						return false, err
 					}
 				}
-			}
-			return true, nil
-		})
-		if err != nil {
-			log.Printf("Error during session.ExecuteWrite: %v", err)
-			return
-		}
 
-		// Create relationship between sections and their child sections
-		_, err = session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
-			for _, node := range batch {
+				// Create relationship between each section and the next section
+				if node.NextSibling != "" {
+					_, err := transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:NEXT_SIBLING]->(b)",
+						map[string]any{
+							"a": node.Name,
+							"b": node.NextSibling,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+				}
+
+				// Create relationship between last child and following section parent
+				if node.NextParent != "" {
+					_, err := transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:NEXT_PARENT]->(b)",
+						map[string]any{
+							"a": node.Name,
+							"b": node.NextParent,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+				}
+
+				// Create relationship between each first child and its parent
+				if node.IsFirstChild {
+					_, err := transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (b)-[:HAS_FIRST_CHILD]->(a)",
+						map[string]any{
+							"a": node.Name,
+							"b": node.Parent,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+				}
+
 				// Create relationships between each of the dependencies and the adjacent dependency
 				_, err := transaction.Run(db_ctx,
 					"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)<-[:HAS_CHILD]-(b)",
