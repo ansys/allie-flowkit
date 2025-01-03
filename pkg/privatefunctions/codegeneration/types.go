@@ -5,36 +5,38 @@ import (
 )
 
 // Structs representing the XML structure
-type MechanicalObjectDefinitionDocument struct {
-	XMLName  xml.Name                   `xml:"doc"`
-	Assembly MechanicalAssembly         `xml:"assembly"`
-	Members  []MechanicalAssemblyMember `xml:"members>member"`
+type XMLObjectDefinitionDocument struct {
+	XMLName  xml.Name            `xml:"doc"`
+	Assembly XMLAssembly         `xml:"assembly"`
+	Members  []XMLAssemblyMember `xml:"members>member"`
 }
 
-type MechanicalAssembly struct {
+type XMLAssembly struct {
 	Name string `xml:"name"`
 }
 
-type MechanicalAssemblyMember struct {
-	Name       string                  `xml:"name,attr"`
-	Summary    string                  `xml:"summary"`
-	ReturnType string                  `xml:"returnType"`
-	Params     []MechanicalMemberParam `xml:"param"`             // Handles multiple <param> elements
-	Example    MechanicalMemberExample `xml:"example,omitempty"` // Optional <example> element
-	Remarks    string                  `xml:"remarks,omitempty"`
+type XMLAssemblyMember struct {
+	Name       string           `xml:"name,attr"`
+	Summary    string           `xml:"summary"`
+	ReturnType string           `xml:"returnType"`
+	Params     []XMLMemberParam `xml:"param"`             // Handles multiple <param> elements
+	Example    XMLMemberExample `xml:"example,omitempty"` // Optional <example> element
+	Remarks    string           `xml:"remarks,omitempty"`
+	EnumValues string           `xml:"enumValues,omitempty"`
 }
 
-type MechanicalMemberParam struct {
-	Name        string `xml:"name,attr" json:"name"`        // Attribute for <param>
+type XMLMemberParam struct {
+	Name        string `xml:"name" json:"name"`             // Attribute for <param>
+	Type        string `xml:"type,omitempty" json:"type"`   // Attribute for <param>
 	Description string `xml:",chardata" json:"description"` // Text content of <param>
 }
 
-type MechanicalMemberExample struct {
-	Description string                      `xml:",chardata" json:"description"` // Text content of <example>
-	Code        MechanicalMemberExampleCode `xml:"code,omitempty" json:"code"`   // Optional <code> element
+type XMLMemberExample struct {
+	Description string               `xml:",chardata" json:"description"` // Text content of <example>
+	Code        XMLMemberExampleCode `xml:"code,omitempty" json:"code"`   // Optional <code> element
 }
 
-type MechanicalMemberExampleCode struct {
+type XMLMemberExampleCode struct {
 	Type string `xml:"type,attr" json:"type"` // Attribute for <code>
 	Text string `xml:",chardata" json:"text"` // Text content of <code>
 }
@@ -55,8 +57,8 @@ type CodeGenerationElement struct {
 	Remarks           string   `json:"remarks"`
 
 	// Only for type "function" or "method"
-	Parameters []MechanicalMemberParam `json:"parameters"`
-	Example    MechanicalMemberExample `json:"example"`
+	Parameters []XMLMemberParam `json:"parameters"`
+	Example    XMLMemberExample `json:"example"`
 
 	// Only for type "enum"
 	EnumValues []string `json:"enum_values"`
@@ -102,16 +104,16 @@ type VectorDatabaseExample struct {
 }
 
 type GraphDatabaseElement struct {
-	Guid           string                  `json:"guid"`
-	Type           string                  `json:"type"`
-	NamePseudocode string                  `json:"name_pseudocode"`
-	Description    string                  `json:"description"`
-	Summary        string                  `json:"summary"`
-	Examples       string                  `json:"examples"`
-	Parameters     []MechanicalMemberParam `json:"parameters"`
-	Dependencies   []string                `json:"dependencies"`
-	ReturnType     string                  `json:"returnType"`
-	Remarks        string                  `json:"remarks"`
+	Guid           string           `json:"guid"`
+	Type           string           `json:"type"`
+	NamePseudocode string           `json:"name_pseudocode"`
+	Description    string           `json:"description"`
+	Summary        string           `json:"summary"`
+	Examples       string           `json:"examples"`
+	Parameters     []XMLMemberParam `json:"parameters"`
+	Dependencies   []string         `json:"dependencies"`
+	ReturnType     string           `json:"returnType"`
+	Remarks        string           `json:"remarks"`
 }
 
 type CodeGenerationExample struct {

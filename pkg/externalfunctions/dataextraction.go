@@ -560,7 +560,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 	}
 
 	// Create object definition document.
-	objectDefinitionDoc := codegeneration.MechanicalObjectDefinitionDocument{}
+	objectDefinitionDoc := codegeneration.XMLObjectDefinitionDocument{}
 
 	// Unmarshal the XML content into the object definition document.
 	err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
@@ -643,7 +643,8 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			element.Dependencies = dependencies
 
 			// Extract enum values.
-			element.EnumValues = strings.Split(objectDefinition.ReturnType, ", ")
+			cleaned := strings.Trim(objectDefinition.EnumValues, "[]")
+			element.EnumValues = strings.Split(cleaned, ",")
 
 		default:
 			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)

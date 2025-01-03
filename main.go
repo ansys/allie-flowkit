@@ -85,28 +85,6 @@ func TestCodeGenElements() {
 	// Load mechanical object definitions
 	e := externalfunctions.LoadObjectDefinitions(path)
 
-	// functionPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
-	// Signature: {name}
-	// Summary: {summary}
-	// Parameters: {parameters}
-	// Example: {example}
-	// ReturnType: {returnType}
-
-	// I want you to generate a short description of the function.
-	// `
-	// parameterPrompt := `Please focus, this is really important to me. I have a {type} with this specifications:
-	// Name: {name}
-	// Summary: {summary}
-	// Type: {returnType}
-
-	// I want you to generate a short description of the parameter.
-	// `
-
-	// systemPrompt := `You are a really helpful assistant`
-
-	// // generate pseudo code
-	// functionDef := externalfunctions.GeneratePseudocodeFromCodeGenerationFunctions(e, functionPrompt, parameterPrompt, systemPrompt, 20)
-
 	// store in database
 	embeddingsBatchSize := 200
 	externalfunctions.StoreElementsInVectorDatabase(e, "mechanical_elements_collection", embeddingsBatchSize)
