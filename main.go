@@ -62,14 +62,14 @@ func main() {
 	for category, file := range files {
 		err := functiondefinitions.ExtractFunctionDefinitionsFromPackage(file, category)
 		if err != nil {
-			logging.Log.Fatalf(internalstates.Ctx, "Error extracting function definitions from package: %v", err)
+			logging.Log.Fatalf(&logging.ContextMap{}, "Error extracting function definitions from package: %v", err)
 		}
 	}
 
 	// Log the version of the system
-	logging.Log.Info(internalstates.Ctx, "Launching Allie Flowkit")
+	logging.Log.Info(&logging.ContextMap{}, "Launching Allie Flowkit")
 
 	// start the gRPC server
 	grpcserver.StartServer()
-	logging.Log.Fatalf(internalstates.Ctx, "Error in gRPC server. Exiting application.")
+	logging.Log.Fatalf(&logging.ContextMap{}, "Error in gRPC server. Exiting application.")
 }

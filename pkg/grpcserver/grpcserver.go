@@ -32,7 +32,7 @@ func StartServer() {
 	// Create listener on the specified port
 	lis, err := net.Listen("tcp", ":"+config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
 	if err != nil {
-		logging.Log.Fatalf(internalstates.Ctx, "failed to listen: %v", err)
+		logging.Log.Fatalf(&logging.ContextMap{}, "failed to listen: %v", err)
 	}
 
 	// Check if SSL is enabled and load the server's certificate and private key
@@ -43,7 +43,7 @@ func StartServer() {
 			config.GlobalConfig.SSL_CERT_PRIVATE_KEY_FILE,
 		)
 		if err != nil {
-			logging.Log.Fatalf(internalstates.Ctx, "failed to load SSL certificates: %v", err)
+			logging.Log.Fatalf(&logging.ContextMap{}, "failed to load SSL certificates: %v", err)
 		}
 		opts = append(opts, grpc.Creds(creds))
 	}
@@ -60,9 +60,9 @@ func StartServer() {
 	// Create the gRPC server with the options
 	s := grpc.NewServer(opts...)
 	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
-	logging.Log.Infof(internalstates.Ctx, "gRPC server listening at %v", lis.Addr())
+	logging.Log.Infof(&logging.ContextMap{}, "gRPC server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
-		logging.Log.Fatalf(internalstates.Ctx, "failed to serve: %v", err)
+		logging.Log.Fatalf(&logging.ContextMap{}, "failed to serve: %v", err)
 	}
 }
 
@@ -324,7 +324,7 @@ func convertOptionSetValues(functionName string, inputName string, inputValue in
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic occured in convertOptionSetValues: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic occured in convertOptionSetValues: %v", r)
 		}
 	}()
 

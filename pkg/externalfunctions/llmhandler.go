@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
@@ -37,19 +36,19 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 		}
 
 		// Log LLM response
-		logging.Log.Debugf(internalstates.Ctx, "Received embeddings response.")
+		logging.Log.Debugf(&logging.ContextMap{}, "Received embeddings response.")
 
 		// Get embedded vector array
 		interfaceArray, ok := response.EmbeddedData.([]interface{})
 		if !ok {
 			errMessage := "error converting embedded data to interface array"
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 		embedding32, err = convertToFloat32Slice(interfaceArray)
 		if err != nil {
 			errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -94,13 +93,13 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 		}
 
 		// Log LLM response
-		logging.Log.Debugf(internalstates.Ctx, "Received batch embeddings response.")
+		logging.Log.Debugf(&logging.ContextMap{}, "Received batch embeddings response.")
 
 		// Get embedded vector array
 		interfaceArray, ok := response.EmbeddedData.([]interface{})
 		if !ok {
 			errMessage := "error converting embedded data to interface array"
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -108,13 +107,13 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 			lowerInterfaceArray, ok := interfaceArrayElement.([]interface{})
 			if !ok {
 				errMessage := "error converting embedded data to interface array"
-				logging.Log.Error(internalstates.Ctx, errMessage)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
 				panic(errMessage)
 			}
 			embedding32, err := convertToFloat32Slice(lowerInterfaceArray)
 			if err != nil {
 				errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
-				logging.Log.Error(internalstates.Ctx, errMessage)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
 				panic(errMessage)
 			}
 			embedding32Array[i] = embedding32
@@ -170,7 +169,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 		}
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Received keywords response.")
+	logging.Log.Debugf(&logging.ContextMap{}, "Received keywords response.")
 
 	// Close the response channel
 	close(responseChannel)
@@ -179,7 +178,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	err := json.Unmarshal([]byte(responseAsStr), &keywords)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling keywords response from allie-llm: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -221,7 +220,7 @@ func PerformSummaryRequest(input string) (summary string) {
 		}
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Received summary response.")
+	logging.Log.Debugf(&logging.ContextMap{}, "Received summary response.")
 
 	// Close the response channel
 	close(responseChannel)
@@ -459,13 +458,13 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 		// Extract the code from the response
 		pythonCode, err := extractPythonCode(responseAsStr)
 		if err != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Error extracting Python code: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, "Error extracting Python code: %v", err)
 		} else {
 
 			// Validate the Python code
 			valid, warnings, err := validatePythonCode(pythonCode)
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error validating Python code: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error validating Python code: %v", err)
 			} else {
 				if valid {
 					if warnings {
@@ -623,7 +622,7 @@ func AppendMessageHistory(newMessage string, role AppendMessageHistoryRole, hist
 	case system:
 	default:
 		errMessage := fmt.Sprintf("Invalid role used for 'AppendMessageHistory': %v", role)
-		logging.Log.Warn(internalstates.Ctx, errMessage)
+		logging.Log.Warn(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
