@@ -655,7 +655,7 @@ func AisAcsSemanticHybridSearchs(
 			defer func() {
 				r := recover()
 				if r != nil {
-					logging.Log.Errorf(&logging.ContextMap{}, "panic in paralell processing of ACS request: %v", r)
+					logging.Log.Errorf(&logging.ContextMap{}, "panic in paralell processing of ACS requests: %v", r)
 				}
 			}()
 			defer wg.Done()
