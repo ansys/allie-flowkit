@@ -652,6 +652,12 @@ func AisAcsSemanticHybridSearchs(
 	// Launch a goroutine for each index
 	for _, indexName := range indexList {
 		go func(idx string) {
+			defer func() {
+				r := recover()
+				if r != nil {
+					logging.Log.Errorf(&logging.ContextMap{}, "panic in paralell processing of ACS requests: %v", r)
+				}
+			}()
 			defer wg.Done()
 			// Run the search for this index
 			result, err := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, idx, nil, topK, true, physics)
@@ -665,6 +671,12 @@ func AisAcsSemanticHybridSearchs(
 
 	// Launch a goroutine to close the channel once all searches are complete
 	go func() {
+		defer func() {
+			r := recover()
+			if r != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "panic in closing ACS result channel: %v", r)
+			}
+		}()
 		wg.Wait()
 		close(resultChan)
 	}()
