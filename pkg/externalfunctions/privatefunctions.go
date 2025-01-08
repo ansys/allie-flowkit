@@ -710,6 +710,12 @@ func ansysGPTACSSemanticHybridSearch(
 	topK int,
 	isAis bool,
 	physics []string) (output []sharedtypes.ACSSearchResponse, err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = fmt.Errorf("panic occured in ansysGPTACSSemanticHybridSearch: %v", r)
+		}
+	}()
 
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
