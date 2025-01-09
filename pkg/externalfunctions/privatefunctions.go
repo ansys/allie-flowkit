@@ -280,8 +280,16 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 	// Disable the read limit
 	c.SetReadLimit(-1)
 
-	// Send "testkey" for authentication
-	err = c.Write(context.Background(), websocket.MessageText, []byte("testkey"))
+	// Get API key
+	apiKey := config.GlobalConfig.LLM_API_KEY
+
+	// Legacy authentication
+	if apiKey == "" {
+		apiKey = "testkey"
+	}
+
+	// Send apikey for authentication
+	err = c.Write(context.Background(), websocket.MessageText, []byte(apiKey))
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to send authentication message to allie-llm: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
