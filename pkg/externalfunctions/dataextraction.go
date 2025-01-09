@@ -785,6 +785,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 			NameFormatted:  element.NameFormatted,
 			Description:    element.Description,
 			Type:           string(element.Type),
+			ParentClass:    strings.Join(element.Dependencies, "."),
 		}
 
 		// Add the new vector database object to the list.
@@ -833,6 +834,10 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 		},
 		{
 			Name: "description",
+			Type: "string",
+		},
+		{
+			Name: "parent_class",
 			Type: "string",
 		},
 	}

@@ -1933,7 +1933,7 @@ func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeG
 		batchData := elements[i:end]
 		batchTextToEmbed := make([]string, len(batchData))
 		for j, data := range batchData {
-			batchTextToEmbed[j] = data.NameFormatted + "\n" + data.NamePseudocode + "\n" + data.Summary
+			batchTextToEmbed[j] = data.NameFormatted + "\n" + data.NamePseudocode + "\n" + data.Summary + "\n" + strings.Join(data.Dependencies, " ") + "\n" + strings.Join(data.Dependencies, ".")
 		}
 
 		// Send http request
@@ -2053,7 +2053,7 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 	}()
 
 	// create embeddings
-	url := "http://20.61.171.221:8000/embedding"
+	url := "http://localhost:8000/embedding"
 
 	request := pythonEmbeddingRequest{
 		Passages:          passages,

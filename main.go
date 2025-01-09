@@ -71,8 +71,8 @@ func main() {
 	logging.Log.Info(internalstates.Ctx, "Launching Allie Flowkit")
 
 	TestCodeGenElements()
-	TestCodeGenExamples()
-	TestCodeGenUserGuide()
+	// TestCodeGenExamples()
+	// TestCodeGenUserGuide()
 
 	// start the gRPC server
 	grpcserver.StartServer()
@@ -88,7 +88,7 @@ func TestCodeGenElements() {
 	// store in database
 	embeddingsBatchSize := 200
 	externalfunctions.StoreElementsInVectorDatabase(e, "mechanical_elements_collection", embeddingsBatchSize)
-	externalfunctions.StoreElementsInGraphDatabase(e)
+	// externalfunctions.StoreElementsInGraphDatabase(e)
 }
 
 func TestCodeGenExamples() {

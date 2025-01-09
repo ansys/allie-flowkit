@@ -89,6 +89,7 @@ type VectorDatabaseElement struct {
 	NamePseudocode string           `json:"name_pseudocode"`
 	NameFormatted  string           `json:"name_formatted"`
 	Description    string           `json:"description"`
+	ParentClass    string           `json:"parent_class"`
 }
 
 type VectorDatabaseExample struct {
