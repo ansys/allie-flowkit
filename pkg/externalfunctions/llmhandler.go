@@ -3,6 +3,7 @@ package externalfunctions
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -65,6 +66,69 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	close(responseChannel)
 
 	return embedding32
+}
+
+// PerformVectorEmbeddingRequestWithTokenLimitCatch performs a vector embedding request to LLM
+// and catches the token limit error message
+//
+// Tags:
+//   - @displayName: Embeddings with Token Limit Catch
+//
+// Parameters:
+//   - input: the input string
+//
+// Returns:
+//   - embeddedVector: the embedded vector in float32 format
+func PerformVectorEmbeddingRequestWithTokenLimitCatch(input string, tokenLimitMessage string) (embeddedVector []float32, tokenLimitReached bool, responseMessage string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send embeddings request
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+
+	// Process the first response and close the channel
+	var embedding32 []float32
+	var err error
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			if strings.Contains(response.Error.Message, "tokens") {
+				return nil, true, tokenLimitMessage
+			} else {
+				panic(response.Error)
+			}
+		}
+
+		// Log LLM response
+		logging.Log.Debugf(&logging.ContextMap{}, "Received embeddings response.")
+
+		// Get embedded vector array
+		interfaceArray, ok := response.EmbeddedData.([]interface{})
+		if !ok {
+			errMessage := "error converting embedded data to interface array"
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+		embedding32, err = convertToFloat32Slice(interfaceArray)
+		if err != nil {
+			errMessage := fmt.Sprintf("error converting embedded data to float32 slice: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// Mark that the first response has been received
+		firstResponseReceived := true
+
+		// Exit the loop after processing the first response
+		if firstResponseReceived {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	return embedding32, false, ""
 }
 
 // PerformBatchEmbeddingRequest performs a batch vector embedding request to LLM

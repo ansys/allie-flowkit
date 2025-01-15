@@ -2,18 +2,19 @@ package externalfunctions
 
 var ExternalFunctionsMap = map[string]interface{}{
 	// llm handler
-	"PerformVectorEmbeddingRequest":       PerformVectorEmbeddingRequest,
-	"PerformBatchEmbeddingRequest":        PerformBatchEmbeddingRequest,
-	"PerformKeywordExtractionRequest":     PerformKeywordExtractionRequest,
-	"PerformGeneralRequest":               PerformGeneralRequest,
-	"PerformGeneralRequestWithImages":     PerformGeneralRequestWithImages,
-	"PerformGeneralRequestSpecificModel":  PerformGeneralRequestSpecificModel,
-	"PerformCodeLLMRequest":               PerformCodeLLMRequest,
-	"BuildLibraryContext":                 BuildLibraryContext,
-	"BuildFinalQueryForGeneralLLMRequest": BuildFinalQueryForGeneralLLMRequest,
-	"BuildFinalQueryForCodeLLMRequest":    BuildFinalQueryForCodeLLMRequest,
-	"AppendMessageHistory":                AppendMessageHistory,
-	"ShortenMessageHistory":               ShortenMessageHistory,
+	"PerformVectorEmbeddingRequest":                    PerformVectorEmbeddingRequest,
+	"PerformVectorEmbeddingRequestWithTokenLimitCatch": PerformVectorEmbeddingRequestWithTokenLimitCatch,
+	"PerformBatchEmbeddingRequest":                     PerformBatchEmbeddingRequest,
+	"PerformKeywordExtractionRequest":                  PerformKeywordExtractionRequest,
+	"PerformGeneralRequest":                            PerformGeneralRequest,
+	"PerformGeneralRequestWithImages":                  PerformGeneralRequestWithImages,
+	"PerformGeneralRequestSpecificModel":               PerformGeneralRequestSpecificModel,
+	"PerformCodeLLMRequest":                            PerformCodeLLMRequest,
+	"BuildLibraryContext":                              BuildLibraryContext,
+	"BuildFinalQueryForGeneralLLMRequest":              BuildFinalQueryForGeneralLLMRequest,
+	"BuildFinalQueryForCodeLLMRequest":                 BuildFinalQueryForCodeLLMRequest,
+	"AppendMessageHistory":                             AppendMessageHistory,
+	"ShortenMessageHistory":                            ShortenMessageHistory,
 
 	// knowledge db
 	"SendVectorsToKnowledgeDB": SendVectorsToKnowledgeDB,
