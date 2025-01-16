@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/generic"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -40,7 +39,7 @@ func Initialize() (milvusClient client.Client, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic initialize: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic initialize: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -50,26 +49,26 @@ func Initialize() (milvusClient client.Client, funcError error) {
 	// Create Milvus client
 	milvusClient, err = newClient()
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "error during NewMilvusClient: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "error during NewMilvusClient: %s", err.Error())
 		return nil, err
 	}
 
 	// Load all existing collections
 	collections, err := listCollections(milvusClient)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "error during ListCollections: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "error during ListCollections: %s", err.Error())
 		return nil, err
 	}
 
 	for _, collection := range collections {
 		err := loadCollection(collection, milvusClient)
 		if err != nil {
-			logging.Log.Errorf(internalstates.Ctx, "error during LoadCollection: %s", err.Error())
+			logging.Log.Errorf(&logging.ContextMap{}, "error during LoadCollection: %s", err.Error())
 			return nil, err
 		}
 	}
 
-	logging.Log.Info(internalstates.Ctx, "Initialized Milvus")
+	logging.Log.Info(&logging.ContextMap{}, "Initialized Milvus")
 
 	return milvusClient, nil
 }
@@ -78,7 +77,7 @@ func newClient() (milvusClient client.Client, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in NewMilvusClient: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in NewMilvusClient: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -112,12 +111,12 @@ func newClient() (milvusClient client.Client, funcError error) {
 
 		// Check if the error is a timeout error
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			logging.Log.Warnf(internalstates.Ctx, "Timeout error during client.NewClient: %s (Retry %d/%d)", err.Error(), retry+1, milvusConnectionRetries)
+			logging.Log.Warnf(&logging.ContextMap{}, "Timeout error during client.NewClient: %s (Retry %d/%d)", err.Error(), retry+1, milvusConnectionRetries)
 			continue
 		}
 
 		// If the error is not a timeout error, log and return the error
-		logging.Log.Errorf(internalstates.Ctx, "Error during client.NewClient: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during client.NewClient: %s", err.Error())
 		return nil, err
 	}
 
@@ -136,7 +135,7 @@ func listCollections(milvusClient client.Client) (collections []string, funcErro
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in ListCollections: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in ListCollections: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -145,7 +144,7 @@ func listCollections(milvusClient client.Client) (collections []string, funcErro
 		context.Background(),
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to list collections: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to list collections: %s", err.Error())
 		return collections, err
 	}
 
@@ -156,7 +155,7 @@ func listCollections(milvusClient client.Client) (collections []string, funcErro
 		}
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Collections listed: %v", collections)
+	logging.Log.Infof(&logging.ContextMap{}, "Collections listed: %v", collections)
 
 	return collections, nil
 }
@@ -173,7 +172,7 @@ func loadCollection(collectionName string, milvusClient client.Client) (funcErro
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in LoadCollection: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in LoadCollection: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -185,11 +184,11 @@ func loadCollection(collectionName string, milvusClient client.Client) (funcErro
 		false,                // async
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "error during milvusClient.LoadCollection: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "error during milvusClient.LoadCollection: %s", err.Error())
 		return err
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Collection loaded: %v", collectionName)
+	logging.Log.Infof(&logging.ContextMap{}, "Collection loaded: %v", collectionName)
 
 	return nil
 }
@@ -206,7 +205,7 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in CreateCollection: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in CreateCollection: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -217,12 +216,12 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 		schema.CollectionName, // CollectionName
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error during HasCollection: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during HasCollection: %v", err)
 		return err
 	}
 
 	if hasColl {
-		logging.Log.Infof(internalstates.Ctx, "Collection already exists: %s\n", schema.CollectionName)
+		logging.Log.Infof(&logging.ContextMap{}, "Collection already exists: %s\n", schema.CollectionName)
 		return nil
 	}
 
@@ -233,7 +232,7 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 		2, // shardNum
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error during CreateCollection: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during CreateCollection: %v", err)
 		return err
 	}
 
@@ -258,18 +257,18 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 	// Create index on the collection
 	err = CreateIndexes(schema.CollectionName, milvusClient, "guid", denseVectorFieldName, sparseVectorFieldName)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error during CreateIndexes: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during CreateIndexes: %v", err)
 		return err
 	}
 
 	// Load the collection
 	err = loadCollection(schema.CollectionName, milvusClient)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error during LoadCollection: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during LoadCollection: %v", err)
 		return err
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Created collection: %s\n", schema.CollectionName)
+	logging.Log.Infof(&logging.ContextMap{}, "Created collection: %s\n", schema.CollectionName)
 
 	return nil
 }
@@ -287,7 +286,7 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in CreateIndexes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in CreateIndexes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -304,11 +303,11 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 		false,
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to create index: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index: %s", err.Error())
 		return err
 	}
 
-	logging.Log.Info(internalstates.Ctx, "Scalar index created")
+	logging.Log.Info(&logging.ContextMap{}, "Scalar index created")
 
 	///////////////////////////////////////////
 	// 2. Create Vector Index
@@ -343,7 +342,7 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	}
 
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Failed to create %v index: %s", denseIdx.IndexType(), err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "Failed to create %v index: %s", denseIdx.IndexType(), err.Error())
 		return err
 	}
 
@@ -356,14 +355,14 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 		false,
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to create index: %s", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index: %s", err.Error())
 		return err
 	}
 
 	// Create a vector index for the sparseVectorFieldName field
 	sparseIdx, err := entity.NewIndexSparseInverted(entity.IP, 0)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to create index %v", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
 		return err
 	}
 	err = milvusClient.CreateIndex(
@@ -374,7 +373,7 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 		false,
 	)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to create index %v", err.Error())
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
 		return err
 	}
 
@@ -475,7 +474,7 @@ func InsertData(collectionName string, dataToSend []interface{}) (funcError erro
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in InsertData: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in InsertData: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -504,7 +503,7 @@ func InsertData(collectionName string, dataToSend []interface{}) (funcError erro
 		// Send the data batch to Milvus
 		err := sendInsertRequest(request)
 		if err != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Error during sendInsertRequest: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendInsertRequest: %v", err)
 			return err
 		}
 
@@ -527,7 +526,7 @@ func sendInsertRequest(request MilvusRequest) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in sendInsertRequest: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in sendInsertRequest: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -542,17 +541,17 @@ func sendInsertRequest(request MilvusRequest) (funcError error) {
 	// Send the Milvus insert request and receive the response.
 	err, _ := generic.CreatePayloadAndSendHttpRequest(url, request, &response)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error in CreatePayloadAndSendHttpRequest: %s", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
 		return err
 	}
 
 	// Check the response status code.
 	if response.Code != http.StatusOK {
-		logging.Log.Errorf(internalstates.Ctx, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
+		logging.Log.Errorf(&logging.ContextMap{}, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
 		return errors.New(response.Message)
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Added %v entries to the DB.", response.InsertData.InsertCount)
+	logging.Log.Infof(&logging.ContextMap{}, "Added %v entries to the DB.", response.InsertData.InsertCount)
 
 	return nil
 }
@@ -570,7 +569,7 @@ func sendQueryRequest(request MilvusRequest) (response MilvusQueryResponse, func
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in sendQueryRequest: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in sendQueryRequest: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -582,13 +581,13 @@ func sendQueryRequest(request MilvusRequest) (response MilvusQueryResponse, func
 	// Send the Milvus query request and receive the response.
 	err, _ := generic.CreatePayloadAndSendHttpRequest(url, request, &response)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error in CreatePayloadAndSendHttpRequest: %s", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
 		return response, err
 	}
 
 	// Check the response status code.
 	if response.Code != http.StatusOK {
-		logging.Log.Errorf(internalstates.Ctx, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
+		logging.Log.Errorf(&logging.ContextMap{}, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
 		return response, errors.New(response.Message)
 	}
 
@@ -608,7 +607,7 @@ func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, fu
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in sendSearchRequest: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in sendSearchRequest: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -620,13 +619,13 @@ func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, fu
 	// Send the Milvus search request and receive the response.
 	err, _ := generic.CreatePayloadAndSendHttpRequest(url, request, &response)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error in CreatePayloadAndSendHttpRequest: %s", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
 		return response, err
 	}
 
 	// Check the response status code.
 	if response.Code != http.StatusOK {
-		logging.Log.Errorf(internalstates.Ctx, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
+		logging.Log.Errorf(&logging.ContextMap{}, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
 		return response, errors.New(response.Message)
 	}
 
@@ -662,7 +661,7 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 // 	defer func() {
 // 		r := recover()
 // 		if r != nil {
-// 			logging.Log.Errorf(internalstates.Ctx, "Panic occured in SearchMilvusCollection: %v", r)
+// 			logging.Log.Errorf(&logging.ContextMap{}, "Panic occured in SearchMilvusCollection: %v", r)
 // 			func_error = r.(error)
 // 		}
 // 	}()
@@ -681,12 +680,12 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 
 // 		sparse_vector_formatted, err := entity.NewSliceSparseEmbedding(positions, values)
 // 		if err != nil {
-// 			logging.Log.Errorf(internalstates.Ctx, "failed to create sparse embedding %v", err.Error())
+// 			logging.Log.Errorf(&logging.ContextMap{}, "failed to create sparse embedding %v", err.Error())
 // 			return nil, err
 // 		}
 // 		sparse_search_params, err := entity.NewIndexSparseInvertedSearchParam(0)
 // 		if err != nil {
-// 			logging.Log.Errorf(internalstates.Ctx, "failed to create search params %v", err.Error())
+// 			logging.Log.Errorf(&logging.ContextMap{}, "failed to create search params %v", err.Error())
 // 			return nil, err
 // 		}
 
@@ -700,7 +699,7 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 // 		dense_vectors := []entity.Vector{entity.FloatVector(request.DenseVector)}
 // 		dense_search_params, err := entity.NewIndexFlatSearchParam()
 // 		if err != nil {
-// 			logging.Log.Errorf(internalstates.Ctx, "failed to create search params %v", err.Error())
+// 			logging.Log.Errorf(&logging.ContextMap{}, "failed to create search params %v", err.Error())
 // 			return nil, err
 // 		}
 // 		dense_vector_search_request := client.NewANNSearchRequest("dense_vector", entity.COSINE, filter_expression, dense_vectors, dense_search_params, 100)
@@ -724,7 +723,7 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 
 // 	search_result, err := milvusClient.HybridSearch(context.TODO(), request.ProjectId, []string{}, 300, output_fields, reranker, sub_requests, opt)
 // 	if err != nil {
-// 		logging.Log.Errorf(internalstates.Ctx, "failed to search collection %v", err.Error())
+// 		logging.Log.Errorf(&logging.ContextMap{}, "failed to search collection %v", err.Error())
 // 		return nil, err
 // 	}
 

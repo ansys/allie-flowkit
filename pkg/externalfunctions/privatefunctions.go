@@ -18,7 +18,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -1618,7 +1617,7 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		}
 
 		if response.Type == "info" {
-			logging.Log.Infof(internalstates.Ctx, "Received info message for general llm request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			logging.Log.Infof(&logging.ContextMap{}, "Received info message for general llm request: %v: %v", response.InstructionGuid, response.InfoMessage)
 			continue
 		}
 
@@ -1929,7 +1928,7 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 		elementEmbeddings = append(elementEmbeddings, batchEmbeddings...)
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", len(elements))
+	logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", len(elements))
 
 	return elementEmbeddings, nil
 }
@@ -1970,7 +1969,7 @@ func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeG
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchData)
-		logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, lexicalWeights, nil
@@ -2012,7 +2011,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForExamples(elements []codegener
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchData)
-		logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, lexicalWeights, nil
@@ -2046,7 +2045,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(sections []
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchData)
-		logging.Log.Infof(internalstates.Ctx, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, lexicalWeights, nil
@@ -2070,7 +2069,7 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic occured in CreateEmbeddings: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic occured in CreateEmbeddings: %v", r)
 			func_error = r.(error)
 		}
 	}()
@@ -2088,13 +2087,13 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 
 	jsonData, err := json.Marshal(request)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error marshalling request: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error marshalling request: %v", err)
 		return nil, nil, nil, err
 	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewReader(jsonData))
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error sending request to python helper server extract-text: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error sending request to python helper server extract-text: %v", err)
 		return nil, nil, nil, err
 	}
 	defer resp.Body.Close()
@@ -2109,7 +2108,7 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 	var response pythonEmbeddingResponse
 	err = json.Unmarshal([]byte(responseBody), &response)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error unmarshalling response: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error unmarshalling response: %v", err)
 		return nil, nil, nil, err
 	}
 
@@ -2133,7 +2132,7 @@ func dataExtractionTextSplitter(input string, chunkSize int, chunkOverlap int) (
 	splittedChunks, err = txtLoader.LoadAndSplit(context.Background(), splitter)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		return nil, err
 	}
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
 
@@ -14,7 +13,7 @@ func CreatePayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in CreatePayloadAndSendHttpRequest: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in CreatePayloadAndSendHttpRequest: %v", r)
 			funcError = r.(error)
 			return
 		}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -32,7 +31,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic Initialize: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic Initialize: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -41,7 +40,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 	// Create DB login object
 	driver, err := neo4j.NewDriverWithContext(uri, neo4j.BasicAuth(username, password, ""))
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "Error during neo4j.NewDriverWithContext %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during neo4j.NewDriverWithContext %v", err)
 		return err
 	}
 	Neo4j_Driver = neo4j_Context{driver: &driver}
@@ -57,7 +56,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 			nil,
 		)
 		if err != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Error during session.ExecuteWrite: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during session.ExecuteWrite: %v", err)
 			return nil, err
 		}
 
@@ -65,7 +64,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 			return result.Record().Values, nil
 		}
 
-		logging.Log.Error(internalstates.Ctx, "nothing returned by query")
+		logging.Log.Error(&logging.ContextMap{}, "nothing returned by query")
 		return nil, errors.New("nothing returned by query")
 	})
 	if err != nil {
@@ -73,7 +72,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 	}
 
 	// Log successfull connection
-	logging.Log.Infof(internalstates.Ctx, "Initialized neo4j database connection to %v", uri)
+	logging.Log.Infof(&logging.ContextMap{}, "Initialized neo4j database connection to %v", uri)
 
 	return nil
 }
@@ -89,7 +88,7 @@ func (neo4j_context *neo4j_Context) AddNodes(nodes []codegeneration.CodeGenerati
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic AddNodes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddNodes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -111,12 +110,12 @@ func (neo4j_context *neo4j_Context) AddNodes(nodes []codegeneration.CodeGenerati
 			nodeMap := make(map[string]any)
 			nodeJSON, err := json.Marshal(node) // Convert struct to JSON
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error serializing node to JSON: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error serializing node to JSON: %v", err)
 				return false, err
 			}
 			err = json.Unmarshal(nodeJSON, &nodeMap) // Convert JSON to map
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error deserializing JSON to map: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error deserializing JSON to map: %v", err)
 				return false, err
 			}
 
@@ -151,7 +150,7 @@ func (neo4j_context *neo4j_Context) AddNodes(nodes []codegeneration.CodeGenerati
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 				return false, err
 			}
 
@@ -179,7 +178,7 @@ func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeG
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic AddNodes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddNodes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -201,12 +200,12 @@ func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeG
 			nodeMap := make(map[string]any)
 			nodeJSON, err := json.Marshal(node) // Convert struct to JSON
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error serializing node to JSON: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error serializing node to JSON: %v", err)
 				return false, err
 			}
 			err = json.Unmarshal(nodeJSON, &nodeMap) // Convert JSON to map
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error deserializing JSON to map: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error deserializing JSON to map: %v", err)
 				return false, err
 			}
 
@@ -218,7 +217,7 @@ func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeG
 			delete(nodeMap, "dependency_equivalences")
 			dependencyEquivalencesJSON, err := json.Marshal(node.DependencyEquivalences)
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error serializing dependency equivalences to JSON: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error serializing dependency equivalences to JSON: %v", err)
 				return false, err
 			}
 			nodeMap["dependency_equivalences"] = string(dependencyEquivalencesJSON)
@@ -232,7 +231,7 @@ func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeG
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 				return false, err
 			}
 
@@ -260,7 +259,7 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic AddNodes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddNodes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -282,12 +281,12 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 			nodeMap := make(map[string]any)
 			nodeJSON, err := json.Marshal(node) // Convert struct to JSON
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error serializing node to JSON: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error serializing node to JSON: %v", err)
 				return false, err
 			}
 			err = json.Unmarshal(nodeJSON, &nodeMap) // Convert JSON to map
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error deserializing JSON to map: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error deserializing JSON to map: %v", err)
 				return false, err
 			}
 
@@ -307,7 +306,7 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 				return false, err
 			}
 
@@ -335,7 +334,7 @@ func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegener
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic CreateRelationships: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateRelationships: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -357,7 +356,7 @@ func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegener
 		// Create batch of nodes
 		batch := nodes[i:end]
 
-		logging.Log.Infof(internalstates.Ctx, "Creating relationships for batch %v-%v", i, end)
+		logging.Log.Infof(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
 
 		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
 			for _, node := range batch {
@@ -371,7 +370,7 @@ func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegener
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -384,7 +383,7 @@ func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegener
 		}
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Created relationships for %v nodes", len(nodes))
+	logging.Log.Infof(&logging.ContextMap{}, "Created relationships for %v nodes", len(nodes))
 	return nil
 }
 
@@ -399,7 +398,7 @@ func (neo4j_context *neo4j_Context) CreateRelationships(nodes []codegeneration.C
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic CreateRelationships: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateRelationships: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -425,7 +424,7 @@ func (neo4j_context *neo4j_Context) CreateRelationships(nodes []codegeneration.C
 		// Create batch of nodes
 		batch := nodes[i:end]
 
-		logging.Log.Infof(internalstates.Ctx, "Creating relationships for batch %v-%v", i, end)
+		logging.Log.Infof(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
 
 		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
 			for _, node := range batch {
@@ -462,7 +461,7 @@ func (neo4j_context *neo4j_Context) CreateRelationships(nodes []codegeneration.C
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -477,7 +476,7 @@ func (neo4j_context *neo4j_Context) CreateRelationships(nodes []codegeneration.C
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -505,7 +504,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic CreateRelationships: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateRelationships: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -529,7 +528,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 		// Create batch of nodes
 		batch := nodes[i:end]
 
-		logging.Log.Infof(internalstates.Ctx, "Creating relationships for batch %v-%v", i, end)
+		logging.Log.Infof(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
 
 		// Create relationships between sections and their references
 		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
@@ -549,7 +548,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 
@@ -562,7 +561,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -577,7 +576,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -592,7 +591,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -607,7 +606,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 						},
 					)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 				}
@@ -621,7 +620,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 					},
 				)
 				if err != nil {
-					logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+					logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 					return false, err
 				}
 			}

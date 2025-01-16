@@ -13,7 +13,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/neo4j"
@@ -555,7 +554,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 	content, err := os.ReadFile(path)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -571,7 +570,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 	case ".json":
@@ -579,13 +578,13 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		err = json.Unmarshal(content, &objectDefinitionDoc.Members)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
 	default:
 		errMessage := fmt.Sprintf("Unknown file extension: %s", fileExtension)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -615,7 +614,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		element.ReturnElementList, err = codegeneration.CreateReturnListMechanical(objectDefinition.ReturnType)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error creating return element list: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -676,7 +675,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 
 		default:
 			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -684,7 +683,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		element.NamePseudocode, element.NameFormatted, err = codegeneration.ProcessElementName(element.Name, element.Dependencies)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error processing element name: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -716,14 +715,14 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 				parametersJSON, err := json.Marshal(function.Parameters)
 				if err != nil {
 					errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
-					logging.Log.Error(internalstates.Ctx, errMessage)
+					logging.Log.Error(&logging.ContextMap{}, errMessage)
 					errorChannel <- fmt.Errorf(errMessage)
 				}
 
 				exampleJSON, err := json.Marshal(function.Example)
 				if err != nil {
 					errMessage := fmt.Sprintf("Error marshalling function example: %v", err)
-					logging.Log.Error(internalstates.Ctx, errMessage)
+					logging.Log.Error(&logging.ContextMap{}, errMessage)
 					errorChannel <- fmt.Errorf(errMessage)
 				}
 
@@ -748,7 +747,7 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 
 				processedInstructionsCounter++
 				if processedInstructionsCounter%10 == 0 {
-					logging.Log.Infof(internalstates.Ctx, "Processed %v elements \n", processedInstructionsCounter)
+					logging.Log.Infof(&logging.ContextMap{}, "Processed %v elements \n", processedInstructionsCounter)
 				}
 
 				completeElementDefinitions = append(completeElementDefinitions, function)
@@ -769,11 +768,11 @@ func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.Co
 	close(errorChannel)
 	for err := range errorChannel {
 		errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	logging.Log.Infof(internalstates.Ctx, "Finished generating pseudocode for functions \n")
+	logging.Log.Infof(&logging.ContextMap{}, "Finished generating pseudocode for functions \n")
 
 	return completeElementDefinitions
 }
@@ -793,7 +792,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to generate embeddings for elements: %v", err)
 		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
 	}
 
@@ -820,7 +819,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	milvusClient, err := milvus.Initialize()
 	if err != nil {
 		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -865,7 +864,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	schema, err := milvus.CreateCustomSchema(elementsCollectionName, schemaFields, "collection for code generation elements")
 	if err != nil {
 		errMessage := "error creating the schema"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -873,7 +872,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	err = milvus.CreateCollection(schema, milvusClient)
 	if err != nil {
 		errMessage := "error creating the collection"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -887,7 +886,7 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
 	if err != nil {
 		errMessage := "error inserting data into the vector database"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -915,7 +914,7 @@ func LoadAndCheckExampleDependencies(
 	content, err := os.ReadFile(path)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -924,7 +923,7 @@ func LoadAndCheckExampleDependencies(
 	err = json.Unmarshal(content, &dependenciesMap)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling dependencies: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -1048,7 +1047,7 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 		content, err := os.ReadFile(examplePath)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -1056,7 +1055,7 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 		chunks, err := dataExtractionTextSplitter(string(content), chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -1089,7 +1088,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	milvusClient, err := milvus.Initialize()
 	if err != nil {
 		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1130,7 +1129,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	schema, err := milvus.CreateCustomSchema(examplesCollectionName, schemaFields, "collection for code generation examples")
 	if err != nil {
 		errMessage := "error creating the schema"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1138,7 +1137,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	err = milvus.CreateCollection(schema, milvusClient)
 	if err != nil {
 		errMessage := "error creating the collection"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1181,7 +1180,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForExamples(vectorExamples, batchSize)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to generate embeddings for elements: %v", err)
 		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
 	}
 
@@ -1201,7 +1200,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	err = milvus.InsertData(examplesCollectionName, elementsAsInterface)
 	if err != nil {
 		errMessage := "error inserting data into the vector database"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1230,7 +1229,7 @@ func LoadUserGuideSections(paths []string) (sections []codegeneration.CodeGenera
 		content, err := os.ReadFile(path)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -1241,7 +1240,7 @@ func LoadUserGuideSections(paths []string) (sections []codegeneration.CodeGenera
 		err = json.Unmarshal(content, &newSections)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error unmarshalling user guide sections: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -1262,7 +1261,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	milvusClient, err := milvus.Initialize()
 	if err != nil {
 		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1315,7 +1314,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation examples")
 	if err != nil {
 		errMessage := "error creating the schema"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1323,7 +1322,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	err = milvus.CreateCollection(schema, milvusClient)
 	if err != nil {
 		errMessage := "error creating the collection"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
@@ -1334,7 +1333,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 		chunks, err := dataExtractionTextSplitter(section.Content, chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 		section.Chunks = chunks
@@ -1376,7 +1375,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
 	if err != nil {
-		logging.Log.Errorf(internalstates.Ctx, "failed to generate embeddings for elements: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, "failed to generate embeddings for elements: %v", err)
 		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
 	}
 
@@ -1406,7 +1405,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface)
 	if err != nil {
 		errMessage := "error inserting data into the vector database"
-		logging.Log.Errorf(internalstates.Ctx, "%s: %v", errMessage, err)
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
 		return fmt.Errorf("%s: %v", errMessage, err)
 	}
 
