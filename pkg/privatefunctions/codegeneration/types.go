@@ -19,8 +19,9 @@ type XMLAssemblyMember struct {
 	Name       string           `xml:"name,attr"`
 	Summary    string           `xml:"summary"`
 	ReturnType string           `xml:"returnType"`
-	Params     []XMLMemberParam `xml:"param"`             // Handles multiple <param> elements
-	Example    XMLMemberExample `xml:"example,omitempty"` // Optional <example> element
+	Returns    string           `xml:"returns,omitempty"`
+	Params     []XMLMemberParam `xml:"param" json:"parameters"` // Handles multiple <param> elements
+	Example    XMLMemberExample `xml:"example,omitempty"`       // Optional <example> element
 	Remarks    string           `xml:"remarks,omitempty"`
 	EnumValues string           `xml:"enumValues,omitempty"`
 }
@@ -54,6 +55,7 @@ type CodeGenerationElement struct {
 	Summary           string   `json:"summary"`
 	ReturnType        string   `json:"return"`
 	ReturnElementList []string `json:"return_element_list"`
+	ReturnDescription string   `json:"return_description"` // Return description
 	Remarks           string   `json:"remarks"`
 
 	// Only for type "function" or "method"
@@ -73,6 +75,7 @@ const (
 	Class     CodeGenerationType = "Class"
 	Parameter CodeGenerationType = "Parameter"
 	Enum      CodeGenerationType = "Enum"
+	Module    CodeGenerationType = "Module"
 )
 
 type CodeGenerationPseudocodeResponse struct {
@@ -88,7 +91,6 @@ type VectorDatabaseElement struct {
 	Name           string           `json:"name"`
 	NamePseudocode string           `json:"name_pseudocode"`
 	NameFormatted  string           `json:"name_formatted"`
-	Description    string           `json:"description"`
 	ParentClass    string           `json:"parent_class"`
 }
 

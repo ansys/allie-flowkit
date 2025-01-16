@@ -28,6 +28,7 @@ dist
 doc/_build
 /config.yaml
 error.log
+logs.log
 
 examples/
 user_guide_structured/

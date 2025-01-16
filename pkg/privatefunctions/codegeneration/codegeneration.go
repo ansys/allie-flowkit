@@ -1,6 +1,7 @@
 package codegeneration
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -65,4 +66,32 @@ func CreateReturnListMechanical(returnString string) (returnElementList []string
 		}
 	}
 	return returnElementList, nil
+}
+
+func ProcessElementName(fullName string, dependencies []string) (namePseudocode string, nameFormatted string, err error) {
+	// If the name is empty, return empty error.
+	if fullName == "" {
+		return "", "", fmt.Errorf("empty name")
+	}
+
+	// Remove the prefix from the name.
+	if len(dependencies) > 0 {
+		prefixNamePseudocode := strings.Join(dependencies, ".") + "."
+		namePseudocode = fullName[len(prefixNamePseudocode):]
+	} else {
+		namePseudocode = fullName
+	}
+	namePseudocode = strings.Split(namePseudocode, "(")[0]
+
+	// If string contains underscores (snake_case), replace them with spaces.
+	if strings.Contains(namePseudocode, "_") {
+		nameFormatted = strings.ReplaceAll(namePseudocode, "_", " ")
+	} else {
+		// Add space before capital letters.
+		nameFormatted = SplitByCapitalLetters(namePseudocode)
+		if nameFormatted == "" {
+			nameFormatted = namePseudocode
+		}
+	}
+	return namePseudocode, nameFormatted, nil
 }

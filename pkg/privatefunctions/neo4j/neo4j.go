@@ -536,11 +536,26 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 			for _, node := range batch {
 				// Create relationships between each of the dependencies and the adjacent dependency
 				for _, referenceLink := range node.ReferencedLinks {
-					if node.Name == referenceLink {
+					if node.Name == referenceLink || node.DocumentName == referenceLink {
 						continue
 					}
+
+					// Check if reference link references the link of another section and create relationship
 					_, err := transaction.Run(db_ctx,
 						"MATCH (a {Name: $a}) MATCH (b {link: $b}) MERGE (a)-[:REFERENCES]->(b)",
+						map[string]any{
+							"a": node.Name,
+							"b": referenceLink,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(internalstates.Ctx, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+
+					// Check if reference link references a document and create relationship
+					_, err = transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b:UserGuide {document_name: $b}) WITH a, b ORDER BY b.level ASC LIMIT 1 MERGE (a)-[:REFERENCES]->(b)",
 						map[string]any{
 							"a": node.Name,
 							"b": referenceLink,

@@ -559,13 +559,32 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		panic(errMessage)
 	}
 
+	// Get the file extension.
+	fileExtension := filepath.Ext(path)
+
 	// Create object definition document.
 	objectDefinitionDoc := codegeneration.XMLObjectDefinitionDocument{}
 
-	// Unmarshal the XML content into the object definition document.
-	err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
+	switch fileExtension {
+	case ".xml":
+		// Unmarshal the XML content into the object definition document.
+		err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+	case ".json":
+		// Unmarshal the JSON content into a list of assembly members.
+		err = json.Unmarshal(content, &objectDefinitionDoc.Members)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
+		}
+
+	default:
+		errMessage := fmt.Sprintf("Unknown file extension: %s", fileExtension)
 		logging.Log.Error(internalstates.Ctx, errMessage)
 		panic(errMessage)
 	}
@@ -582,13 +601,14 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 
 		// Create the code generation element.
 		element := codegeneration.CodeGenerationElement{
-			Guid:       "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
-			Name:       name,
-			Summary:    objectDefinition.Summary,
-			ReturnType: objectDefinition.ReturnType,
-			Example:    objectDefinition.Example,
-			Parameters: objectDefinition.Params,
-			Remarks:    objectDefinition.Remarks,
+			Guid:              "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Name:              name,
+			Summary:           objectDefinition.Summary,
+			ReturnType:        objectDefinition.ReturnType,
+			Example:           objectDefinition.Example,
+			Parameters:        objectDefinition.Params,
+			Remarks:           objectDefinition.Remarks,
+			ReturnDescription: objectDefinition.Returns,
 		}
 
 		// Create a list with all the return types of the element.
@@ -646,21 +666,26 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			cleaned := strings.Trim(objectDefinition.EnumValues, "[]")
 			element.EnumValues = strings.Split(cleaned, ",")
 
+		case "MOD":
+			element.Type = codegeneration.CodeGenerationType(codegeneration.Class)
+
+			// Extract dependencies for class.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
 		default:
 			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)
 			logging.Log.Error(internalstates.Ctx, errMessage)
 			panic(errMessage)
 		}
 
-		// Remove the prefix from the name.
-		prefixNamePseudocode := strings.Join(element.Dependencies, ".") + "."
-		element.NamePseudocode = element.Name[len(prefixNamePseudocode):]
-		element.NamePseudocode = strings.Split(element.NamePseudocode, "(")[0]
-
-		// Add space before capital letters.
-		element.NameFormatted = codegeneration.SplitByCapitalLetters(element.NamePseudocode)
-		if element.NameFormatted == "" {
-			element.NameFormatted = element.NamePseudocode
+		// Get name pseudocode and formatted name.
+		element.NamePseudocode, element.NameFormatted, err = codegeneration.ProcessElementName(element.Name, element.Dependencies)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error processing element name: %v", err)
+			logging.Log.Error(internalstates.Ctx, errMessage)
+			panic(errMessage)
 		}
 
 		elements = append(elements, element)
@@ -783,7 +808,6 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 			Name:           element.Name,
 			NamePseudocode: element.NamePseudocode,
 			NameFormatted:  element.NameFormatted,
-			Description:    element.Description,
 			Type:           string(element.Type),
 			ParentClass:    strings.Join(element.Dependencies, "."),
 		}
@@ -830,10 +854,6 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 		},
 		{
 			Name: "name_formatted",
-			Type: "string",
-		},
-		{
-			Name: "description",
 			Type: "string",
 		},
 		{
