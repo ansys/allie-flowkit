@@ -58,7 +58,7 @@ func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 	branch, _, err := client.Repositories.GetBranch(ctx, githubRepoOwner, githubRepoName, githubRepoBranch, 1)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting branch %s: %v", githubRepoBranch, err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -69,7 +69,7 @@ func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 	tree, _, err := client.Git.GetTree(ctx, githubRepoOwner, githubRepoName, sha, true)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting tree: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -78,7 +78,7 @@ func GetGithubFilesToExtract(githubRepoName string, githubRepoOwner string,
 
 	// Log the files that need to be extracted.
 	for _, file := range githubFilesToExtract {
-		logging.Log.Debugf(internalstates.Ctx, "Github file to extract: %s \n", file)
+		logging.Log.Debugf(&logging.ContextMap{}, "Github file to extract: %s \n", file)
 	}
 
 	return githubFilesToExtract
@@ -107,7 +107,7 @@ func GetLocalFilesToExtract(localPath string, localFileExtensions []string,
 	// Check if the local path exists.
 	if _, err := os.Stat(localPath); os.IsNotExist(err) {
 		errMessage := fmt.Sprintf("Local path does not exist: %s", localPath)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -123,13 +123,13 @@ func GetLocalFilesToExtract(localPath string, localFileExtensions []string,
 	err := filepath.Walk(localPath, walkFn)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error walking through the files: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
 	// Log the files that need to be extracted.
 	for _, file := range *localFiles {
-		logging.Log.Debugf(internalstates.Ctx, "Local file to extract: %s \n", file)
+		logging.Log.Debugf(&logging.ContextMap{}, "Local file to extract: %s \n", file)
 	}
 
 	return *localFiles
@@ -183,7 +183,7 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	fileContent, _, _, err := client.Repositories.GetContents(ctx, githubRepoOwner, githubRepoName, gihubFilePath, &github.RepositoryContentGetOptions{Ref: githubRepoBranch})
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -191,7 +191,7 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	stringContent, err := fileContent.GetContent()
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -201,7 +201,7 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	// Convert the content to a byte slice.
 	content = []byte(stringContent)
 
-	logging.Log.Debugf(internalstates.Ctx, "Got content from github file: %s", gihubFilePath)
+	logging.Log.Debugf(&logging.ContextMap{}, "Got content from github file: %s", gihubFilePath)
 
 	return checksum, content
 }
@@ -222,7 +222,7 @@ func GetLocalFileContent(localFilePath string) (checksum string, content []byte)
 	content, err := os.ReadFile(localFilePath)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -231,14 +231,14 @@ func GetLocalFileContent(localFilePath string) (checksum string, content []byte)
 	_, err = hash.Write(content)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
 	// Convert checksum to a hexadecimal string.
 	checksum = hex.EncodeToString(hash.Sum(nil))
 
-	logging.Log.Debugf(internalstates.Ctx, "Got content from local file: %s", localFilePath)
+	logging.Log.Debugf(&logging.ContextMap{}, "Got content from local file: %s", localFilePath)
 
 	return checksum, content
 }
@@ -295,7 +295,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 		splittedChunks, err = htmlLoader.LoadAndSplit(context.Background(), splitter)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -307,7 +307,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 		output, err = dataExtractionPerformSplitterRequest(bytesContent, "py", chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting python document: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -315,7 +315,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 		output, err = dataExtractionPerformSplitterRequest(bytesContent, "pdf", chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting pdf document: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -323,7 +323,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 		output, err = dataExtractionPerformSplitterRequest(bytesContent, "ppt", chunkSize, chunkOverlap)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error splitting ppt document: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -333,7 +333,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 		splittedChunks, err = txtLoader.LoadAndSplit(context.Background(), splitter)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -343,7 +343,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 	}
 
 	// Log number of chunks created.
-	logging.Log.Debugf(internalstates.Ctx, "Splitted document in %v chunks \n", len(output))
+	logging.Log.Debugf(&logging.ContextMap{}, "Splitted document in %v chunks \n", len(output))
 
 	return output
 }
@@ -369,7 +369,7 @@ func LangchainSplitter(bytesContent []byte, documentType string, chunkSize int, 
 func GenerateDocumentTree(documentName string, documentId string, documentChunks []string,
 	embeddingsDimensions int, getSummary bool, getKeywords bool, numKeywords int, chunkSize int, numLlmWorkers int) (returnedDocumentData []sharedtypes.DbData) {
 
-	logging.Log.Debugf(internalstates.Ctx, "Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
+	logging.Log.Debugf(&logging.ContextMap{}, "Processing document: %s with %v leaf chunks \n", documentName, len(documentChunks))
 
 	// Create llm handler input channel and wait group.
 	llmHandlerInputChannel := make(chan *DataExtractionLLMInputChannelItem, 40)
@@ -531,11 +531,11 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	err = dataExtractionProcessBatchEmbeddings(documentData, maxBatchSize)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error in dataExtractionProcessBatchEmbeddings: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Finished processing document: %s \n", documentName)
+	logging.Log.Debugf(&logging.ContextMap{}, "Finished processing document: %s \n", documentName)
 
 	// Copy document data to returned document data
 	returnedDocumentData = make([]sharedtypes.DbData, len(documentData))

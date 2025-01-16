@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
@@ -39,7 +38,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
 
 	// Log the request
-	logging.Log.Debugf(internalstates.Ctx, "Connecting to the KnowledgeDB.")
+	logging.Log.Debugf(&logging.ContextMap{}, "Connecting to the KnowledgeDB.")
 
 	// Build filters
 	var filters sharedtypes.DbFilters
@@ -76,7 +75,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -87,7 +86,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -99,7 +98,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -108,20 +107,20 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
 	// Log the similarity search response
-	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB response: %v", string(body))
-	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB response received!")
+	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB response: %v", string(body))
+	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -129,11 +128,11 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	var count int = 1
 	for _, element := range response.SimilarityResult {
 		// Log the result
-		logging.Log.Debugf(internalstates.Ctx, "Result #%d:", count)
-		logging.Log.Debugf(internalstates.Ctx, "Similarity score: %v", element.Score)
-		logging.Log.Debugf(internalstates.Ctx, "Similarity file id: %v", element.Data.DocumentId)
-		logging.Log.Debugf(internalstates.Ctx, "Similarity file name: %v", element.Data.DocumentName)
-		logging.Log.Debugf(internalstates.Ctx, "Similarity summary: %v", element.Data.Summary)
+		logging.Log.Debugf(&logging.ContextMap{}, "Result #%d:", count)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity score: %v", element.Score)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity file id: %v", element.Data.DocumentId)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity file name: %v", element.Data.DocumentName)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity summary: %v", element.Data.Summary)
 
 		// Add the result to the list
 		mostRelevantData = append(mostRelevantData, element.Data)
@@ -173,7 +172,7 @@ func GetListCollections() (collectionsList []string) {
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating GET /list_collections request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -185,7 +184,7 @@ func GetListCollections() (collectionsList []string) {
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending GET /list_collections request to allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -194,7 +193,7 @@ func GetListCollections() (collectionsList []string) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -203,18 +202,18 @@ func GetListCollections() (collectionsList []string) {
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
 	// Log the result and return the list of collections
 	if !response.Success {
 		errMessage := "Failed to retrieve list of collections from allie-db"
-		logging.Log.Warn(internalstates.Ctx, errMessage)
+		logging.Log.Warn(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	} else {
-		logging.Log.Debugf(internalstates.Ctx, "List collections response received!")
-		logging.Log.Debugf(internalstates.Ctx, "Collections: %v", response.Collections)
+		logging.Log.Debugf(&logging.ContextMap{}, "List collections response received!")
+		logging.Log.Debugf(&logging.ContextMap{}, "Collections: %v", response.Collections)
 		return response.Collections
 	}
 }
@@ -263,7 +262,7 @@ func RetrieveDependencies(
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -271,7 +270,7 @@ func RetrieveDependencies(
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -283,7 +282,7 @@ func RetrieveDependencies(
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -292,18 +291,18 @@ func RetrieveDependencies(
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB RetrieveDependencies response received!")
+	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB RetrieveDependencies response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response retrieveDependenciesOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -338,7 +337,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -346,7 +345,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -358,7 +357,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -367,18 +366,18 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB GeneralNeo4jQuery response received!")
+	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB GeneralNeo4jQuery response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response sharedtypes.GeneralNeo4jQueryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -419,7 +418,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -427,7 +426,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /query request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -439,7 +438,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /query request to allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -448,18 +447,18 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /query request from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB GeneralQuery response received!")
+	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB GeneralQuery response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response queryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -522,7 +521,7 @@ func SimilaritySearch(
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -530,7 +529,7 @@ func SimilaritySearch(
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -542,7 +541,7 @@ func SimilaritySearch(
 	resp, err := client.Do(req)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	defer resp.Body.Close()
@@ -551,18 +550,18 @@ func SimilaritySearch(
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Knowledge DB SimilaritySearch response received!")
+	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB SimilaritySearch response received!")
 
 	// Unmarshal the response body to the appropriate struct.
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -730,11 +729,11 @@ func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 	err, _ := createPayloadAndSendHttpRequest(url, requestObject, &response)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error sending request to add_data endpoint: %v", err)
-		logging.Log.Error(internalstates.Ctx, errorMessage)
+		logging.Log.Error(&logging.ContextMap{}, errorMessage)
 		panic(errorMessage)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Added data to collection: %s \n", collectionName)
+	logging.Log.Debugf(&logging.ContextMap{}, "Added data to collection: %s \n", collectionName)
 
 	return
 }
@@ -760,15 +759,15 @@ func CreateCollectionRequest(collectionName string) {
 	err, statusCode := createPayloadAndSendHttpRequest(url, requestObject, &response)
 	if err != nil {
 		if statusCode == 409 {
-			logging.Log.Warnf(internalstates.Ctx, "Collection already exists %s \n", collectionName)
+			logging.Log.Warnf(&logging.ContextMap{}, "Collection already exists %s \n", collectionName)
 		} else {
 			errorMessage := fmt.Sprintf("Error sending request to create_collection endpoint: %v", err)
-			logging.Log.Error(internalstates.Ctx, errorMessage)
+			logging.Log.Error(&logging.ContextMap{}, errorMessage)
 			panic(errorMessage)
 		}
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Created collection: %s \n", collectionName)
+	logging.Log.Debugf(&logging.ContextMap{}, "Created collection: %s \n", collectionName)
 
 	return
 }

@@ -61,7 +61,7 @@ func transferDatafromResponseToStreamChannel(
 	for response := range *responseChannel {
 		// Check if the response is an error
 		if response.Type == "error" {
-			logging.Log.Errorf(internalstates.Ctx, "Error in request %v: %v\n", response.InstructionGuid, response.Error.Message)
+			logging.Log.Errorf(&logging.ContextMap{}, "Error in request %v: %v\n", response.InstructionGuid, response.Error.Message)
 			// send the error message to the stream channel and exit function
 			*streamChannel <- fmt.Sprintf("$&$error$&$:$&$%v$&$", response.Error.Message)
 			return
@@ -83,7 +83,7 @@ func transferDatafromResponseToStreamChannel(
 				// get the output token count
 				outputTokenCount, err := openAiTokenCount(tokenCountModelName, responseAsStr)
 				if err != nil {
-					logging.Log.Errorf(internalstates.Ctx, "Error getting token count: %v\n", err)
+					logging.Log.Errorf(&logging.ContextMap{}, "Error getting token count: %v\n", err)
 					// send the error message to the stream channel and exit function
 					*streamChannel <- fmt.Sprintf("$&$error$&$:$&$Error getting token count: %v$&$", err)
 				}
@@ -95,7 +95,7 @@ func transferDatafromResponseToStreamChannel(
 				// send the token count to the token count endpoint
 				err = sendTokenCountToEndpoint(userEmail, tokenCountEndpoint, totalInputTokenCount, totalOuputTokenCount)
 				if err != nil {
-					logging.Log.Errorf(internalstates.Ctx, "Error sending token count: %v\n", err)
+					logging.Log.Errorf(&logging.ContextMap{}, "Error sending token count: %v\n", err)
 					// send the error message to the stream channel and exit function
 					*streamChannel <- fmt.Sprintf("$&$error$&$:$&$Error in updating token count: %v$&$", err)
 				} else {
@@ -115,13 +115,13 @@ func transferDatafromResponseToStreamChannel(
 				// Extract the code from the response
 				pythonCode, err := extractPythonCode(responseAsStr)
 				if err != nil {
-					logging.Log.Errorf(internalstates.Ctx, "Error extracting Python code: %v\n", err)
+					logging.Log.Errorf(&logging.ContextMap{}, "Error extracting Python code: %v\n", err)
 				} else {
 
 					// Validate the Python code
 					valid, warnings, err := validatePythonCode(pythonCode)
 					if err != nil {
-						logging.Log.Errorf(internalstates.Ctx, "Error validating Python code: %v\n", err)
+						logging.Log.Errorf(&logging.ContextMap{}, "Error validating Python code: %v\n", err)
 					} else {
 						if valid {
 							if warnings {
@@ -279,17 +279,25 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 	c, _, err := websocket.Dial(context.Background(), url, nil)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to connect to allie-llm: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	// Disable the read limit
 	c.SetReadLimit(-1)
 
-	// Send "testkey" for authentication
-	err = c.Write(context.Background(), websocket.MessageText, []byte("testkey"))
+	// Get API key
+	apiKey := config.GlobalConfig.LLM_API_KEY
+
+	// Legacy authentication
+	if apiKey == "" {
+		apiKey = "testkey"
+	}
+
+	// Send apikey for authentication
+	err = c.Write(context.Background(), websocket.MessageText, []byte(apiKey))
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to send authentication message to allie-llm: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -315,7 +323,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 		typ, message, err := c.Read(context.Background())
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to read message from allie-llm: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			response := sharedtypes.HandlerResponse{
 				Type: "error",
 				Error: &sharedtypes.ErrorResponse{
@@ -335,11 +343,11 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 				// Check if it is the authentication message
 				msgAsStr := string(message)
 				if msgAsStr == "authentication successful" {
-					logging.Log.Debugf(internalstates.Ctx, "Authentication to LLM was successful.")
+					logging.Log.Debugf(&logging.ContextMap{}, "Authentication to LLM was successful.")
 					continue
 				} else {
 					errMessage := fmt.Sprintf("failed to unmarshal message from allie-llm: %v", err)
-					logging.Log.Error(internalstates.Ctx, errMessage)
+					logging.Log.Error(&logging.ContextMap{}, errMessage)
 					response := sharedtypes.HandlerResponse{
 						Type: "error",
 						Error: &sharedtypes.ErrorResponse{
@@ -354,7 +362,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 
 			if response.Type == "error" {
 				errMessage := fmt.Sprintf("error in request %v: %v (%v)\n", response.InstructionGuid, response.Error.Code, response.Error.Message)
-				logging.Log.Error(internalstates.Ctx, errMessage)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
 				response := sharedtypes.HandlerResponse{
 					Type: "error",
 					Error: &sharedtypes.ErrorResponse{
@@ -372,23 +380,22 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 						stopListener = false
 					} else {
 						// If it is the last message, stop listening
-						logging.Log.Debugf(internalstates.Ctx, "Chat response completely received from allie-llm.")
+						logging.Log.Debugf(&logging.ContextMap{}, "Chat response completely received from allie-llm.")
 					}
 				case "embeddings":
-					logging.Log.Debugf(internalstates.Ctx, "Embeddings received from allie-llm.")
+					logging.Log.Debugf(&logging.ContextMap{}, "Embeddings received from allie-llm.")
 				case "info":
-					logging.Log.Infof(internalstates.Ctx, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
+					logging.Log.Infof(&logging.ContextMap{}, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
 					stopListener = false
 					continue
 				default:
-					logging.Log.Warn(internalstates.Ctx, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
-					continue
+					logging.Log.Warn(&logging.ContextMap{}, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
 				// Send the response to the channel
 				responseChannel <- response
 			}
 		default:
-			logging.Log.Warnf(internalstates.Ctx, "Response with unsupported message type '%v'received from allie-llm. Ignoring...\n", typ)
+			logging.Log.Warnf(&logging.ContextMap{}, "Response with unsupported message type '%v'received from allie-llm. Ignoring...\n", typ)
 		}
 
 		// If stopListener is true, stop the listener
@@ -397,7 +404,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 		// - the embeddings response is received
 		// - an unsupported adapter type is received
 		if stopListener {
-			logging.Log.Debugf(internalstates.Ctx, "Stopping listener for allie-llm request.")
+			logging.Log.Debugf(&logging.ContextMap{}, "Stopping listener for allie-llm request.")
 			return
 		}
 	}
@@ -415,7 +422,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 		err := c.Write(context.Background(), websocket.MessageBinary, requestJSON)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to write message to allie-llm: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			response := sharedtypes.HandlerResponse{
 				Type: "error",
 				Error: &sharedtypes.ErrorResponse{
@@ -462,7 +469,7 @@ func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, c
 	if adapter == "chat" {
 		if chatRequestType == "" {
 			errMessage := "Property 'ChatRequestType' is required for 'Adapter' type 'chat' requests to allie-llm."
-			logging.Log.Warn(internalstates.Ctx, errMessage)
+			logging.Log.Warn(&logging.ContextMap{}, errMessage)
 			response := sharedtypes.HandlerResponse{
 				Type: "error",
 				Error: &sharedtypes.ErrorResponse{
@@ -477,7 +484,7 @@ func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, c
 
 		if dataStream == "" {
 			errMessage := "Property 'DataStream' is required for for 'Adapter' type 'chat' requests to allie-llm."
-			logging.Log.Warn(internalstates.Ctx, errMessage)
+			logging.Log.Warn(&logging.ContextMap{}, errMessage)
 			response := sharedtypes.HandlerResponse{
 				Type: "error",
 				Error: &sharedtypes.ErrorResponse{
@@ -512,7 +519,7 @@ func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, c
 	requestJSON, err := json.Marshal(request)
 	if err != nil {
 		errMessage := fmt.Sprintf("failed to marshal request to allie-llm: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		response := sharedtypes.HandlerResponse{
 			Type: "error",
 			Error: &sharedtypes.ErrorResponse{
@@ -537,7 +544,7 @@ func shutdownHandler(c *websocket.Conn) {
 	signal.Notify(signalCh, syscall.SIGINT)
 
 	sig := <-signalCh
-	logging.Log.Debugf(internalstates.Ctx, "Closing client. Received closing signal: %v\n", sig)
+	logging.Log.Debugf(&logging.ContextMap{}, "Closing client. Received closing signal: %v\n", sig)
 
 	// close connection
 	c.Close(websocket.StatusNormalClosure, "Normal Closure")
@@ -665,7 +672,7 @@ func validatePythonCode(pythonCode string) (bool, bool, error) {
 		// Check for potential warnings in output
 		outputAsStr := string(output)
 		if !strings.Contains(outputAsStr, "0 warnings") {
-			logging.Log.Warn(internalstates.Ctx, "Potential errors in Python code...")
+			logging.Log.Warn(&logging.ContextMap{}, "Potential errors in Python code...")
 			return true, true, nil
 		} else {
 			return true, false, nil
@@ -716,7 +723,13 @@ func ansysGPTACSSemanticHybridSearch(
 	filter map[string]string,
 	topK int,
 	isAis bool,
-	physics []string) (output []sharedtypes.ACSSearchResponse) {
+	physics []string) (output []sharedtypes.ACSSearchResponse, err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			err = fmt.Errorf("panic occured in ansysGPTACSSemanticHybridSearch: %v", r)
+		}
+	}()
 
 	// Create the URL
 	url := fmt.Sprintf("https://%s.search.windows.net/indexes/%s/docs/search?api-version=%s", acsEndpoint, indexName, acsApiVersion)
@@ -759,10 +772,14 @@ func ansysGPTACSSemanticHybridSearch(
 		}
 	}
 
+	// special case for Scade ONE
+	if len(physics) == 1 && physics[0] == "scade" {
+		filterData = append(filterData, "product eq 'scade one'")
+	}
+
 	// join filter data
 	filterQuery := strings.Join(filterData, " or ")
-
-	logging.Log.Debugf(internalstates.Ctx, "filter_data is : %s\n", filterQuery)
+	logging.Log.Debugf(&logging.ContextMap{}, "filter_data is : %s\n", filterQuery)
 
 	// Get the searchedEmbeddedFields and returnedProperties
 	searchedEmbeddedFields, returnedProperties := getFieldsAndReturnProperties(indexName)
@@ -790,17 +807,17 @@ func ansysGPTACSSemanticHybridSearch(
 	// Marshal the search request
 	requestBody, err := json.Marshal(searchRequest)
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to marshal search request to ACS: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		errMessage := fmt.Errorf("failed to marshal search request to ACS: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return nil, errMessage
 	}
 
 	// Create the HTTP request
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(requestBody))
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to create POST request for ACS: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		errMessage := fmt.Errorf("failed to create POST request for ACS: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return nil, errMessage
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -810,31 +827,31 @@ func ansysGPTACSSemanticHybridSearch(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to send POST request to ACS: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		errMessage := fmt.Errorf("failed to send POST request to ACS: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return nil, errMessage
 	}
 	defer resp.Body.Close()
 
 	// Read and return the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("failed to read response body from ACS: %v", err)
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		errMessage := fmt.Errorf("failed to read response body from ACS: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return nil, errMessage
 	}
 
 	// check if the reponse is an error
 	if resp.StatusCode != 200 {
-		errMessage := fmt.Sprintf("Error in ACS semantic hybrid search for index %v: %s", indexName, string(body))
-		logging.Log.Error(internalstates.Ctx, errMessage)
-		panic(errMessage)
+		errMessage := fmt.Errorf("error in ACS semantic hybrid search for index %v: %s", indexName, string(body))
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return nil, errMessage
 	}
 
 	// extract and convert the response
 	output = extractAndConvertACSResponse(body, indexName)
 	for _, item := range output {
-		logging.Log.Debugf(internalstates.Ctx, "ACS topic returned for index %v: %v\n", indexName, item.SourceTitleLvl2)
+		logging.Log.Debugf(&logging.ContextMap{}, "ACS topic returned for index %v: %v\n", indexName, item.SourceTitleLvl2)
 	}
 
 	// assign index name to the output
@@ -842,7 +859,7 @@ func ansysGPTACSSemanticHybridSearch(
 		output[i].IndexName = indexName
 	}
 
-	return output
+	return output, nil
 }
 
 // getFieldsAndReturnProperties returns the searchedEmbeddedFields and returnedProperties based on the index name
@@ -876,9 +893,15 @@ func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields stri
 	case "external-crtech-thermal-desktop":
 		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
 		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, bridge_id, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "external-product-documentation-public", "external-learning-hub", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub":
+		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
+	case "scbu-data-except-alh":
+		searchedEmbeddedFields = "content_vctr, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
+		returnedProperties = "token_size, physics, typeOFasset, product, index_connection_id, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 	return searchedEmbeddedFields, returnedProperties
@@ -900,7 +923,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 		err := json.Unmarshal(body, &respObject)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStruct: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 		output = respObject.Value
@@ -910,7 +933,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 		err := json.Unmarshal(body, &respObjectAlh)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructALH: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -937,7 +960,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 		err := json.Unmarshal(body, &respObjectLsdyna)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructLSdyna: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -957,12 +980,12 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 			})
 		}
 
-	case "external-crtech-thermal-desktop":
+	case "external-product-documentation-public", "external-learning-hub", "external-crtech-thermal-desktop", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub", "scbu-data-except-alh":
 		respObjectCrtech := ACSSearchResponseStructCrtech{}
 		err := json.Unmarshal(body, &respObjectCrtech)
 		if err != nil {
 			errMessage := fmt.Sprintf("failed to unmarshal response body from ACS to ACSSearchResponseStructCrtech: %v", err)
-			logging.Log.Error(internalstates.Ctx, errMessage)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
 
@@ -986,7 +1009,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 
 	default:
 		errMessage := fmt.Sprintf("Index name not found: %s", indexName)
-		logging.Log.Error(internalstates.Ctx, errMessage)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
@@ -1100,7 +1123,7 @@ func dataExtractionFilterGithubTreeEntries(tree *github.Tree, githubFilteredDire
 	}
 
 	for _, file := range githubFilesToExtract {
-		logging.Log.Debugf(internalstates.Ctx, "Github file to extract: %s \n", file)
+		logging.Log.Debugf(&logging.ContextMap{}, "Github file to extract: %s \n", file)
 	}
 
 	return githubFilesToExtract
@@ -1368,7 +1391,7 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 	for instruction := range inputChannel {
 		// Check if text field for chunk is empty.
 		if instruction.Data.Text == "" {
-			logging.Log.Warnf(internalstates.Ctx, "Text field is empty for document %v \n", instruction.Data.DocumentName)
+			logging.Log.Warnf(&logging.ContextMap{}, "Text field is empty for document %v \n", instruction.Data.DocumentName)
 
 			// Lower instruction sequence waitgroup counter and update processed instructions counter.
 			instruction.InstructionSequenceWaitGroup.Done()
@@ -1399,7 +1422,7 @@ func dataExtractionLLMHandlerWorker(waitgroup *sync.WaitGroup, inputChannel chan
 		instruction.InstructionSequenceWaitGroup.Done()
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "LLM Handler Worker stopped.")
+	logging.Log.Debugf(&logging.ContextMap{}, "LLM Handler Worker stopped.")
 }
 
 // dataExtractionProcessBatchEmbeddings processes the data extraction batch embeddings.
@@ -1420,7 +1443,7 @@ func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, ma
 	}
 
 	if len(nonEmptyDocumentData) == 0 {
-		logging.Log.Error(internalstates.Ctx, "error in dataExtractionProcessBatchEmbeddings: documentData slice is empty")
+		logging.Log.Error(&logging.ContextMap{}, "error in dataExtractionProcessBatchEmbeddings: documentData slice is empty")
 		return fmt.Errorf("error in dataExtractionProcessBatchEmbeddings: documentData slice is empty")
 	}
 
@@ -1478,7 +1501,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors []
 
 		// Check if the response is an info message.
 		if response.Type == "info" {
-			logging.Log.Infof(internalstates.Ctx, "Received info message for batch embedding request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			logging.Log.Infof(&logging.ContextMap{}, "Received info message for batch embedding request: %v: %v", response.InstructionGuid, response.InfoMessage)
 			continue
 		}
 
@@ -1546,7 +1569,7 @@ func llmHandlerPerformSummaryRequest(input string) (summary string, err error) {
 		}
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Received summary response.")
+	logging.Log.Debugf(&logging.ContextMap{}, "Received summary response.")
 
 	// Close the response channel.
 	close(responseChannel)
@@ -1648,7 +1671,7 @@ func llmHandlerPerformKeywordExtractionRequest(input string, numKeywords uint32)
 		}
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Received keywords response.")
+	logging.Log.Debugf(&logging.ContextMap{}, "Received keywords response.")
 
 	// Close the response channel.
 	close(responseChannel)
@@ -1793,7 +1816,7 @@ func createPayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(internalstates.Ctx, "Panic in CreatePayloadAndSendHttpRequest: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in CreatePayloadAndSendHttpRequest: %v", r)
 			funcError = r.(error)
 			return
 		}

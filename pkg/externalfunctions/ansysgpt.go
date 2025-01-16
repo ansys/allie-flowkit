@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
@@ -168,7 +167,7 @@ func AnsysGPTExtractFieldsFromQuery(query string, fieldValues map[string][]strin
 // Returns:
 //   - rephrasedQuery: the rephrased query
 func AnsysGPTPerformLLMRephraseRequestNew(template string, query string, history []sharedtypes.HistoricMessage) (rephrasedQuery string) {
-	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
+	logging.Log.Debugf(&logging.ContextMap{}, "Performing LLM rephrase request")
 
 	historyMessages := ""
 
@@ -185,7 +184,7 @@ func AnsysGPTPerformLLMRephraseRequestNew(template string, query string, history
 
 	// Format the template
 	userTemplate := formatTemplate(template, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "User template: %v", userTemplate)
+	logging.Log.Debugf(&logging.ContextMap{}, "User template: %v", userTemplate)
 
 	// create example
 	exampleHistory := make([]sharedtypes.HistoricMessage, 2)
@@ -204,7 +203,7 @@ func AnsysGPTPerformLLMRephraseRequestNew(template string, query string, history
 		panic(err)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
+	logging.Log.Debugf(&logging.ContextMap{}, "Rephrased query: %v", rephrasedQuery)
 
 	return rephrasedQuery
 }
@@ -222,7 +221,7 @@ func AnsysGPTPerformLLMRephraseRequestNew(template string, query string, history
 // Returns:
 //   - rephrasedQuery: the rephrased query
 func AnsysGPTPerformLLMRephraseRequest(userTemplate string, query string, history []sharedtypes.HistoricMessage, systemPrompt string) (rephrasedQuery string) {
-	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
+	logging.Log.Debugf(&logging.ContextMap{}, "Performing LLM rephrase request")
 
 	historyMessages := ""
 
@@ -239,7 +238,7 @@ func AnsysGPTPerformLLMRephraseRequest(userTemplate string, query string, histor
 
 	// Format the template
 	userTemplate = formatTemplate(userTemplate, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "User template for repharasing query: %v", userTemplate)
+	logging.Log.Debugf(&logging.ContextMap{}, "User template for repharasing query: %v", userTemplate)
 
 	// Perform the general request
 	rephrasedQuery, _, err := performGeneralRequest(userTemplate, nil, false, systemPrompt, nil)
@@ -247,7 +246,7 @@ func AnsysGPTPerformLLMRephraseRequest(userTemplate string, query string, histor
 		panic(err)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
+	logging.Log.Debugf(&logging.ContextMap{}, "Rephrased query: %v", rephrasedQuery)
 
 	return rephrasedQuery
 }
@@ -264,7 +263,7 @@ func AnsysGPTPerformLLMRephraseRequest(userTemplate string, query string, histor
 // Returns:
 //   - finalQuery: the final query
 func AnsysGPTBuildFinalQuery(refrasedQuery string, context []sharedtypes.ACSSearchResponse) (finalQuery string, errorResponse string, displayFixedMessageToUser bool) {
-	logging.Log.Debugf(internalstates.Ctx, "Building final query for Ansys GPT with context of length: %v", len(context))
+	logging.Log.Debugf(&logging.ContextMap{}, "Building final query for Ansys GPT with context of length: %v", len(context))
 
 	// check if there is no context
 	if len(context) == 0 {
@@ -367,7 +366,7 @@ func AnsysGPTReturnIndexList(indexGroups []string) (indexList []string) {
 		case "Ansys Semiconductor":
 			indexList = append(indexList, "ansysgpt-scbu")
 		default:
-			logging.Log.Errorf(internalstates.Ctx, "Invalid indexGroup: %v\n", indexGroup)
+			logging.Log.Errorf(&logging.ContextMap{}, "Invalid indexGroup: %v\n", indexGroup)
 			return
 		}
 	}
@@ -408,7 +407,11 @@ func AnsysGPTACSSemanticHybridSearchs(
 
 	output = make([]sharedtypes.ACSSearchResponse, 0)
 	for _, indexName := range indexList {
-		partOutput := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, indexName, filter, topK, false, nil)
+		partOutput, err := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, indexName, filter, topK, false, nil)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error in semantic hybrid search: %v", err)
+			panic(err)
+		}
 		output = append(output, partOutput...)
 	}
 
@@ -456,7 +459,7 @@ func AnsysGPTRemoveNoneCitationsFromSearchResponse(semanticSearchOutput []shared
 // Returns:
 //   - reorderedSemanticSearchOutput: the reordered search response
 func AnsysGPTReorderSearchResponseAndReturnOnlyTopK(semanticSearchOutput []sharedtypes.ACSSearchResponse, topK int) (reorderedSemanticSearchOutput []sharedtypes.ACSSearchResponse) {
-	logging.Log.Debugf(internalstates.Ctx, "Reordering search response of length %v based on reranker_score and returning only top %v results", len(semanticSearchOutput), topK)
+	logging.Log.Debugf(&logging.ContextMap{}, "Reordering search response of length %v based on reranker_score and returning only top %v results", len(semanticSearchOutput), topK)
 	// Sorting by Weight * SearchRerankerScore in descending order
 	sort.Slice(semanticSearchOutput, func(i, j int) bool {
 		return semanticSearchOutput[i].Weight*semanticSearchOutput[i].SearchRerankerScore > semanticSearchOutput[j].Weight*semanticSearchOutput[j].SearchRerankerScore
@@ -495,7 +498,7 @@ func AnsysGPTGetSystemPrompt(query string, prohibitedWords []string, template st
 
 	// Format the template
 	systemTemplate := formatTemplate(template, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "System prompt for final query: %v", systemTemplate)
+	logging.Log.Debugf(&logging.ContextMap{}, "System prompt for final query: %v", systemTemplate)
 
 	// return system prompt
 	return systemTemplate
@@ -515,7 +518,7 @@ func AnsysGPTGetSystemPrompt(query string, prohibitedWords []string, template st
 // Returns:
 //   - rephrasedQuery: the rephrased query
 func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, query string, history []sharedtypes.HistoricMessage, tokenCountModelName string) (rephrasedQuery string, inputTokenCount int, outputTokenCount int) {
-	logging.Log.Debugf(internalstates.Ctx, "Performing LLM rephrase request")
+	logging.Log.Debugf(&logging.ContextMap{}, "Performing LLM rephrase request")
 
 	// create "chat_history" string
 	historyMessages := ""
@@ -535,9 +538,9 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 
 	// Format the user and system template
 	userPrompt := formatTemplate(userTemplate, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "User template for repharasing query: %v", userTemplate)
+	logging.Log.Debugf(&logging.ContextMap{}, "User template for repharasing query: %v", userTemplate)
 	systemPrompt := formatTemplate(systemTemplate, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "System template for repharasing query: %v", systemTemplate)
+	logging.Log.Debugf(&logging.ContextMap{}, "System template for repharasing query: %v", systemTemplate)
 
 	// create options
 	var maxTokens int32 = 500
@@ -563,7 +566,7 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 		panic(err)
 	}
 
-	logging.Log.Debugf(internalstates.Ctx, "Rephrased query: %v", rephrasedQuery)
+	logging.Log.Debugf(&logging.ContextMap{}, "Rephrased query: %v", rephrasedQuery)
 
 	return rephrasedQuery, inputTokenCount, outputTokenCount
 }
@@ -578,21 +581,37 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 //
 // Returns:
 //   - indexList: the index list
-func AisReturnIndexList(accessPoint string) (indexList []string) {
+func AisReturnIndexList(accessPoint string, physics []string) (indexList []string) {
 	indexList = []string{}
 
 	switch accessPoint {
 	case "ansysgpt-general", "ais-embedded":
-		indexList = append(indexList, "granular-ansysgpt")
-		indexList = append(indexList, "ansysgpt-documentation-2023r2")
-		indexList = append(indexList, "lsdyna-documentation-r14")
-		indexList = append(indexList, "scade-documentation-2023r2")
-		indexList = append(indexList, "external-marketing")
-		// indexList = append(indexList, "ansysgpt-alh")
+		if len(physics) == 1 && physics[0] == "scade" {
+			// special case for Scade One
+			indexList = append(indexList, "external-product-documentation-public")
+		} else {
+			// default ais case
+			indexList = append(indexList,
+				"granular-ansysgpt",
+				"ansysgpt-documentation-2023r2",
+				"lsdyna-documentation-r14",
+				"scade-documentation-2023r2",
+				"external-marketing",
+				"external-product-documentation-public",
+				"external-learning-hub",
+				"external-crtech-thermal-desktop",
+				"external-release-notes",
+				"external-zemax-websites",
+			)
+		}
 	case "ansysgpt-scbu":
-		indexList = append(indexList, "ansysgpt-scbu")
+		indexList = append(indexList,
+			"ansysgpt-scbu",
+			"external-scbu-learning-hub",
+			"scbu-data-except-alh",
+		)
 	default:
-		logging.Log.Errorf(internalstates.Ctx, "Invalid accessPoint: %v\n", accessPoint)
+		logging.Log.Errorf(&logging.ContextMap{}, "Invalid accessPoint: %v\n", accessPoint)
 		return
 	}
 
@@ -633,15 +652,31 @@ func AisAcsSemanticHybridSearchs(
 	// Launch a goroutine for each index
 	for _, indexName := range indexList {
 		go func(idx string) {
+			defer func() {
+				r := recover()
+				if r != nil {
+					logging.Log.Errorf(&logging.ContextMap{}, "panic in paralell processing of ACS requests: %v", r)
+				}
+			}()
 			defer wg.Done()
 			// Run the search for this index
-			result := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, idx, nil, topK, true, physics)
+			result, err := ansysGPTACSSemanticHybridSearch(acsEndpoint, acsApiKey, acsApiVersion, query, embeddedQuery, idx, nil, topK, true, physics)
+			if err != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "Error in semantic hybrid search: %v", err)
+				return
+			}
 			resultChan <- result
 		}(indexName)
 	}
 
 	// Launch a goroutine to close the channel once all searches are complete
 	go func() {
+		defer func() {
+			r := recover()
+			if r != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "panic in closing ACS result channel: %v", r)
+			}
+		}()
 		wg.Wait()
 		close(resultChan)
 	}()
@@ -722,7 +757,7 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 	isStream bool,
 	userEmail string) (message string, stream *chan string) {
 
-	logging.Log.Debugf(internalstates.Ctx, "Performing LLM final request")
+	logging.Log.Debugf(&logging.ContextMap{}, "Performing LLM final request")
 
 	// create "chat_history" string
 	historyMessages := ""
@@ -743,7 +778,7 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 		for _, example := range context {
 			json, err := json.Marshal(example)
 			if err != nil {
-				logging.Log.Errorf(internalstates.Ctx, "Error marshalling context: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, "Error marshalling context: %v", err)
 				return "", nil
 			}
 			contextString += fmt.Sprintf("\"chunk %v\": %v", chunkNr, string(json)) + ", "
@@ -783,9 +818,9 @@ func AisPerformLLMFinalRequest(systemTemplate string,
 
 	// Format the user and system template
 	userPrompt := formatTemplate(userTemplate, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "User template for final query: %v", userPrompt)
+	logging.Log.Debugf(&logging.ContextMap{}, "User template for final query: %v", userPrompt)
 	systemPrompt := formatTemplate(systemTemplate, dataMap)
-	logging.Log.Debugf(internalstates.Ctx, "System template for final query: %v", systemPrompt)
+	logging.Log.Debugf(&logging.ContextMap{}, "System template for final query: %v", systemPrompt)
 
 	// create options
 	var maxTokens int32 = 2000
