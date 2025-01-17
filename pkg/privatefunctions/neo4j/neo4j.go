@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
@@ -77,18 +78,20 @@ func Initialize(uri string, username string, password string) (funcError error) 
 	return nil
 }
 
-// AddNodes adds nodes to neo4j database.
+////////////// Write functions //////////////
+
+// AddCodeGenerationElementNodes adds nodes to neo4j database.
 //
 // Parameters:
 //   - nodes: List of nodes to be added.
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) AddNodes(nodes []codegeneration.CodeGenerationElement) (funcError error) {
+func (neo4j_context *neo4j_Context) AddCodeGenerationElementNodes(nodes []codegeneration.CodeGenerationElement) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddNodes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddCodeGenerationElementNodes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -167,18 +170,18 @@ func (neo4j_context *neo4j_Context) AddNodes(nodes []codegeneration.CodeGenerati
 	return nil
 }
 
-// AddExampleNodes adds nodes to neo4j database.
+// AddCodeGenerationExampleNodes adds nodes to neo4j database.
 //
 // Parameters:
 //   - nodes: List of nodes to be added.
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) AddExampleNodes(nodes []codegeneration.CodeGenerationExample) (funcError error) {
+func (neo4j_context *neo4j_Context) AddCodeGenerationExampleNodes(nodes []codegeneration.CodeGenerationExample) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddNodes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddCodeGenerationExampleNodes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -259,7 +262,7 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddNodes: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic AddUserGuideSectionNodes: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -323,18 +326,18 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 	return nil
 }
 
-// CreateExampleRelationships creates relationships between nodes in neo4j database.
+// CreateCodeGenerationExampleRelationships creates relationships between nodes in neo4j database.
 //
 // Parameters:
 //   - relationships: List of relationships to be created.
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegeneration.CodeGenerationExample) (funcError error) {
+func (neo4j_context *neo4j_Context) CreateCodeGenerationExampleRelationships(nodes []codegeneration.CodeGenerationExample) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateRelationships: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateCodeGenerationExampleRelationships: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -387,18 +390,18 @@ func (neo4j_context *neo4j_Context) CreateExampleRelationships(nodes []codegener
 	return nil
 }
 
-// CreateRelationships creates relationships between nodes in neo4j database.
+// CreateCodeGenerationRelationships creates relationships between nodes in neo4j database.
 //
 // Parameters:
 //   - relationships: List of relationships to be created.
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) CreateRelationships(nodes []codegeneration.CodeGenerationElement) (funcError error) {
+func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []codegeneration.CodeGenerationElement) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateRelationships: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateCodeGenerationRelationships: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -504,7 +507,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateRelationships: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic CreateUserGuideSectionRelationships: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -634,4 +637,511 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 
 	log.Printf("Created %v relationships in neo4j", counter)
 	return nil
+}
+
+////////////// Read functions //////////////
+
+// GetExamplesFromCodeGenerationElement gets examples from a code generation element.
+//
+// Parameters:
+//   - elementType: Type of the code generation element.
+//   - elementName: Name of the code generation element.
+//
+// Returns:
+//   - exampleNames: List of example names.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) GetExamplesFromCodeGenerationElement(elementType string, elementName string) (exampleNames []string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic GetExamplesFromCodeGenerationElement: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(db_ctx)
+
+	exampleNames = []string{}
+
+	// Get examples
+	_, err := session.ExecuteRead(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
+		result, err := transaction.Run(db_ctx,
+			"MATCH (a:"+elementType+" {Name: $name})<-[:USES]-(b:Example) RETURN b.Name",
+			map[string]any{
+				"name": elementName,
+			},
+		)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
+			return nil, err
+		}
+
+		for result.Next(db_ctx) {
+			exampleNames = append(exampleNames, result.Record().Values[0].(string))
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		log.Printf("Error during session.ExecuteRead: %v", err)
+		return
+	}
+
+	return exampleNames, nil
+}
+
+// GetCodeGenerationElementAndDependencies gets a code generation element and its dependencies.
+//
+// Parameters:
+//   - elementName: Name of the code generation element.
+//   - maxHops: Maximum number of hops to search for dependencies.
+//
+// Returns:
+//   - elements: List of code generation elements.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elementName string, maxHops int) (elements []codegeneration.CodeGenerationElement, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic GetCodeGenerationElementAndDependencies: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(db_ctx)
+
+	elements = []codegeneration.CodeGenerationElement{}
+
+	// Execute query
+	_, err := session.ExecuteRead(db_ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := fmt.Sprintf(`
+			MATCH (start {Name: $element_name})
+			OPTIONAL MATCH paths = (start)-[:BELONGS_TO*0..%d]->(node)
+			WITH DISTINCT node
+			OPTIONAL MATCH (node)-[:BELONGS_TO]->(dep)
+			RETURN node,
+				collect(DISTINCT dep.Name) AS dependencies,
+				labels(node) AS type
+		`, maxHops)
+
+		params := map[string]any{
+			"element_name": elementName,
+		}
+
+		result, err := tx.Run(db_ctx, query, params)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
+			return nil, err
+		}
+
+		// Parse results
+		for result.Next(db_ctx) {
+			record := result.Record()
+
+			node := record.Values[0].(neo4j.Node) // Extract node
+			dependenciesRaw, _ := record.Get("dependencies")
+			nodeType, _ := record.Get("type")
+
+			// Convert dependencies to []string
+			var dependencies []string
+			if dependenciesRaw != nil {
+				for _, dep := range dependenciesRaw.([]interface{}) {
+					dependencies = append(dependencies, dep.(string))
+				}
+			}
+
+			// Build CodeGenerationElement
+			element := codegeneration.CodeGenerationElement{
+				Name:           getStringProp(node.Props, "Name"),
+				NamePseudocode: getStringProp(node.Props, "namePseudocode"),
+				NameFormatted:  getStringProp(node.Props, "nameFormatted"),
+				Summary:        getStringProp(node.Props, "summary"),
+				Dependencies:   dependencies,
+			}
+
+			if len(nodeType.([]interface{})) > 0 {
+				nodeTypeString := nodeType.([]interface{})[0].(string)
+				var nodeTypeEnum codegeneration.CodeGenerationType
+
+				nodeTypeEnum, err = codegeneration.StringToCodeGenerationType(nodeTypeString)
+				if err != nil {
+					logging.Log.Errorf(&logging.ContextMap{}, "Error converting node type to CodeGenerationType: %v", err)
+					return nil, err
+				}
+
+				element.Type = nodeTypeEnum
+			}
+
+			elements = append(elements, element)
+		}
+
+		if err := result.Err(); err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during result iteration: %v", err)
+			return nil, err
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		log.Printf("Error during session.ExecuteRead: %v", err)
+		funcError = err
+		return
+	}
+
+	return elements, nil
+}
+
+// GetUserGuideMainChapters gets the main chapters of the user guide.
+//
+// Returns:
+//   - sections: List of user guide sections.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) GetUserGuideMainChapters() (sections []codegeneration.CodeGenerationUserGuideSection, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic GetUserGuideMainChapters: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
+	defer session.Close(db_ctx)
+
+	// Execute query
+	_, err := session.ExecuteRead(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (firstChild {level: 1.0})
+			WITH firstChild
+			OPTIONAL MATCH path=(firstChild)-[:NEXT_SIBLING*]->(child {level: 1.0})
+			ORDER BY length(path) DESC
+			WITH firstChild, [n IN nodes(path)] AS chapters
+			RETURN chapters
+		`
+
+		result, err := transaction.Run(db_ctx, query, map[string]any{})
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
+			return nil, err
+		}
+
+		for result.Next(db_ctx) {
+			if result.Record().Values[0] == nil {
+				continue
+			}
+			chapters := result.Record().Values[0].([]any)
+			for _, chapter := range chapters {
+				node, ok := chapter.(neo4j.Node)
+				if !ok {
+					logging.Log.Warnf(&logging.ContextMap{}, "Unexpected type in chapter: %v", chapter)
+					continue
+				}
+				section := codegeneration.CodeGenerationUserGuideSection{
+					Name:         node.Props["Name"].(string),
+					Title:        node.Props["title"].(string),
+					Level:        int(node.Props["level"].(float64)),
+					Parent:       node.Props["parent"].(string),
+					DocumentName: node.Props["document_name"].(string),
+				}
+
+				sections = append(sections, section)
+			}
+			break
+		}
+
+		if err = result.Err(); err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during result iteration: %v", err)
+			return nil, err
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		log.Printf("Error during session.ExecuteRead: %v", err)
+		return
+	}
+
+	return sections, nil
+}
+
+// GetUserGuideSectionChildren gets the children of a user guide section.
+//
+// Parameters:
+//   - sectionName: Name of the user guide section.
+//
+// Returns:
+//   - sectionChildren: List of user guide sections.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) GetUserGuideSectionChildren(sectionName string) (sectionChildren []codegeneration.CodeGenerationUserGuideSection, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in GetUserGuideSectionChildren: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(db_ctx)
+
+	// Execute query
+	_, err := session.ExecuteRead(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (n:UserGuide {Name: $sectionName})-[:HAS_CHILD]->(section_child)
+			RETURN section_child
+		`
+		params := map[string]any{
+			"sectionName": sectionName,
+		}
+
+		result, err := transaction.Run(db_ctx, query, params)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
+			return nil, err
+		}
+
+		for result.Next(db_ctx) {
+			record := result.Record()
+			node := record.Values[0].(neo4j.Node) // Assumes the returned value is a Neo4j Node
+			attributes := map[string]interface{}{}
+
+			// Extract properties of the node
+			for key, value := range node.Props {
+				attributes[key] = value
+			}
+
+			child := codegeneration.CodeGenerationUserGuideSection{
+				Name:         node.Props["Name"].(string),
+				Title:        node.Props["title"].(string),
+				Level:        int(node.Props["level"].(float64)),
+				Parent:       node.Props["parent"].(string),
+				DocumentName: node.Props["document_name"].(string),
+			}
+
+			sectionChildren = append(sectionChildren, child)
+		}
+
+		if err := result.Err(); err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during result iteration: %v", err)
+			return nil, err
+		}
+
+		return nil, nil
+	})
+
+	if err != nil {
+		log.Printf("Error during session.ExecuteRead: %v", err)
+		return
+	}
+
+	return sectionChildren, nil
+}
+
+// GetUserGuideTableOfContents gets the table of contents of the user guide.
+//
+// Parameters:
+//   - maxLevel: Maximum depth of the table of contents.
+//
+// Returns:
+//   - tableOfContents: List of user guide sections.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) GetUserGuideTableOfContents(maxLevel int) (tableOfContents []map[string]interface{}, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in GetUserGuideTableOfContents: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(db_ctx)
+
+	// Fetch table of contents
+	mainChapters, err := Neo4j_Driver.GetUserGuideMainChapters()
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error fetching main chapters: %v", err)
+		return nil, err
+	}
+
+	tableOfContentsList := []map[string]interface{}{}
+
+	// Process each section
+	for _, section := range mainChapters {
+		sectionNode, err := neo4j_context.getUserGuideNodeRecursive(section.Name, maxLevel)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error fetching section node %v: %v", section.Name, err)
+			return nil, err
+		}
+		if sectionNode != nil {
+			tableOfContentsList = append(tableOfContentsList, map[string]interface{}{
+				"title":    sectionNode["title"],
+				"Name":     sectionNode["Name"],
+				"children": sectionNode["children"],
+			})
+		}
+	}
+
+	return tableOfContentsList, nil
+}
+
+// GetUserGuideNodeRecursive fetches a user guide node and its children recursively.
+//
+// Parameters:
+//   - nodeName: Name of the user guide node.
+//   - maxLevel: Maximum depth of the table of contents.
+//
+// Returns:
+//   - nodeProps: Properties of the user guide node.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) getUserGuideNodeRecursive(nodeName string, maxLevel int) (map[string]interface{}, error) {
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(db_ctx)
+
+	query := `
+		MATCH (node {Name: $node_name})
+		OPTIONAL MATCH (node)-[:HAS_FIRST_CHILD]->(firstChild)
+		OPTIONAL MATCH path=(firstChild)-[:NEXT_SIBLING*]->(child)
+		WITH node, firstChild, path
+		ORDER BY length(path) DESC
+		LIMIT 1
+		WITH node, firstChild, [n IN nodes(path) | n.Name] AS orderedChildren
+		RETURN node, node.name_pseudocode AS name_pseudocode, orderedChildren
+	`
+	params := map[string]any{
+		"node_name": nodeName,
+	}
+
+	result, err := session.Run(context.Background(), query, params)
+	if err != nil {
+		return nil, fmt.Errorf("error during transaction.Run: %v", err)
+	}
+
+	record, err := result.Single(context.Background())
+	if err != nil {
+		return nil, nil // No record found, return nil without error
+	}
+
+	// Parse node properties
+	node := record.Values[0].(neo4j.Node)
+	nodeProps := map[string]interface{}{
+		"title":    node.Props["title"],
+		"Name":     node.Props["Name"],
+		"children": []map[string]interface{}{},
+	}
+
+	// Recursively fetch children
+	orderedChildrenNames, _ := record.Get("orderedChildren")
+	if orderedChildrenNames != nil && maxLevel > 1 {
+		for _, childName := range orderedChildrenNames.([]interface{}) {
+			childNode, err := neo4j_context.getUserGuideNodeRecursive(childName.(string), maxLevel-1)
+			if err != nil {
+				return nil, fmt.Errorf("error fetching child node %v: %v", childName, err)
+			}
+			if childNode != nil {
+				nodeProps["children"] = append(nodeProps["children"].([]map[string]interface{}), childNode)
+			}
+		}
+	}
+
+	return nodeProps, nil
+}
+
+// GetUserGuideSectionReferences gets the references of a user guide section.
+//
+// Parameters:
+//   - sectionName: Name of the user guide section.
+//
+// Returns:
+//   - referencedSections: List of referenced sections.
+//   - funcError: Error object.
+func (neo4j_context *neo4j_Context) GetUserGuideSectionReferences(sectionName string) (referencedSections string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in GetUserGuideSectionReferences: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Open session
+	db_ctx := context.Background()
+	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
+	defer session.Close(db_ctx)
+
+	// Execute query
+	_, err := session.ExecuteRead(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (n:UserGuide {Name: $sectionName})-[:REFERENCES]->(reference)
+			RETURN reference.Name
+		`
+		params := map[string]any{
+			"sectionName": sectionName,
+		}
+
+		result, err := transaction.Run(db_ctx, query, params)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
+			return nil, err
+		}
+
+		referencedSections = ""
+		for result.Next(db_ctx) {
+			record := result.Record()
+			referencedSections += record.Values[0].(string) + ", "
+		}
+
+		if err := result.Err(); err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during result iteration: %v", err)
+			return nil, err
+		}
+
+		return nil, nil
+	})
+	if err != nil {
+		log.Printf("Error during session.ExecuteRead: %v", err)
+		return
+	}
+
+	return referencedSections, nil
+}
+
+// //////////// Helper functions //////////////
+
+// getStringProp gets a string property from a map.
+//
+// Parameters:
+//   - props: Map of properties.
+//   - key: Key of the property.
+//
+// Returns:
+//   - strVal: Value of the property.
+func getStringProp(props map[string]interface{}, key string) string {
+	if val, ok := props[key]; ok {
+		if strVal, isString := val.(string); isString {
+			return strVal
+		}
+	}
+	return ""
 }

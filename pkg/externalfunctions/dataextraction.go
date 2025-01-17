@@ -898,10 +898,10 @@ func StoreElementsInGraphDatabase(elements []codegeneration.CodeGenerationElemen
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddNodes(elements)
+	neo4j.Neo4j_Driver.AddCodeGenerationElementNodes(elements)
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateRelationships(elements)
+	neo4j.Neo4j_Driver.CreateCodeGenerationRelationships(elements)
 
 	return nil
 }
@@ -1212,10 +1212,10 @@ func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationExampl
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddExampleNodes(elements)
+	neo4j.Neo4j_Driver.AddCodeGenerationExampleNodes(elements)
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateExampleRelationships(elements)
+	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(elements)
 
 	return nil
 }

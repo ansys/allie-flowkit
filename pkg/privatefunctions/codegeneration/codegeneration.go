@@ -95,3 +95,20 @@ func ProcessElementName(fullName string, dependencies []string) (namePseudocode 
 	}
 	return namePseudocode, nameFormatted, nil
 }
+
+func StringToCodeGenerationType(nodeTypeString string) (CodeGenerationType, error) {
+	switch nodeTypeString {
+	case "Function":
+		return Function, nil
+	case "Class":
+		return Class, nil
+	case "Method":
+		return Method, nil
+	case "Enum":
+		return Enum, nil
+	case "Module":
+		return Module, nil
+	default:
+		return "", fmt.Errorf("invalid node type: %s", nodeTypeString)
+	}
+}
