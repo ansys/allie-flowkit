@@ -70,7 +70,7 @@ func main() {
 	// Log the version of the system
 	logging.Log.Info(&logging.ContextMap{}, "Launching Allie Flowkit")
 
-	TestCodeGenElements()
+	// TestCodeGenElements()
 	// TestCodeGenExamples()
 	// TestCodeGenUserGuide()
 
