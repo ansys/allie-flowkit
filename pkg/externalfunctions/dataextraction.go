@@ -605,8 +605,11 @@ func LoadCodeGenerationElements(path string) (elements []sharedtypes.CodeGenerat
 		}
 
 		// Extract the prefix and name from the object definition.
-		prefix := strings.Split(objectDefinition.Name, ":")[0]
-		name := strings.Split(objectDefinition.Name, ":")[1]
+		prefix := strings.SplitN(objectDefinition.Name, ":", 2)[0]
+		name := ""
+		if parts := strings.SplitN(objectDefinition.Name, ":", 2); len(parts) > 1 {
+			name = parts[1]
+		}
 
 		// Create the code generation element.
 		element := sharedtypes.CodeGenerationElement{
@@ -676,7 +679,7 @@ func LoadCodeGenerationElements(path string) (elements []sharedtypes.CodeGenerat
 			element.EnumValues = strings.Split(cleaned, ",")
 
 		case "MOD":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Class)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Module)
 
 			// Extract dependencies for class.
 			dependencies := strings.Split(element.Name, ".")
