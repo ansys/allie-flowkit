@@ -28,12 +28,8 @@ github.com/Shopify/goreferrer v0.0.0-20181106222321-ec9c9a553398/go.mod h1:a1uqR
 github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
 github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsViSLyss=
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
-github.com/ansys/allie-sharedtypes v0.0.0-20250122074434-3c73fc8b0725 h1:cZ8bvu8AN0E42QLDCylkX0EM7wGDzTiUS/ixjgTaTW0=
-github.com/ansys/allie-sharedtypes v0.0.0-20250122074434-3c73fc8b0725/go.mod h1:9KZTPxk0VyxtW4BzYovfTIP/znVTdxpT/jZwDWxAQKY=
-github.com/ansys/allie-sharedtypes v0.0.0-20250122101757-3db0e15f8267 h1:dQtJD83SAzyRYGF4t6xnX6jkfuKq30fzL7audbgJGzg=
-github.com/ansys/allie-sharedtypes v0.0.0-20250122101757-3db0e15f8267/go.mod h1:9KZTPxk0VyxtW4BzYovfTIP/znVTdxpT/jZwDWxAQKY=
-github.com/ansys/allie-sharedtypes v0.0.0-20250122105841-4c15e2aeb3ff h1:qQCLvLUcYPplfyn3Z1jWLejN8WK1JR8WrV9FdZ6/1BE=
-github.com/ansys/allie-sharedtypes v0.0.0-20250122105841-4c15e2aeb3ff/go.mod h1:9KZTPxk0VyxtW4BzYovfTIP/znVTdxpT/jZwDWxAQKY=
+github.com/ansys/allie-sharedtypes v0.0.0-20250123140401-761199b0fb2c h1:omQx9xPEvVEadN9DWyLkkz/yP6K8YYawqPTsERcbF/s=
+github.com/ansys/allie-sharedtypes v0.0.0-20250123140401-761199b0fb2c/go.mod h1:9KZTPxk0VyxtW4BzYovfTIP/znVTdxpT/jZwDWxAQKY=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
