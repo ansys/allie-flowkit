@@ -9,6 +9,7 @@ import (
 
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -87,7 +88,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) AddCodeGenerationElementNodes(nodes []codegeneration.CodeGenerationElement) (funcError error) {
+func (neo4j_context *neo4j_Context) AddCodeGenerationElementNodes(nodes []sharedtypes.CodeGenerationElement) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -177,7 +178,7 @@ func (neo4j_context *neo4j_Context) AddCodeGenerationElementNodes(nodes []codege
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) AddCodeGenerationExampleNodes(nodes []codegeneration.CodeGenerationExample) (funcError error) {
+func (neo4j_context *neo4j_Context) AddCodeGenerationExampleNodes(nodes []sharedtypes.CodeGenerationExample) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -258,7 +259,7 @@ func (neo4j_context *neo4j_Context) AddCodeGenerationExampleNodes(nodes []codege
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegeneration.CodeGenerationUserGuideSection) (funcError error) {
+func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -333,7 +334,7 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []codegenerat
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) CreateCodeGenerationExampleRelationships(nodes []codegeneration.CodeGenerationExample) (funcError error) {
+func (neo4j_context *neo4j_Context) CreateCodeGenerationExampleRelationships(nodes []sharedtypes.CodeGenerationExample) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -397,7 +398,7 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationExampleRelationships(nod
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []codegeneration.CodeGenerationElement) (funcError error) {
+func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []sharedtypes.CodeGenerationElement) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -503,7 +504,7 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []co
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []codegeneration.CodeGenerationUserGuideSection) (funcError error) {
+func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -806,7 +807,7 @@ func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elem
 // Returns:
 //   - sections: List of user guide sections.
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) GetUserGuideMainChapters() (sections []codegeneration.CodeGenerationUserGuideSection, funcError error) {
+func (neo4j_context *neo4j_Context) GetUserGuideMainChapters() (sections []sharedtypes.CodeGenerationUserGuideSection, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -849,7 +850,7 @@ func (neo4j_context *neo4j_Context) GetUserGuideMainChapters() (sections []codeg
 					logging.Log.Warnf(&logging.ContextMap{}, "Unexpected type in chapter: %v", chapter)
 					continue
 				}
-				section := codegeneration.CodeGenerationUserGuideSection{
+				section := sharedtypes.CodeGenerationUserGuideSection{
 					Name:         node.Props["Name"].(string),
 					Title:        node.Props["title"].(string),
 					Level:        int(node.Props["level"].(float64)),
@@ -886,7 +887,7 @@ func (neo4j_context *neo4j_Context) GetUserGuideMainChapters() (sections []codeg
 // Returns:
 //   - sectionChildren: List of user guide sections.
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) GetUserGuideSectionChildren(sectionName string) (sectionChildren []codegeneration.CodeGenerationUserGuideSection, funcError error) {
+func (neo4j_context *neo4j_Context) GetUserGuideSectionChildren(sectionName string) (sectionChildren []sharedtypes.CodeGenerationUserGuideSection, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -927,7 +928,7 @@ func (neo4j_context *neo4j_Context) GetUserGuideSectionChildren(sectionName stri
 				attributes[key] = value
 			}
 
-			child := codegeneration.CodeGenerationUserGuideSection{
+			child := sharedtypes.CodeGenerationUserGuideSection{
 				Name:         node.Props["Name"].(string),
 				Title:        node.Props["title"].(string),
 				Level:        int(node.Props["level"].(float64)),

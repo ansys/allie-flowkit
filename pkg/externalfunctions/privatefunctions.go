@@ -1941,7 +1941,7 @@ func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerati
 //
 // Returns:
 //   - error: an error if any
-func codeGenerationProcessHybridSearchEmbeddings(elements []codegeneration.CodeGenerationElement, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+func codeGenerationProcessHybridSearchEmbeddings(elements []sharedtypes.CodeGenerationElement, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
 	processedEmbeddings := 0
 
 	// Process data in batches
@@ -2075,7 +2075,7 @@ func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, pa
 	}()
 
 	// create embeddings
-	url := "http://localhost:8000/embedding"
+	url := "http://20.61.171.221:8000/embedding"
 
 	request := pythonEmbeddingRequest{
 		Passages:          passages,

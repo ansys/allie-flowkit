@@ -2,6 +2,8 @@ package codegeneration
 
 import (
 	"encoding/xml"
+
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 )
 
 // Structs representing the XML structure
@@ -16,14 +18,14 @@ type XMLAssembly struct {
 }
 
 type XMLAssemblyMember struct {
-	Name       string           `xml:"name,attr"`
-	Summary    string           `xml:"summary"`
-	ReturnType string           `xml:"returnType"`
-	Returns    string           `xml:"returns,omitempty"`
-	Params     []XMLMemberParam `xml:"param" json:"parameters"` // Handles multiple <param> elements
-	Example    XMLMemberExample `xml:"example,omitempty"`       // Optional <example> element
-	Remarks    string           `xml:"remarks,omitempty"`
-	EnumValues string           `xml:"enumValues,omitempty"`
+	Name       string                       `xml:"name,attr"`
+	Summary    string                       `xml:"summary"`
+	ReturnType string                       `xml:"returnType"`
+	Returns    string                       `xml:"returns,omitempty"`
+	Params     []sharedtypes.XMLMemberParam `xml:"param" json:"parameters"` // Handles multiple <param> elements
+	Example    sharedtypes.XMLMemberExample `xml:"example,omitempty"`       // Optional <example> element
+	Remarks    string                       `xml:"remarks,omitempty"`
+	EnumValues string                       `xml:"enumValues,omitempty"`
 }
 
 type XMLMemberParam struct {

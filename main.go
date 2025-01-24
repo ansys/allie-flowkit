@@ -83,19 +83,19 @@ func TestCodeGenElements() {
 	path := "./mechanical_def_complete.xml"
 
 	// Load mechanical object definitions
-	e := externalfunctions.LoadObjectDefinitions(path)
+	e := externalfunctions.LoadCodeGenerationElements(path)
 
 	// store in database
 	embeddingsBatchSize := 200
 	externalfunctions.StoreElementsInVectorDatabase(e, "mechanical_elements_collection", embeddingsBatchSize)
-	// externalfunctions.StoreElementsInGraphDatabase(e)
+	externalfunctions.StoreElementsInGraphDatabase(e)
 }
 
 func TestCodeGenExamples() {
 	path := "./mechanical_def_complete.xml"
 
 	// Load mechanical object definitions
-	e := externalfunctions.LoadObjectDefinitions(path)
+	e := externalfunctions.LoadCodeGenerationElements(path)
 
 	// Load examples dependencies
 	dependenciesPath := "./example_dependencies.json"

@@ -63,7 +63,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SendRestAPICall":      SendRestAPICall,
 
 	// code generation
-	"LoadObjectDefinitions":           LoadObjectDefinitions,
+	"LoadCodeGenerationElements":      LoadCodeGenerationElements,
 	"LoadCodeGenerationExamples":      LoadCodeGenerationExamples,
 	"LoadAndCheckExampleDependencies": LoadAndCheckExampleDependencies,
 	"LoadUserGuideSections":           LoadUserGuideSections,

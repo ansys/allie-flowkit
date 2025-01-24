@@ -549,7 +549,17 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	return returnedDocumentData
 }
 
-func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGenerationElement) {
+// LoadCodeGenerationElements loads code generation elements from an xml or json file.
+//
+// Tags:
+//   - @displayName: Load Code Generation Elements
+//
+// Parameters:
+//   - path: path to the file.
+//
+// Returns:
+//   - elements: code generation elements.
+func LoadCodeGenerationElements(path string) (elements []sharedtypes.CodeGenerationElement) {
 	// Read file from local path.
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -599,7 +609,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		name := strings.Split(objectDefinition.Name, ":")[1]
 
 		// Create the code generation element.
-		element := codegeneration.CodeGenerationElement{
+		element := sharedtypes.CodeGenerationElement{
 			Guid:              "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
 			Name:              name,
 			Summary:           objectDefinition.Summary,
@@ -620,7 +630,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 
 		switch prefix {
 		case "M":
-			element.Type = codegeneration.CodeGenerationType(codegeneration.Method)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Method)
 
 			// Extract dependencies for method.
 			dependencies := strings.Split(element.Name, "(")
@@ -629,7 +639,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			element.Dependencies = dependencies
 
 		case "P":
-			element.Type = codegeneration.CodeGenerationType(codegeneration.Parameter)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Parameter)
 
 			// Extract dependencies for parameter.
 			dependencies := strings.Split(element.Name, ".")
@@ -637,7 +647,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			element.Dependencies = dependencies
 
 		case "F":
-			element.Type = codegeneration.CodeGenerationType(codegeneration.Function)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Function)
 
 			// Extract dependencies for function.
 			dependencies := strings.Split(element.Name, "(")
@@ -646,7 +656,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			element.Dependencies = dependencies
 
 		case "T":
-			element.Type = codegeneration.CodeGenerationType(codegeneration.Class)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Class)
 
 			// Extract dependencies for class.
 			dependencies := strings.Split(element.Name, ".")
@@ -654,7 +664,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			element.Dependencies = dependencies
 
 		case "E":
-			element.Type = codegeneration.CodeGenerationType(codegeneration.Enum)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Enum)
 
 			// Extract dependencies for enum.
 			dependencies := strings.Split(element.Name, ".")
@@ -666,7 +676,7 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 			element.EnumValues = strings.Split(cleaned, ",")
 
 		case "MOD":
-			element.Type = codegeneration.CodeGenerationType(codegeneration.Class)
+			element.Type = sharedtypes.CodeGenerationType(codegeneration.Class)
 
 			// Extract dependencies for class.
 			dependencies := strings.Split(element.Name, ".")
@@ -690,94 +700,21 @@ func LoadObjectDefinitions(path string) (elements []codegeneration.CodeGeneratio
 		elements = append(elements, element)
 	}
 
+	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v code generation elements from file: %s", len(elements), path)
+
 	return elements
 }
 
-func GeneratePseudocodeFromCodeGenerationFunctions(functions []codegeneration.CodeGenerationElement, functionPrompt string, parameterPrompt string, systemPrompt string, workers int) (completeElementDefinitions []codegeneration.CodeGenerationElement) {
-	llmChannel := make(chan codegeneration.CodeGenerationElement, len(functions)) // Channel for functions to process
-	errorChannel := make(chan error, 1)
-	llmWaitGroup := sync.WaitGroup{}
-	processedInstructionsCounter := 0
-
-	// Start LLM Handler workers.
-	for i := 0; i < workers; i++ {
-		llmWaitGroup.Add(1)
-		go func() {
-			defer llmWaitGroup.Done()
-			for function := range llmChannel {
-				pseudoCodePrompt := functionPrompt
-				// If type is not "function" or "method", use parameter prompt.
-				if function.Type != codegeneration.Function && function.Type != codegeneration.Method {
-					pseudoCodePrompt = parameterPrompt
-				}
-
-				// Prompt formatting depending on function
-				parametersJSON, err := json.Marshal(function.Parameters)
-				if err != nil {
-					errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
-					logging.Log.Error(&logging.ContextMap{}, errMessage)
-					errorChannel <- fmt.Errorf(errMessage)
-				}
-
-				exampleJSON, err := json.Marshal(function.Example)
-				if err != nil {
-					errMessage := fmt.Sprintf("Error marshalling function example: %v", err)
-					logging.Log.Error(&logging.ContextMap{}, errMessage)
-					errorChannel <- fmt.Errorf(errMessage)
-				}
-
-				valuesToFormat := map[string]string{
-					"name":       function.Name,
-					"parameters": string(parametersJSON),
-					"summary":    function.Summary,
-					"example":    string(exampleJSON),
-					"type":       string(function.Type),
-					"returnType": function.ReturnType,
-				}
-
-				prompt := formatTemplate(pseudoCodePrompt, valuesToFormat)
-
-				response, _, err := performGeneralRequest(prompt, []sharedtypes.HistoricMessage{}, false, systemPrompt, &sharedtypes.ModelOptions{})
-				if err != nil {
-					errorChannel <- err // Report errors
-				}
-
-				// Assign the description to the function
-				function.Description = response
-
-				processedInstructionsCounter++
-				if processedInstructionsCounter%10 == 0 {
-					logging.Log.Infof(&logging.ContextMap{}, "Processed %v elements \n", processedInstructionsCounter)
-				}
-
-				completeElementDefinitions = append(completeElementDefinitions, function)
-			}
-		}()
-	}
-
-	// Add all functions to the channel.
-	for _, function := range functions {
-		llmChannel <- function
-	}
-	close(llmChannel) // Close the channel to signal workers no more items are coming
-
-	// Wait for all workers to finish.
-	llmWaitGroup.Wait()
-
-	// Check for errors if needed.
-	close(errorChannel)
-	for err := range errorChannel {
-		errMessage := fmt.Sprintf("Error marshalling function parameters: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	logging.Log.Infof(&logging.ContextMap{}, "Finished generating pseudocode for functions \n")
-
-	return completeElementDefinitions
-}
-
-func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationElement, elementsCollectionName string, batchSize int) error {
+// StoreElementsInVectorDatabase stores elements in the vector database.
+//
+// Tags:
+//   - @displayName: Store Elements in Vector Database
+//
+// Parameters:
+//   - elements: code generation elements.
+//   - elementsCollectionName: name of the collection.
+//   - batchSize: batch size for embeddings.
+func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement, elementsCollectionName string, batchSize int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 200
@@ -792,8 +729,9 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
 	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to generate embeddings for elements: %v", err)
-		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+		errMessage := fmt.Sprintf("Error generating embeddings for elements: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
 	// Create the vector database objects.
@@ -818,9 +756,9 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	// Initialize the vector database.
 	milvusClient, err := milvus.Initialize()
 	if err != nil {
-		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		errMessage := fmt.Sprintf("Error initializing the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
 	// Create the schema for this collection
@@ -863,17 +801,17 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 
 	schema, err := milvus.CreateCustomSchema(elementsCollectionName, schemaFields, "collection for code generation elements")
 	if err != nil {
-		errMessage := "error creating the schema"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		errMessage := fmt.Sprintf("Error creating the schema for the collection: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
 	// Create the collection.
 	err = milvus.CreateCollection(schema, milvusClient)
 	if err != nil {
-		errMessage := "error creating the collection"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		errMessage := fmt.Sprintf("Error creating the collection: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
 	// Convert []VectorDatabaseElement to []interface{}
@@ -885,15 +823,22 @@ func StoreElementsInVectorDatabase(elements []codegeneration.CodeGenerationEleme
 	// Insert the elements into the vector database.
 	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
 	if err != nil {
-		errMessage := "error inserting data into the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
-	return nil
+	return
 }
 
-func StoreElementsInGraphDatabase(elements []codegeneration.CodeGenerationElement) error {
+// StoreElementsInGraphDatabase stores elements in the graph database.
+//
+// Tags:
+//   - @displayName: Store Elements in Graph Database
+//
+// Parameters:
+//   - elements: code generation elements.
+func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) {
 	// Initialize the graph database.
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
@@ -903,12 +848,24 @@ func StoreElementsInGraphDatabase(elements []codegeneration.CodeGenerationElemen
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateCodeGenerationRelationships(elements)
 
-	return nil
+	return
 }
 
+// LoadAndCheckExampleDependencies loads and checks the dependencies of the examples.
+//
+// Tags:
+//   - @displayName: Load and Check Example Dependencies
+//
+// Parameters:
+//   - path: path to the file.
+//   - elements: code generation elements.
+//
+// Returns:
+//   - checkedDependenciesMap: checked dependencies.
+//   - equivalencesMap: equivalences.
 func LoadAndCheckExampleDependencies(
 	path string,
-	functions []codegeneration.CodeGenerationElement,
+	elements []sharedtypes.CodeGenerationElement,
 ) (checkedDependenciesMap map[string][]string, equivalencesMap map[string]map[string]string) {
 	// Read file from local path.
 	content, err := os.ReadFile(path)
@@ -963,7 +920,7 @@ func LoadAndCheckExampleDependencies(
 			matchFound := false
 
 			// Check if the exact dependency exists in functions.
-			for _, function := range functions {
+			for _, function := range elements {
 				functionNameNoParams := strings.Split(function.Name, "(")[0]
 				if functionNameNoParams == dependency {
 					checkedDependencies = append(checkedDependencies, function.Name)
@@ -980,7 +937,7 @@ func LoadAndCheckExampleDependencies(
 				lastDotIndex := strings.LastIndex(dependency, ".")
 				if lastDotIndex != -1 {
 					truncatedDependency := dependency[:lastDotIndex]
-					for _, function := range functions {
+					for _, function := range elements {
 						functionNameNoParams := strings.Split(function.Name, "(")[0]
 						if functionNameNoParams == truncatedDependency {
 							// Update dependency and equivalences.
@@ -1037,9 +994,23 @@ func LoadAndCheckExampleDependencies(
 	return checkedDependenciesMap, equivalencesMap
 }
 
-func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[string][]string, equivalencesMap map[string]map[string]string, chunkSize int, chunkOverlap int) (examples []codegeneration.CodeGenerationExample) {
+// LoadCodeGenerationExamples loads code generation examples from the provided paths.
+//
+// Tags:
+//   - @displayName: Load Code Generation Examples
+//
+// Parameters:
+//   - examplesToExtract: paths to the examples.
+//   - dependencies: dependencies of the examples.
+//   - equivalencesMap: equivalences of the examples.
+//   - chunkSize: size of the chunks.
+//   - chunkOverlap: overlap of the chunks.
+//
+// Returns:
+//   - examples: code generation examples.
+func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[string][]string, equivalencesMap map[string]map[string]string, chunkSize int, chunkOverlap int) (examples []sharedtypes.CodeGenerationExample) {
 	// Initialize the examples slice.
-	examples = []codegeneration.CodeGenerationExample{}
+	examples = []sharedtypes.CodeGenerationExample{}
 
 	// Load the examples from the provided paths.
 	for _, examplePath := range examplesToExtract {
@@ -1064,7 +1035,7 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 		fmt.Println("Extracting example: ", fileName)
 
 		// Create the object
-		example := codegeneration.CodeGenerationExample{
+		example := sharedtypes.CodeGenerationExample{
 			Chunks:                 chunks,
 			Name:                   fileName,
 			Dependencies:           dependencies[fileName],
@@ -1078,7 +1049,16 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 	return examples
 }
 
-func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExample, examplesCollectionName string, batchSize int) error {
+// StoreExamplesInVectorDatabase stores examples in the vector database.
+//
+// Tags:
+//   - @displayName: Store Examples in Vector Database
+//
+// Parameters:
+//   - elements: code generation examples.
+//   - examplesCollectionName: name of the collection.
+//   - batchSize: batch size for embeddings.
+func StoreExamplesInVectorDatabase(elements []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 200
@@ -1089,7 +1069,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	if err != nil {
 		errMessage := "error initializing the vector database"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the schema for this collection
@@ -1128,9 +1108,9 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 
 	schema, err := milvus.CreateCustomSchema(examplesCollectionName, schemaFields, "collection for code generation examples")
 	if err != nil {
-		errMessage := "error creating the schema"
+		errMessage := "error creating the schema for the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the collection.
@@ -1138,7 +1118,7 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	if err != nil {
 		errMessage := "error creating the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the vector database objects.
@@ -1180,8 +1160,9 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForExamples(vectorExamples, batchSize)
 	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to generate embeddings for elements: %v", err)
-		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+		errMessage := fmt.Sprintf("Error generating embeddings for examples: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
 	// Assign embeddings to the vector database objects.
@@ -1199,15 +1180,22 @@ func StoreExamplesInVectorDatabase(elements []codegeneration.CodeGenerationExamp
 	// Insert the elements into the vector database.
 	err = milvus.InsertData(examplesCollectionName, elementsAsInterface)
 	if err != nil {
-		errMessage := "error inserting data into the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
-	return nil
+	return
 }
 
-func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationExample) error {
+// StoreExamplesInGraphDatabase stores examples in the graph database.
+//
+// Tags:
+//   - @displayName: Store Examples in Graph Database
+//
+// Parameters:
+//   - elements: code generation examples.
+func StoreExamplesInGraphDatabase(elements []sharedtypes.CodeGenerationExample) {
 	// Initialize the graph database.
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
@@ -1217,12 +1205,22 @@ func StoreExamplesInGraphDatabase(elements []codegeneration.CodeGenerationExampl
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(elements)
 
-	return nil
+	return
 }
 
-func LoadUserGuideSections(paths []string) (sections []codegeneration.CodeGenerationUserGuideSection) {
+// LoadUserGuideSections loads user guide sections from the provided paths.
+//
+// Tags:
+//   - @displayName: Load User Guide Sections
+//
+// Parameters:
+//   - paths: paths to the sections.
+//
+// Returns:
+//   - sections: user guide sections.
+func LoadUserGuideSections(paths []string) (sections []sharedtypes.CodeGenerationUserGuideSection) {
 	// Initialize the sections.
-	sections = []codegeneration.CodeGenerationUserGuideSection{}
+	sections = []sharedtypes.CodeGenerationUserGuideSection{}
 
 	for _, path := range paths {
 		// Read file from local path.
@@ -1234,7 +1232,7 @@ func LoadUserGuideSections(paths []string) (sections []codegeneration.CodeGenera
 		}
 
 		// Initialize the sections.
-		newSections := []codegeneration.CodeGenerationUserGuideSection{}
+		newSections := []sharedtypes.CodeGenerationUserGuideSection{}
 
 		// Unmarshal the JSON content into the sections.
 		err = json.Unmarshal(content, &newSections)
@@ -1248,10 +1246,23 @@ func LoadUserGuideSections(paths []string) (sections []codegeneration.CodeGenera
 		sections = append(sections, newSections...)
 	}
 
+	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v user guide sections \n", len(sections))
+
 	return sections
 }
 
-func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int) error {
+// StoreUserGuideSectionsInVectorDatabase stores user guide sections in the vector database.
+//
+// Tags:
+//   - @displayName: Store User Guide Sections in Vector Database
+//
+// Parameters:
+//   - sections: user guide sections.
+//   - userGuideCollectionName: name of the collection.
+//   - batchSize: batch size for embeddings.
+//   - chunkSize: size of the chunks.
+//   - chunkOverlap: overlap of the chunks.
+func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 200
@@ -1262,7 +1273,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	if err != nil {
 		errMessage := "error initializing the vector database"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the schema for this collection
@@ -1313,9 +1324,9 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 
 	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation examples")
 	if err != nil {
-		errMessage := "error creating the schema"
+		errMessage := "error creating the schema for the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the collection.
@@ -1323,7 +1334,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	if err != nil {
 		errMessage := "error creating the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the vector database objects.
@@ -1375,8 +1386,9 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
 	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to generate embeddings for elements: %v", err)
-		return fmt.Errorf("failed to generate embeddings for elements: %w", err)
+		errMessage := fmt.Sprintf("Error generating embeddings for user guide sections: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
 	// dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
@@ -1404,23 +1416,30 @@ func StoreUserGuideSectionsInVectorDatabase(sections []codegeneration.CodeGenera
 	// Insert the elements into the vector database.
 	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface)
 	if err != nil {
-		errMessage := "error inserting data into the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		return fmt.Errorf("%s: %v", errMessage, err)
+		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
 	}
 
-	return nil
+	return
 }
 
-func StoreUserGuideSectionsInGraphDatabase(elements []codegeneration.CodeGenerationUserGuideSection) error {
+// StoreUserGuideSectionsInGraphDatabase stores user guide sections in the graph database.
+//
+// Tags:
+//   - @displayName: Store User Guide Sections in Graph Database
+//
+// Parameters:
+//   - elements: user guide sections.
+func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection) {
 	// Initialize the graph database.
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(elements)
+	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections)
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(elements)
+	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections)
 
-	return nil
+	return
 }
