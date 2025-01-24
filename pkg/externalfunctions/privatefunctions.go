@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -1530,23 +1531,40 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string, sparse bool) (embed
 			// Assert that response.LexicalWeights is []interface{}
 			lexicalWeights, ok := response.LexicalWeights.([]interface{})
 			if !ok {
-				return nil, nil, fmt.Errorf("error converting sparse embeddings to interface array")
+				return nil, nil, fmt.Errorf("error converting lexical weights to []interface{}, got %T", response.LexicalWeights)
 			}
 
 			// Convert []interface{} to []map[uint]float32
-			fmt.Println(lexicalWeights)
-			sparseEmbeddings := make([]map[uint]float32, len(lexicalWeights))
+			sparseEmbeddings = make([]map[uint]float32, len(lexicalWeights))
 			for i, lw := range lexicalWeights {
-				// Assert each element to map[uint]float32
-				sparseEmbedding, ok := lw.(map[uint]float32)
+				// Assert each element is map[string]interface{}
+				rawMap, ok := lw.(map[string]interface{})
 				if !ok {
-					return nil, nil, fmt.Errorf("error converting sparse embeddings to right type")
+					return nil, nil, fmt.Errorf("error converting lexical weight to map[string]interface{}, got %T", lw)
 				}
-				sparseEmbeddings[i] = sparseEmbedding
-			}
 
-			// Use sparseEmbeddings as needed
-			fmt.Println(sparseEmbeddings)
+				// Convert map[string]interface{} to map[uint]float32
+				convertedMap := make(map[uint]float32)
+				for key, value := range rawMap {
+					// Convert key from string to uint
+					keyUint, err := strconv.ParseUint(key, 10, 32)
+					if err != nil {
+						return nil, nil, fmt.Errorf("error converting key to uint, got %v", key)
+					}
+
+					// Assert value is float64 (common type for numbers in JSON)
+					floatValue, ok := value.(float64)
+					if !ok {
+						return nil, nil, fmt.Errorf("error converting value to float64, got %T", value)
+					}
+
+					// Convert float64 to float32
+					convertedMap[uint(keyUint)] = float32(floatValue)
+				}
+
+				// Add converted map to sparseEmbeddings
+				sparseEmbeddings[i] = convertedMap
+			}
 		}
 
 		// Mark that the first response has been received.
@@ -1561,7 +1579,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string, sparse bool) (embed
 	// Close the response channel
 	close(responseChannel)
 
-	return embeddedVectors, nil, nil
+	return embeddedVectors, sparseEmbeddings, nil
 }
 
 // llmHandlerPerformSummaryRequest performs a summary request to LLM Handler.
