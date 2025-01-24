@@ -720,11 +720,7 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 		batchSize = 200
 	}
 
-	// Generate the embeddings for the elements
-	// embeddings, err := codeGenerationProcessBatchEmbeddings(elements, batchSize)
-	// if err != nil {
-	// 	return fmt.Errorf("failed to generate embeddings for elements: %w", err)
-	// }
+	logging.Log.Infof(&logging.ContextMap{}, "Storing %v code generation elements in the vector database", len(elements))
 
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
