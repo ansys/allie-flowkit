@@ -30,6 +30,13 @@ var ReplacementPriorityList = []string{
 	"ExtAPI.Application",
 }
 
+// RemoveEmptyLines removes empty lines from a string
+//
+// Parameters:
+//   - input: the string to remove empty lines from
+//
+// Returns:
+//   - the string with empty lines removed
 func RemoveEmptyLines(input string) string {
 	// Split the string into lines
 	lines := strings.Split(input, "\n")
@@ -45,12 +52,27 @@ func RemoveEmptyLines(input string) string {
 	return strings.Join(nonEmptyLines, "\n")
 }
 
+// SplitByCapitalLetters splits a string by capital letters
+//
+// Parameters:
+//   - s: the string to split
+//
+// Returns:
+//   - the string with spaces inserted before capital letters
 func SplitByCapitalLetters(s string) string {
 	re := regexp.MustCompile(`[A-Z]+[a-z]*|[A-Z]+`)
 	words := re.FindAllString(s, -1)
 	return strings.Join(words, " ")
 }
 
+// CreateReturnListMechanical creates a list of return elements from a string
+//
+// Parameters:
+//   - returnString: the string to create the list from
+//
+// Returns:
+//   - the list of return elements
+//   - an error if the string is empty
 func CreateReturnListMechanical(returnString string) (returnElementList []string, err error) {
 	// Split the string by comma
 	returnList := strings.Split(returnString, " ")
@@ -68,6 +90,16 @@ func CreateReturnListMechanical(returnString string) (returnElementList []string
 	return returnElementList, nil
 }
 
+// ProcessElementName processes an element name
+//
+// Parameters:
+//   - fullName: the full name of the element
+//   - dependencies: the dependencies of the element
+//
+// Returns:
+//   - the pseudocode name of the element
+//   - the formatted name of the element
+//   - an error if the name is empty
 func ProcessElementName(fullName string, dependencies []string) (namePseudocode string, nameFormatted string, err error) {
 	// If the name is empty, return empty error.
 	if fullName == "" {
@@ -96,6 +128,15 @@ func ProcessElementName(fullName string, dependencies []string) (namePseudocode 
 	return namePseudocode, nameFormatted, nil
 }
 
+// StringToCodeGenerationType converts a string to a CodeGenerationType
+// enum value.
+//
+// Parameters:
+//   - nodeTypeString: the string to convert
+//
+// Returns:
+//   - the CodeGenerationType value
+//   - an error if the string is invalid
 func StringToCodeGenerationType(nodeTypeString string) (CodeGenerationType, error) {
 	switch nodeTypeString {
 	case "Function":

@@ -9,6 +9,17 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
 
+// CreatePayloadAndSendHttpRequest creates a JSON payload from a request object and sends an HTTP POST request to the specified URL.
+// The response body is decoded into the responsePtr object.
+//
+// Parameters:
+//   - url: the URL to send the HTTP POST request to.
+//   - requestObject: the request object to create the JSON payload from.
+//   - responsePtr: a pointer to the response object to decode the JSON response body into.
+//
+// Returns:
+//   - an error if there was an issue creating the JSON payload, sending the HTTP POST request, or decoding the JSON response body.
+//   - the status code of the HTTP response.
 func CreatePayloadAndSendHttpRequest(url string, requestObject interface{}, responsePtr interface{}) (funcError error, statusCode int) {
 	defer func() {
 		r := recover()
