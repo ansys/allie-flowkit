@@ -865,6 +865,8 @@ func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) 
 func LoadAndCheckExampleDependencies(
 	path string,
 	elements []sharedtypes.CodeGenerationElement,
+	instancesReplacementDict map[string]string,
+	InstancesReplacementPriorityList []string,
 ) (checkedDependenciesMap map[string][]string, equivalencesMap map[string]map[string]string) {
 	// Read file from local path.
 	content, err := os.ReadFile(path)
@@ -893,8 +895,8 @@ func LoadAndCheckExampleDependencies(
 		equivalences := make(map[string]string)
 		for _, dependency := range dependencies {
 			original := dependency
-			for _, key := range codegeneration.ReplacementPriorityList { // Iterate over keys in the desired priority order
-				value := codegeneration.MechanicalInstancesReplaceDict[key]
+			for _, key := range InstancesReplacementPriorityList { // Iterate over keys in the desired priority order
+				value := instancesReplacementDict[key]
 				if strings.HasPrefix(dependency, key) {
 					dependency = strings.Replace(dependency, key, value, 1) // Replace only the prefix
 					break                                                   // Stop after the first match since keys are prefixes

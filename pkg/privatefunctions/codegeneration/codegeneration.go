@@ -6,30 +6,6 @@ import (
 	"strings"
 )
 
-var MechanicalInstancesReplaceDict = map[string]string{
-	"Model.Mesh":                      "Ansys.ACT.Automation.Mechanical.MeshControls.Mesh",
-	"Model.CoordinateSystems":         "Ansys.ACT.Automation.Mechanical.CoordinateSystems",
-	"Model.Analyses.AnalysisSettings": "Ansys.ACT.Automation.Mechanical.AnalysisSettings.ANSYSAnalysisSettings",
-	"Model.Analyses.Solution":         "Ansys.ACT.Automation.Mechanical.Solution",
-	"Model.Analyses":                  "Ansys.ACT.Automation.Mechanical.Analysis",
-	"DataModel.Project.Model":         "Ansys.ACT.Automation.Mechanical.Model",
-	"Model":                           "Ansys.ACT.Automation.Mechanical.Model",
-	"ExtAPI.DataModel":                "Ansys.ACT.Automation.Mechanical",
-	"ExtAPI.Application":              "Ansys.ACT.Interfaces.Mechanical.IMechanicalApplication",
-}
-
-var ReplacementPriorityList = []string{
-	"Model.Mesh",
-	"Model.CoordinateSystems",
-	"Model.Analyses.AnalysisSettings",
-	"Model.Analyses.Solution",
-	"Model.Analyses",
-	"DataModel.Project.Model",
-	"Model",
-	"ExtAPI.DataModel",
-	"ExtAPI.Application",
-}
-
 // RemoveEmptyLines removes empty lines from a string
 //
 // Parameters:
