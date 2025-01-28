@@ -2047,7 +2047,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForExamples(elements []codegener
 		}
 
 		// Send http request
-		batchDenseEmbeddings, batchLexicalWeights, _, err := CreateEmbeddings(true, true, false, false, batchTextToEmbed)
+		batchDenseEmbeddings, batchLexicalWeights, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, true)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
 		}

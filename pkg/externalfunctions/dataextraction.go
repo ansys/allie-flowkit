@@ -555,13 +555,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 //   - @displayName: Load Code Generation Elements
 //
 // Parameters:
-//   - path: path to the file.
+//   - elementsFilePath: path to the file.
 //
 // Returns:
 //   - elements: code generation elements.
-func LoadCodeGenerationElements(path string) (elements []sharedtypes.CodeGenerationElement) {
+func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes.CodeGenerationElement) {
 	// Read file from local path.
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(elementsFilePath)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -569,7 +569,7 @@ func LoadCodeGenerationElements(path string) (elements []sharedtypes.CodeGenerat
 	}
 
 	// Get the file extension.
-	fileExtension := filepath.Ext(path)
+	fileExtension := filepath.Ext(elementsFilePath)
 
 	// Create object definition document.
 	objectDefinitionDoc := codegeneration.XMLObjectDefinitionDocument{}
@@ -703,7 +703,7 @@ func LoadCodeGenerationElements(path string) (elements []sharedtypes.CodeGenerat
 		elements = append(elements, element)
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v code generation elements from file: %s", len(elements), path)
+	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v code generation elements from file: %s", len(elements), elementsFilePath)
 
 	return elements
 }
@@ -856,20 +856,20 @@ func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) 
 //   - @displayName: Load and Check Example Dependencies
 //
 // Parameters:
-//   - path: path to the file.
+//   - dependenciesFilePath: path to the file.
 //   - elements: code generation elements.
 //
 // Returns:
 //   - checkedDependenciesMap: checked dependencies.
 //   - equivalencesMap: equivalences.
 func LoadAndCheckExampleDependencies(
-	path string,
+	dependenciesFilePath string,
 	elements []sharedtypes.CodeGenerationElement,
 	instancesReplacementDict map[string]string,
 	InstancesReplacementPriorityList []string,
 ) (checkedDependenciesMap map[string][]string, equivalencesMap map[string]map[string]string) {
 	// Read file from local path.
-	content, err := os.ReadFile(path)
+	content, err := os.ReadFile(dependenciesFilePath)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -1056,10 +1056,10 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 //   - @displayName: Store Examples in Vector Database
 //
 // Parameters:
-//   - elements: code generation examples.
+//   - examples: code generation examples.
 //   - examplesCollectionName: name of the collection.
 //   - batchSize: batch size for embeddings.
-func StoreExamplesInVectorDatabase(elements []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int) {
+func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 200
@@ -1124,7 +1124,7 @@ func StoreExamplesInVectorDatabase(elements []sharedtypes.CodeGenerationExample,
 
 	// Create the vector database objects.
 	vectorExamples := []codegeneration.VectorDatabaseExample{}
-	for _, element := range elements {
+	for _, element := range examples {
 		chunkGuids := make([]string, len(element.Chunks)) // Track GUIDs for all chunks in the current element
 
 		// Generate GUIDs for each chunk in advance.
@@ -1195,16 +1195,16 @@ func StoreExamplesInVectorDatabase(elements []sharedtypes.CodeGenerationExample,
 //   - @displayName: Store Examples in Graph Database
 //
 // Parameters:
-//   - elements: code generation examples.
-func StoreExamplesInGraphDatabase(elements []sharedtypes.CodeGenerationExample) {
+//   - examples: code generation examples.
+func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) {
 	// Initialize the graph database.
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddCodeGenerationExampleNodes(elements)
+	neo4j.Neo4j_Driver.AddCodeGenerationExampleNodes(examples)
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(elements)
+	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(examples)
 
 	return
 }
