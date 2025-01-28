@@ -720,7 +720,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement, elementsCollectionName string, batchSize int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
-		batchSize = 200
+		batchSize = 2
 	}
 
 	logging.Log.Infof(&logging.ContextMap{}, "Storing %v code generation elements in the vector database", len(elements))
@@ -1061,7 +1061,7 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
-		batchSize = 200
+		batchSize = 2
 	}
 
 	// Initialize the vector database.
@@ -1273,7 +1273,7 @@ func LoadUserGuideSections(paths []string) (sections []sharedtypes.CodeGeneratio
 func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
-		batchSize = 200
+		batchSize = 2
 	}
 
 	// Initialize the vector database.
