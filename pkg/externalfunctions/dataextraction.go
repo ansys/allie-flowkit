@@ -1033,7 +1033,6 @@ func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[str
 
 		// The name should be only the file name
 		fileName := filepath.Base(examplePath)
-		fmt.Println("Extracting example: ", fileName)
 
 		// Create the object
 		example := sharedtypes.CodeGenerationExample{
