@@ -73,6 +73,11 @@ func Initialize() (milvusClient client.Client, funcError error) {
 	return milvusClient, nil
 }
 
+// newClient creates a new Milvus client.
+//
+// Returns:
+//   - milvusClient: Milvus client.
+//   - error: Error if any issue occurs during creating the Milvus client.
 func newClient() (milvusClient client.Client, funcError error) {
 	defer func() {
 		r := recover()
@@ -123,7 +128,7 @@ func newClient() (milvusClient client.Client, funcError error) {
 	return nil, errors.New("unable to create Milvus client after maximum retries")
 }
 
-// listCollections
+// listCollections lists all collections in the Milvus DB.
 //
 // Parameters:
 //   - milvusClient: Milvus client.
@@ -404,8 +409,12 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.DataType = entity.FieldTypeVarChar
 		case "[]string":
 			fieldSchema.DataType = entity.FieldTypeArray
+			fieldSchema.ElementType = entity.FieldTypeVarChar
+			fieldSchema.TypeParams = map[string]string{"max_length": "40000", "max_capacity": "1000"}
 		case "bool":
 			fieldSchema.DataType = entity.FieldTypeBool
+		case "map[string]string":
+			fieldSchema.DataType = entity.FieldTypeJSON
 		case "[]float32":
 			fieldSchema.DataType = entity.FieldTypeFloatVector
 		case "map[uint]float32":
@@ -657,7 +666,7 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 }
 
 // // Returns nil if threshhold is not reached
-// func SearchMilvusCollection(request MilvusRequest, milvusClient client.Client) (response *MilvusSearchResponse, func_error error) {
+// func SearchMilvusCollection(request MilvusRequest, milvusClient client.Client, minScore float32, numResults int, denseVectorWeight float64, sparseVectorWeight float64) (response []client.SearchResult, func_error error) {
 // 	defer func() {
 // 		r := recover()
 // 		if r != nil {
@@ -668,7 +677,7 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 
 // 	sub_requests := []*client.ANNSearchRequest{}
 
-// 	// Define Sparse Vecot Search Request (if defined)
+// 	// Define Sparse Vector Search Request (if defined)
 // 	if request.SparseVector != nil {
 // 		positions := make([]uint32, 0, len(request.SparseVector))
 // 		values := make([]float32, 0, len(request.SparseVector))
@@ -694,7 +703,7 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 // 		sub_requests = append(sub_requests, sparse_search_request)
 // 	}
 
-// 	// Define Dense Vecot Search Request (if defined)
+// 	// Define Dense Vector Search Request (if defined)
 // 	if request.DenseVector != nil {
 // 		dense_vectors := []entity.Vector{entity.FloatVector(request.DenseVector)}
 // 		dense_search_params, err := entity.NewIndexFlatSearchParam()
@@ -702,66 +711,49 @@ func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimensi
 // 			logging.Log.Errorf(&logging.ContextMap{}, "failed to create search params %v", err.Error())
 // 			return nil, err
 // 		}
-// 		dense_vector_search_request := client.NewANNSearchRequest("dense_vector", entity.COSINE, filter_expression, dense_vectors, dense_search_params, 100)
+// 		dense_vector_search_request := client.NewANNSearchRequest("dense_vector", entity.COSINE, *request.Filter, dense_vectors, dense_search_params, 100)
 
 // 		sub_requests = append(sub_requests, dense_vector_search_request)
 // 	}
 
 // 	// create reranker
-// 	reranker_weights := []float64{0.5, 0.5}
+// 	reranker_weights := []float64{sparseVectorWeight, denseVectorWeight}
 // 	if request.SparseVector == nil || request.DenseVector == nil {
 // 		reranker_weights = []float64{1.0}
 // 	}
 // 	reranker := client.NewWeightedReranker(reranker_weights)
 
-// 	// construct search request
-// 	output_fields := []string{"document_id", "file_id", "text", "page_number", "html", "summary"}
-
 // 	opt := client.SearchQueryOptionFunc(func(option *client.SearchQueryOption) {
 // 		option.Offset = 0
 // 	})
 
-// 	search_result, err := milvusClient.HybridSearch(context.TODO(), request.ProjectId, []string{}, 300, output_fields, reranker, sub_requests, opt)
+// 	response, err := milvusClient.HybridSearch(context.TODO(), request.CollectionName, []string{}, numResults, request.OutputFields, reranker, sub_requests, opt)
 // 	if err != nil {
 // 		logging.Log.Errorf(&logging.ContextMap{}, "failed to search collection %v", err.Error())
 // 		return nil, err
 // 	}
 
-// 	documents := []*data_structs.Document{}
-// 	if len(search_result) > 0 {
+// 	return response, nil
+// }
 
-// 		qr := search_result[0]
-
-// 		// check whether threshold has been reached
-// 		final_position := -1
-// 		for position, result := range qr.Scores {
-// 			if result >= request.Threshold {
-// 				documents = append(documents, &data_structs.Document{
-// 					ProjectId:        request.ProjectId,
-// 					SimilarityResult: result,
-// 				})
-// 				final_position = position
-// 				continue
-// 			}
-// 			break
+// // Returns nil if threshhold is not reached
+// func QueryUserGuideByName(sectionName string, collectionName string, milvusClient client.Client, maxResults int) (response client.ResultSet, func_error error) {
+// 	defer func() {
+// 		r := recover()
+// 		if r != nil {
+// 			logging.Log.Errorf(&logging.ContextMap{}, "Panic occured in QueryUserGuideByName: %v", r)
+// 			func_error = r.(error)
 // 		}
+// 	}()
 
-// 		// exit if final_position == -1 as no value qualified
-// 		if final_position == -1 {
-// 			return nil, nil
-// 		}
+// 	filter := "section_name == '" + sectionName + "'"
+// 	outputFields := []string{"document_name", "section_name", "previous_chunk", "next_chunk", "text", "level", "parent_section_name", "guid"}
 
-// 		// create document for every result, filter by threshold right away
-// 		for _, field := range qr.Fields {
-// 			if field.Name == "guid" {
-// 				for i, document := range documents {
-// 					document.DocumentId = field.Values[i].(int64)
-// 				}
-// 			}
-// 		}
+// 	response, err := milvusClient.Query(context.TODO(), collectionName, nil, filter, outputFields)
+// 	if err != nil {
+// 		logging.Log.Errorf(&logging.ContextMap{}, "failed to search collection %v", err.Error())
+// 		return nil, err
 // 	}
 
-// 	return &SimilaritySearchResponse{
-// 		OrderedDocuments: documents,
-// 	}, nil
+// 	return response, nil
 // }

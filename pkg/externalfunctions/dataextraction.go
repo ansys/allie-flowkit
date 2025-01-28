@@ -1105,6 +1105,14 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 			Name: "text",
 			Type: "string",
 		},
+		{
+			Name: "dependencies",
+			Type: "[]string",
+		},
+		{
+			Name: "dependency_equivalences",
+			Type: "map[string]string",
+		},
 	}
 
 	schema, err := milvus.CreateCustomSchema(examplesCollectionName, schemaFields, "collection for code generation examples")
