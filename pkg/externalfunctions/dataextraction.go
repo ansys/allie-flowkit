@@ -5,12 +5,18 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/neo4j"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
@@ -541,4 +547,907 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	llmHandlerWaitGroup.Wait()
 
 	return returnedDocumentData
+}
+
+// LoadCodeGenerationElements loads code generation elements from an xml or json file.
+//
+// Tags:
+//   - @displayName: Load Code Generation Elements
+//
+// Parameters:
+//   - elementsFilePath: path to the file.
+//
+// Returns:
+//   - elements: code generation elements.
+func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes.CodeGenerationElement) {
+	// Read file from local path.
+	content, err := os.ReadFile(elementsFilePath)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Get the file extension.
+	fileExtension := filepath.Ext(elementsFilePath)
+
+	// Create object definition document.
+	objectDefinitionDoc := codegeneration.XMLObjectDefinitionDocument{}
+
+	switch fileExtension {
+	case ".xml":
+		// Unmarshal the XML content into the object definition document.
+		err = xml.Unmarshal([]byte(content), &objectDefinitionDoc)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+	case ".json":
+		// Unmarshal the JSON content into a list of assembly members.
+		err = json.Unmarshal(content, &objectDefinitionDoc.Members)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error unmarshalling object definition document: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+	default:
+		errMessage := fmt.Sprintf("Unknown file extension: %s", fileExtension)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	for _, objectDefinition := range objectDefinitionDoc.Members {
+		// If object name contains `` ignore it.
+		if strings.Contains(objectDefinition.Name, "``") {
+			continue
+		}
+
+		// Extract the prefix and name from the object definition.
+		prefix := strings.SplitN(objectDefinition.Name, ":", 2)[0]
+		name := ""
+		if parts := strings.SplitN(objectDefinition.Name, ":", 2); len(parts) > 1 {
+			name = parts[1]
+		}
+
+		// Create the code generation element.
+		element := sharedtypes.CodeGenerationElement{
+			Guid:              "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Name:              name,
+			Summary:           objectDefinition.Summary,
+			ReturnType:        objectDefinition.ReturnType,
+			Example:           objectDefinition.Example,
+			Parameters:        objectDefinition.Params,
+			Remarks:           objectDefinition.Remarks,
+			ReturnDescription: objectDefinition.Returns,
+		}
+
+		// Create a list with all the return types of the element.
+		element.ReturnElementList, err = codegeneration.CreateReturnListMechanical(objectDefinition.ReturnType)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error creating return element list: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		switch prefix {
+		case "M":
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Method)
+
+			// Extract dependencies for method.
+			dependencies := strings.Split(element.Name, "(")
+			dependencies = strings.Split(dependencies[0], ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		case "P":
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Parameter)
+
+			// Extract dependencies for parameter.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		case "F":
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Function)
+
+			// Extract dependencies for function.
+			dependencies := strings.Split(element.Name, "(")
+			dependencies = strings.Split(dependencies[0], ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		case "T":
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Class)
+
+			// Extract dependencies for class.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		case "E":
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Enum)
+
+			// Extract dependencies for enum.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+			// Extract enum values.
+			cleaned := strings.Trim(objectDefinition.EnumValues, "[]")
+			element.EnumValues = strings.Split(cleaned, ",")
+
+		case "MOD":
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Module)
+
+			// Extract dependencies for class.
+			dependencies := strings.Split(element.Name, ".")
+			dependencies = dependencies[:len(dependencies)-1]
+			element.Dependencies = dependencies
+
+		default:
+			errMessage := fmt.Sprintf("Unknown prefix: %s", prefix)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// Get name pseudocode and formatted name.
+		element.NamePseudocode, element.NameFormatted, err = codegeneration.ProcessElementName(element.Name, element.Dependencies)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error processing element name: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		elements = append(elements, element)
+	}
+
+	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v code generation elements from file: %s", len(elements), elementsFilePath)
+
+	return elements
+}
+
+// StoreElementsInVectorDatabase stores elements in the vector database.
+//
+// Tags:
+//   - @displayName: Store Elements in Vector Database
+//
+// Parameters:
+//   - elements: code generation elements.
+//   - elementsCollectionName: name of the collection.
+//   - batchSize: batch size for embeddings.
+func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement, elementsCollectionName string, batchSize int) {
+	// Set default batch size if not provided.
+	if batchSize <= 0 {
+		batchSize = 2
+	}
+
+	logging.Log.Infof(&logging.ContextMap{}, "Storing %v code generation elements in the vector database", len(elements))
+
+	// Generate dense and sparse embeddings
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error generating embeddings for elements: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Create the vector database objects.
+	vectorElements := []codegeneration.VectorDatabaseElement{}
+	for i, element := range elements {
+		// Create a new vector database object.
+		vectorElement := codegeneration.VectorDatabaseElement{
+			Guid:           element.Guid,
+			DenseVector:    denseEmbeddings[i],
+			SparseVector:   sparseEmbeddings[i],
+			Name:           element.Name,
+			NamePseudocode: element.NamePseudocode,
+			NameFormatted:  element.NameFormatted,
+			Type:           string(element.Type),
+			ParentClass:    strings.Join(element.Dependencies, "."),
+		}
+
+		// Add the new vector database object to the list.
+		vectorElements = append(vectorElements, vectorElement)
+	}
+
+	// Initialize the vector database.
+	milvusClient, err := milvus.Initialize()
+	if err != nil {
+		errMessage := fmt.Sprintf("Error initializing the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Create the schema for this collection
+	schemaFields := []milvus.SchemaField{
+		{
+			Name: "guid",
+			Type: "string",
+		},
+		{
+			Name:      "dense_vector",
+			Type:      "[]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name:      "sparse_vector",
+			Type:      "map[uint]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name: "type",
+			Type: "string",
+		},
+		{
+			Name: "name",
+			Type: "string",
+		},
+		{
+			Name: "name_pseudocode",
+			Type: "string",
+		},
+		{
+			Name: "name_formatted",
+			Type: "string",
+		},
+		{
+			Name: "parent_class",
+			Type: "string",
+		},
+	}
+
+	schema, err := milvus.CreateCustomSchema(elementsCollectionName, schemaFields, "collection for code generation elements")
+	if err != nil {
+		errMessage := fmt.Sprintf("Error creating the schema for the collection: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Create the collection.
+	err = milvus.CreateCollection(schema, milvusClient)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error creating the collection: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	elementsAsInterface := make([]interface{}, len(vectorElements))
+	for i, v := range vectorElements {
+		elementsAsInterface[i] = v
+	}
+
+	// Insert the elements into the vector database.
+	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	return
+}
+
+// StoreElementsInGraphDatabase stores elements in the graph database.
+//
+// Tags:
+//   - @displayName: Store Elements in Graph Database
+//
+// Parameters:
+//   - elements: code generation elements.
+func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) {
+	// Initialize the graph database.
+	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+
+	// Add the elements to the graph database.
+	neo4j.Neo4j_Driver.AddCodeGenerationElementNodes(elements)
+
+	// Add the dependencies to the graph database.
+	neo4j.Neo4j_Driver.CreateCodeGenerationRelationships(elements)
+
+	return
+}
+
+// LoadAndCheckExampleDependencies loads and checks the dependencies of the examples.
+//
+// Tags:
+//   - @displayName: Load and Check Example Dependencies
+//
+// Parameters:
+//   - dependenciesFilePath: path to the file.
+//   - elements: code generation elements.
+//
+// Returns:
+//   - checkedDependenciesMap: checked dependencies.
+//   - equivalencesMap: equivalences.
+func LoadAndCheckExampleDependencies(
+	dependenciesFilePath string,
+	elements []sharedtypes.CodeGenerationElement,
+	instancesReplacementDict map[string]string,
+	InstancesReplacementPriorityList []string,
+) (checkedDependenciesMap map[string][]string, equivalencesMap map[string]map[string]string) {
+	// Read file from local path.
+	content, err := os.ReadFile(dependenciesFilePath)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Unmarshal the JSON content into the dependencies map.
+	var dependenciesMap map[string][]string
+	err = json.Unmarshal(content, &dependenciesMap)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error unmarshalling dependencies: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Initialize maps.
+	checkedDependenciesMap = make(map[string][]string)
+	equivalencesMap = make(map[string]map[string]string)
+
+	// Function to replace ExtAPI dependencies.
+	replaceExtAPI := func(dependencies []string) ([]string, map[string]string) {
+		updatedDependencies := make([]string, 0, len(dependencies))
+		equivalences := make(map[string]string)
+		for _, dependency := range dependencies {
+			original := dependency
+			for _, key := range InstancesReplacementPriorityList { // Iterate over keys in the desired priority order
+				value := instancesReplacementDict[key]
+				if strings.HasPrefix(dependency, key) {
+					dependency = strings.Replace(dependency, key, value, 1) // Replace only the prefix
+					break                                                   // Stop after the first match since keys are prefixes
+				}
+			}
+			if original != dependency {
+				equivalences[dependency] = original
+			}
+			updatedDependencies = append(updatedDependencies, dependency)
+		}
+		return updatedDependencies, equivalences
+	}
+
+	// Process dependencies.
+	for key, dependencies := range dependenciesMap {
+		updatedDependencies, equivalences := replaceExtAPI(dependencies)
+
+		// Filter checked dependencies and populate the equivalences map accordingly.
+		checkedDependencies := []string{}
+		checkedEquivalences := make(map[string]string)
+		for _, dependency := range updatedDependencies {
+			matchFound := false
+
+			// Check if the exact dependency exists in functions.
+			for _, function := range elements {
+				functionNameNoParams := strings.Split(function.Name, "(")[0]
+				if functionNameNoParams == dependency {
+					checkedDependencies = append(checkedDependencies, function.Name)
+					if original, ok := equivalences[dependency]; ok {
+						checkedEquivalences[dependency] = original
+					}
+					matchFound = true
+					break
+				}
+			}
+
+			// If no match, check for dependency without the last `.whatever` part.
+			if !matchFound {
+				lastDotIndex := strings.LastIndex(dependency, ".")
+				if lastDotIndex != -1 {
+					truncatedDependency := dependency[:lastDotIndex]
+					for _, function := range elements {
+						functionNameNoParams := strings.Split(function.Name, "(")[0]
+						if functionNameNoParams == truncatedDependency {
+							// Update dependency and equivalences.
+							checkedDependencies = append(checkedDependencies, function.Name)
+							if original, ok := equivalences[dependency]; ok {
+								checkedEquivalences[truncatedDependency] = original[:strings.LastIndex(original, ".")]
+							}
+							matchFound = true
+							break
+						}
+					}
+				}
+			}
+
+			// If still no match, dependency remains unvalidated.
+			if !matchFound {
+				continue
+			}
+		}
+
+		checkedDependenciesMap[key] = checkedDependencies
+		equivalencesMap[key] = checkedEquivalences
+	}
+
+	// Final Step: Remove duplicates from both maps.
+	deduplicate := func(slice []string) []string {
+		unique := make(map[string]bool)
+		result := []string{}
+		for _, item := range slice {
+			if !unique[item] {
+				unique[item] = true
+				result = append(result, item)
+			}
+		}
+		return result
+	}
+
+	for key := range checkedDependenciesMap {
+		checkedDependenciesMap[key] = deduplicate(checkedDependenciesMap[key])
+	}
+
+	for key, equivalences := range equivalencesMap {
+		uniqueEquivalences := make(map[string]string)
+		seen := make(map[string]bool)
+		for newDep, original := range equivalences {
+			if !seen[newDep] {
+				seen[newDep] = true
+				uniqueEquivalences[newDep] = original
+			}
+		}
+		equivalencesMap[key] = uniqueEquivalences
+	}
+
+	return checkedDependenciesMap, equivalencesMap
+}
+
+// LoadCodeGenerationExamples loads code generation examples from the provided paths.
+//
+// Tags:
+//   - @displayName: Load Code Generation Examples
+//
+// Parameters:
+//   - examplesToExtract: paths to the examples.
+//   - dependencies: dependencies of the examples.
+//   - equivalencesMap: equivalences of the examples.
+//   - chunkSize: size of the chunks.
+//   - chunkOverlap: overlap of the chunks.
+//
+// Returns:
+//   - examples: code generation examples.
+func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[string][]string, equivalencesMap map[string]map[string]string, chunkSize int, chunkOverlap int) (examples []sharedtypes.CodeGenerationExample) {
+	// Initialize the examples slice.
+	examples = []sharedtypes.CodeGenerationExample{}
+
+	// Load the examples from the provided paths.
+	for _, examplePath := range examplesToExtract {
+		// Read file from local path.
+		content, err := os.ReadFile(examplePath)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// Create the chunks for the current element.
+		chunks, err := dataExtractionTextSplitter(string(content), chunkSize, chunkOverlap)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// The name should be only the file name
+		fileName := filepath.Base(examplePath)
+
+		// Create the object
+		example := sharedtypes.CodeGenerationExample{
+			Chunks:                 chunks,
+			Name:                   fileName,
+			Dependencies:           dependencies[fileName],
+			DependencyEquivalences: equivalencesMap[fileName],
+		}
+
+		// Add the example to the examples slice.
+		examples = append(examples, example)
+	}
+
+	return examples
+}
+
+// StoreExamplesInVectorDatabase stores examples in the vector database.
+//
+// Tags:
+//   - @displayName: Store Examples in Vector Database
+//
+// Parameters:
+//   - examples: code generation examples.
+//   - examplesCollectionName: name of the collection.
+//   - batchSize: batch size for embeddings.
+func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int) {
+	// Set default batch size if not provided.
+	if batchSize <= 0 {
+		batchSize = 2
+	}
+
+	// Initialize the vector database.
+	milvusClient, err := milvus.Initialize()
+	if err != nil {
+		errMessage := "error initializing the vector database"
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
+	}
+
+	// Create the schema for this collection
+	schemaFields := []milvus.SchemaField{
+		{
+			Name: "guid",
+			Type: "string",
+		},
+		{
+			Name: "document_name",
+			Type: "string",
+		},
+		{
+			Name: "previous_chunk",
+			Type: "string",
+		},
+		{
+			Name: "next_chunk",
+			Type: "string",
+		},
+		{
+			Name:      "dense_vector",
+			Type:      "[]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name:      "sparse_vector",
+			Type:      "map[uint]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name: "text",
+			Type: "string",
+		},
+		{
+			Name: "dependencies",
+			Type: "[]string",
+		},
+		{
+			Name: "dependency_equivalences",
+			Type: "map[string]string",
+		},
+	}
+
+	schema, err := milvus.CreateCustomSchema(examplesCollectionName, schemaFields, "collection for code generation examples")
+	if err != nil {
+		errMessage := "error creating the schema for the collection"
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
+	}
+
+	// Create the collection.
+	err = milvus.CreateCollection(schema, milvusClient)
+	if err != nil {
+		errMessage := "error creating the collection"
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
+	}
+
+	// Create the vector database objects.
+	vectorExamples := []codegeneration.VectorDatabaseExample{}
+	for _, element := range examples {
+		chunkGuids := make([]string, len(element.Chunks)) // Track GUIDs for all chunks in the current element
+
+		// Generate GUIDs for each chunk in advance.
+		for j := 0; j < len(element.Chunks); j++ {
+			guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
+			chunkGuids[j] = guid
+		}
+
+		// Create vector database objects and assign PreviousChunk and NextChunk.
+		for j := 0; j < len(element.Chunks); j++ {
+			vectorExample := codegeneration.VectorDatabaseExample{
+				Guid:                   chunkGuids[j], // Current chunk's GUID
+				DocumentName:           element.Name,
+				PreviousChunk:          "", // Default empty
+				NextChunk:              "", // Default empty
+				Dependencies:           element.Dependencies,
+				DependencyEquivalences: element.DependencyEquivalences,
+				Text:                   element.Chunks[j],
+			}
+
+			// Assign PreviousChunk and NextChunk GUIDs.
+			if j > 0 {
+				vectorExample.PreviousChunk = chunkGuids[j-1]
+			}
+			if j < len(element.Chunks)-1 {
+				vectorExample.NextChunk = chunkGuids[j+1]
+			}
+
+			// Add the new vector database object to the list.
+			vectorExamples = append(vectorExamples, vectorExample)
+		}
+	}
+
+	// Generate dense and sparse embeddings
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForExamples(vectorExamples, batchSize)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error generating embeddings for examples: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// Assign embeddings to the vector database objects.
+	for i := range vectorExamples {
+		vectorExamples[i].DenseVector = denseEmbeddings[i]
+		vectorExamples[i].SparseVector = sparseEmbeddings[i]
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	elementsAsInterface := make([]interface{}, len(vectorExamples))
+	for i, v := range vectorExamples {
+		elementsAsInterface[i] = v
+	}
+
+	// Insert the elements into the vector database.
+	err = milvus.InsertData(examplesCollectionName, elementsAsInterface)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	return
+}
+
+// StoreExamplesInGraphDatabase stores examples in the graph database.
+//
+// Tags:
+//   - @displayName: Store Examples in Graph Database
+//
+// Parameters:
+//   - examples: code generation examples.
+func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) {
+	// Initialize the graph database.
+	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+
+	// Add the elements to the graph database.
+	neo4j.Neo4j_Driver.AddCodeGenerationExampleNodes(examples)
+
+	// Add the dependencies to the graph database.
+	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(examples)
+
+	return
+}
+
+// LoadUserGuideSections loads user guide sections from the provided paths.
+//
+// Tags:
+//   - @displayName: Load User Guide Sections
+//
+// Parameters:
+//   - paths: paths to the sections.
+//
+// Returns:
+//   - sections: user guide sections.
+func LoadUserGuideSections(paths []string) (sections []sharedtypes.CodeGenerationUserGuideSection) {
+	// Initialize the sections.
+	sections = []sharedtypes.CodeGenerationUserGuideSection{}
+
+	for _, path := range paths {
+		// Read file from local path.
+		content, err := os.ReadFile(path)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// Initialize the sections.
+		newSections := []sharedtypes.CodeGenerationUserGuideSection{}
+
+		// Unmarshal the JSON content into the sections.
+		err = json.Unmarshal(content, &newSections)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error unmarshalling user guide sections: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// Add the new sections to the sections.
+		sections = append(sections, newSections...)
+	}
+
+	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v user guide sections \n", len(sections))
+
+	return sections
+}
+
+// StoreUserGuideSectionsInVectorDatabase stores user guide sections in the vector database.
+//
+// Tags:
+//   - @displayName: Store User Guide Sections in Vector Database
+//
+// Parameters:
+//   - sections: user guide sections.
+//   - userGuideCollectionName: name of the collection.
+//   - batchSize: batch size for embeddings.
+//   - chunkSize: size of the chunks.
+//   - chunkOverlap: overlap of the chunks.
+func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int) {
+	// Set default batch size if not provided.
+	if batchSize <= 0 {
+		batchSize = 2
+	}
+
+	// Initialize the vector database.
+	milvusClient, err := milvus.Initialize()
+	if err != nil {
+		errMessage := "error initializing the vector database"
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
+	}
+
+	// Create the schema for this collection
+	schemaFields := []milvus.SchemaField{
+		{
+			Name: "guid",
+			Type: "string",
+		},
+		{
+			Name: "section_name",
+			Type: "string",
+		},
+		{
+			Name: "level",
+			Type: "string",
+		},
+		{
+			Name: "document_name",
+			Type: "string",
+		},
+		{
+			Name: "parent_section_name",
+			Type: "string",
+		},
+		{
+			Name: "previous_chunk",
+			Type: "string",
+		},
+		{
+			Name: "next_chunk",
+			Type: "string",
+		},
+		{
+			Name:      "dense_vector",
+			Type:      "[]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name:      "sparse_vector",
+			Type:      "map[uint]float32",
+			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+		},
+		{
+			Name: "text",
+			Type: "string",
+		},
+	}
+
+	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation examples")
+	if err != nil {
+		errMessage := "error creating the schema for the collection"
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
+	}
+
+	// Create the collection.
+	err = milvus.CreateCollection(schema, milvusClient)
+	if err != nil {
+		errMessage := "error creating the collection"
+		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
+		panic(fmt.Errorf("%s: %v", errMessage, err))
+	}
+
+	// Create the vector database objects.
+	vectorUserGuideSectionChunks := []codegeneration.VectorDatabaseUserGuideSection{}
+	for _, section := range sections {
+		// Create the chunks for the current element.
+		chunks, err := dataExtractionTextSplitter(section.Content, chunkSize, chunkOverlap)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error splitting text into chunks: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+		section.Chunks = chunks
+
+		chunkGuids := make([]string, len(section.Chunks)) // Track GUIDs for all chunks in the current element
+
+		// Generate GUIDs for each chunk in advance.
+		for j := 0; j < len(section.Chunks); j++ {
+			guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
+			chunkGuids[j] = guid
+		}
+
+		// Create vector database objects and assign PreviousChunk and NextChunk.
+		for j := 0; j < len(section.Chunks); j++ {
+			vectorUserGuideSectionChunk := codegeneration.VectorDatabaseUserGuideSection{
+				Guid:              chunkGuids[j], // Current chunk's GUID
+				SectionName:       section.Name,
+				DocumentName:      section.DocumentName,
+				ParentSectionName: section.Parent,
+				Level:             section.Level,
+				PreviousChunk:     "", // Default empty
+				NextChunk:         "", // Default empty
+				Text:              section.Chunks[j],
+			}
+
+			// Assign PreviousChunk and NextChunk GUIDs.
+			if j > 0 {
+				vectorUserGuideSectionChunk.PreviousChunk = chunkGuids[j-1]
+			}
+			if j < len(section.Chunks)-1 {
+				vectorUserGuideSectionChunk.NextChunk = chunkGuids[j+1]
+			}
+
+			// Add the new vector database object to the list.
+			vectorUserGuideSectionChunks = append(vectorUserGuideSectionChunks, vectorUserGuideSectionChunk)
+		}
+	}
+
+	// Generate dense and sparse embeddings
+	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(vectorUserGuideSectionChunks, batchSize)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error generating embeddings for user guide sections: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
+	// for i := range dummyDenseVector {
+	// 	dummyDenseVector[i] = 0.5
+	// }
+
+	// dummySparseVector := make(map[uint]float32)
+	// for i := 0; i < config.GlobalConfig.EMBEDDINGS_DIMENSIONS; i++ {
+	// 	dummySparseVector[uint(i)] = 0.5
+	// }
+
+	// Assign embeddings to the vector database objects.
+	for i := range vectorUserGuideSectionChunks {
+		vectorUserGuideSectionChunks[i].DenseVector = denseEmbeddings[i]
+		vectorUserGuideSectionChunks[i].SparseVector = sparseEmbeddings[i]
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	elementsAsInterface := make([]interface{}, len(vectorUserGuideSectionChunks))
+	for i, v := range vectorUserGuideSectionChunks {
+		elementsAsInterface[i] = v
+	}
+
+	// Insert the elements into the vector database.
+	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	return
+}
+
+// StoreUserGuideSectionsInGraphDatabase stores user guide sections in the graph database.
+//
+// Tags:
+//   - @displayName: Store User Guide Sections in Graph Database
+//
+// Parameters:
+//   - elements: user guide sections.
+func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection) {
+	// Initialize the graph database.
+	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+
+	// Add the elements to the graph database.
+	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections)
+
+	// Add the dependencies to the graph database.
+	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections)
+
+	return
 }
