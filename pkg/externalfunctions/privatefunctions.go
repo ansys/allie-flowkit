@@ -1949,7 +1949,7 @@ func openAiTokenCount(modelName string, message string) (int, error) {
 //
 // Returns:
 //   - error: an error if any
-func codeGenerationProcessBatchEmbeddings(elements []codegeneration.CodeGenerationElement, maxBatchSize int) (elementEmbeddings [][]float32, err error) {
+func codeGenerationProcessBatchEmbeddings(elements []sharedtypes.CodeGenerationElement, maxBatchSize int) (elementEmbeddings [][]float32, err error) {
 	// Process data in batches
 	for i := 0; i < len(elements); i += maxBatchSize {
 		end := i + maxBatchSize

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 )
 
 // RemoveEmptyLines removes empty lines from a string
@@ -113,18 +115,18 @@ func ProcessElementName(fullName string, dependencies []string) (namePseudocode 
 // Returns:
 //   - the CodeGenerationType value
 //   - an error if the string is invalid
-func StringToCodeGenerationType(nodeTypeString string) (CodeGenerationType, error) {
+func StringToCodeGenerationType(nodeTypeString string) (sharedtypes.CodeGenerationType, error) {
 	switch nodeTypeString {
 	case "Function":
-		return Function, nil
+		return sharedtypes.Function, nil
 	case "Class":
-		return Class, nil
+		return sharedtypes.Class, nil
 	case "Method":
-		return Method, nil
+		return sharedtypes.Method, nil
 	case "Enum":
-		return Enum, nil
+		return sharedtypes.Enum, nil
 	case "Module":
-		return Module, nil
+		return sharedtypes.Module, nil
 	default:
 		return "", fmt.Errorf("invalid node type: %s", nodeTypeString)
 	}

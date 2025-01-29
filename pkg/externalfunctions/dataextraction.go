@@ -633,7 +633,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 
 		switch prefix {
 		case "M":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Method)
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Method)
 
 			// Extract dependencies for method.
 			dependencies := strings.Split(element.Name, "(")
@@ -642,7 +642,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 			element.Dependencies = dependencies
 
 		case "P":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Parameter)
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Parameter)
 
 			// Extract dependencies for parameter.
 			dependencies := strings.Split(element.Name, ".")
@@ -650,7 +650,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 			element.Dependencies = dependencies
 
 		case "F":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Function)
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Function)
 
 			// Extract dependencies for function.
 			dependencies := strings.Split(element.Name, "(")
@@ -659,7 +659,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 			element.Dependencies = dependencies
 
 		case "T":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Class)
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Class)
 
 			// Extract dependencies for class.
 			dependencies := strings.Split(element.Name, ".")
@@ -667,7 +667,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 			element.Dependencies = dependencies
 
 		case "E":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Enum)
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Enum)
 
 			// Extract dependencies for enum.
 			dependencies := strings.Split(element.Name, ".")
@@ -679,7 +679,7 @@ func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes
 			element.EnumValues = strings.Split(cleaned, ",")
 
 		case "MOD":
-			element.Type = sharedtypes.CodeGenerationType(codegeneration.Module)
+			element.Type = sharedtypes.CodeGenerationType(sharedtypes.Module)
 
 			// Extract dependencies for class.
 			dependencies := strings.Split(element.Name, ".")

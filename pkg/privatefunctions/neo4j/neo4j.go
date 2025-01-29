@@ -705,7 +705,7 @@ func (neo4j_context *neo4j_Context) GetExamplesFromCodeGenerationElement(element
 // Returns:
 //   - elements: List of code generation elements.
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elementName string, maxHops int) (elements []codegeneration.CodeGenerationElement, funcError error) {
+func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elementName string, maxHops int) (elements []sharedtypes.CodeGenerationElement, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -720,7 +720,7 @@ func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elem
 	session := (*neo4j_context.driver).NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer session.Close(db_ctx)
 
-	elements = []codegeneration.CodeGenerationElement{}
+	elements = []sharedtypes.CodeGenerationElement{}
 
 	// Execute query
 	_, err := session.ExecuteRead(db_ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -761,7 +761,7 @@ func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elem
 			}
 
 			// Build CodeGenerationElement
-			element := codegeneration.CodeGenerationElement{
+			element := sharedtypes.CodeGenerationElement{
 				Name:           getStringProp(node.Props, "Name"),
 				NamePseudocode: getStringProp(node.Props, "namePseudocode"),
 				NameFormatted:  getStringProp(node.Props, "nameFormatted"),
@@ -771,7 +771,7 @@ func (neo4j_context *neo4j_Context) GetCodeGenerationElementAndDependencies(elem
 
 			if len(nodeType.([]interface{})) > 0 {
 				nodeTypeString := nodeType.([]interface{})[0].(string)
-				var nodeTypeEnum codegeneration.CodeGenerationType
+				var nodeTypeEnum sharedtypes.CodeGenerationType
 
 				nodeTypeEnum, err = codegeneration.StringToCodeGenerationType(nodeTypeString)
 				if err != nil {
