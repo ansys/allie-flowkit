@@ -896,7 +896,7 @@ func getFieldsAndReturnProperties(indexName string) (searchedEmbeddedFields stri
 	case "external-crtech-thermal-desktop":
 		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
 		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, bridge_id, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
-	case "external-product-documentation-public", "external-learning-hub", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub":
+	case "external-product-documentation-public", "external-product-documentation-public-25r1", "external-learning-hub", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub":
 		searchedEmbeddedFields = "contentVector, sourceTitle_lvl1_vctr, sourceTitle_lvl2_vctr, sourceTitle_lvl3_vctr"
 		returnedProperties = "token_size, physics, typeOFasset, product, version, weight, content, sourceTitle_lvl2, sourceURL_lvl2, sourceTitle_lvl3, sourceURL_lvl3"
 	case "scbu-data-except-alh":
@@ -983,7 +983,7 @@ func extractAndConvertACSResponse(body []byte, indexName string) (output []share
 			})
 		}
 
-	case "external-product-documentation-public", "external-learning-hub", "external-crtech-thermal-desktop", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub", "scbu-data-except-alh":
+	case "external-product-documentation-public", "external-product-documentation-public-25r1", "external-learning-hub", "external-crtech-thermal-desktop", "external-release-notes", "external-zemax-websites", "external-scbu-learning-hub", "scbu-data-except-alh":
 		respObjectCrtech := ACSSearchResponseStructCrtech{}
 		err := json.Unmarshal(body, &respObjectCrtech)
 		if err != nil {

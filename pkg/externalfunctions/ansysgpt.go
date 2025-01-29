@@ -581,15 +581,15 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 //
 // Returns:
 //   - indexList: the index list
-func AisReturnIndexList(accessPoint string, physics []string) (indexList []string) {
+func AisReturnIndexList(accessPoint string, physics []string, version []string) (indexList []string) {
 	indexList = []string{}
 
 	switch accessPoint {
 	case "ansysgpt-general", "ais-embedded":
-		if len(physics) == 1 && physics[0] == "scade" {
+		switch {
+		case len(physics) == 1 && physics[0] == "scade":
 			// special case for Scade One
-			indexList = append(indexList, "external-product-documentation-public")
-		} else {
+		default:
 			// default ais case
 			indexList = append(indexList,
 				"granular-ansysgpt",
@@ -597,13 +597,23 @@ func AisReturnIndexList(accessPoint string, physics []string) (indexList []strin
 				"lsdyna-documentation-r14",
 				"scade-documentation-2023r2",
 				"external-marketing",
-				"external-product-documentation-public",
 				"external-learning-hub",
 				"external-crtech-thermal-desktop",
 				"external-release-notes",
 				"external-zemax-websites",
 			)
 		}
+
+		// if version is only 25r1, add only the 25r1 index, otherwise add both
+		if len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1") {
+			indexList = append(indexList, "external-product-documentation-public-25r1")
+		} else {
+			indexList = append(indexList,
+				"external-product-documentation-public",
+				"external-product-documentation-public-25r1",
+			)
+		}
+
 	case "ansysgpt-scbu":
 		indexList = append(indexList,
 			"ansysgpt-scbu",
