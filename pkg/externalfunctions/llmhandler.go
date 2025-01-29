@@ -25,7 +25,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, false, nil)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -84,7 +84,7 @@ func PerformVectorEmbeddingRequestWithTokenLimitCatch(input string, tokenLimitMe
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, false, nil)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -146,7 +146,7 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, false, nil)
 
 	// Process the first response and close the channel
 	embedding32Array := make([][]float32, len(input))

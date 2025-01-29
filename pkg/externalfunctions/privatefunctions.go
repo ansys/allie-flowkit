@@ -13,17 +13,22 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/tiktoken-go/tokenizer"
+	"github.com/tmc/langchaingo/documentloaders"
+	"github.com/tmc/langchaingo/schema"
+	"github.com/tmc/langchaingo/textsplitter"
 	"golang.org/x/oauth2"
 	"nhooyr.io/websocket"
 )
@@ -237,7 +242,7 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 	go listener(c, responseChannel)
 	go writer(c, requestChannelChat, responseChannel)
 
-	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options, images)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", false, history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options, images)
 
 	return responseChannel // Return the response channel
 }
@@ -250,7 +255,7 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
-func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, modelIds []string) chan sharedtypes.HandlerResponse {
+func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, getSparseEmbeddings bool, modelIds []string) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelEmbeddings := make(chan []byte, 400)
 	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
@@ -260,7 +265,7 @@ func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, modelIds
 	go listener(c, responseChannel)
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
-	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", nil, 0, "", responseChannel, modelIds, nil, nil)
+	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", getSparseEmbeddings, nil, 0, "", responseChannel, modelIds, nil, nil)
 	return responseChannel // Return the response channel
 }
 
@@ -382,6 +387,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 				case "info":
 					logging.Log.Infof(&logging.ContextMap{}, "Info %v: %v\n", response.InstructionGuid, *response.InfoMessage)
 					stopListener = false
+					continue
 				default:
 					logging.Log.Warn(&logging.ContextMap{}, "Response with unsupported value for 'Type' property received from allie-llm. Ignoring...")
 				}
@@ -440,12 +446,15 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions, images []string) {
+func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, getSparseEmbeddings bool, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions, images []string) {
 	request := sharedtypes.HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
 		Data:            data,
 		Images:          images,
+		EmbeddingOptions: sharedtypes.EmbeddingOptions{
+			ReturnSparse: &getSparseEmbeddings,
+		},
 	}
 
 	// check for modelId
@@ -1456,7 +1465,7 @@ func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, ma
 		}
 
 		// Perform vector embedding request to LLM handler
-		batchEmbeddings, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed)
+		batchEmbeddings, _, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, false)
 		if err != nil {
 			return fmt.Errorf("failed to perform vector embedding request: %w", err)
 		}
@@ -1478,19 +1487,20 @@ func dataExtractionProcessBatchEmbeddings(documentData []*sharedtypes.DbData, ma
 // Returns:
 //   - embeddedVector: the embedded vectors.
 //   - error: an error if any.
-func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors [][]float32, err error) {
+func llmHandlerPerformVectorEmbeddingRequest(input []string, sparse bool) (embeddedVectors [][]float32, sparseEmbeddings []map[uint]float32, err error) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
 	// Set up WebSocket connection with LLM and send embeddings request.
-	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, nil)
+	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, sparse, nil)
 
 	// Process the first response and close the channel.
 	embeddedVectors = make([][]float32, len(input))
+	sparseEmbeddings = make([]map[uint]float32, len(input))
 	for response := range responseChannel {
 		// Check if the response is an error.
 		if response.Type == "error" {
-			return nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+			return nil, nil, fmt.Errorf("error in vector embedding request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
 		}
 
 		// Check if the response is an info message.
@@ -1502,18 +1512,59 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors []
 		// Get embedded vector array
 		interfaceArray, ok := response.EmbeddedData.([]interface{})
 		if !ok {
-			return nil, fmt.Errorf("error converting embedded data to interface array")
+			return nil, nil, fmt.Errorf("error converting embedded data to interface array")
 		}
 		for i, interfaceArrayElement := range interfaceArray {
 			lowerInterfaceArray, ok := interfaceArrayElement.([]interface{})
 			if !ok {
-				return nil, fmt.Errorf("error converting embedded data to interface array")
+				return nil, nil, fmt.Errorf("error converting embedded data to interface array")
 			}
 			embedding32, err := convertToFloat32Slice(lowerInterfaceArray)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			embeddedVectors[i] = embedding32
+		}
+
+		// If sparse embeddings are requested, get the sparse embeddings.
+		if sparse {
+			// Assert that response.LexicalWeights is []interface{}
+			lexicalWeights, ok := response.LexicalWeights.([]interface{})
+			if !ok {
+				return nil, nil, fmt.Errorf("error converting lexical weights to []interface{}, got %T", response.LexicalWeights)
+			}
+
+			// Convert []interface{} to []map[uint]float32
+			sparseEmbeddings = make([]map[uint]float32, len(lexicalWeights))
+			for i, lw := range lexicalWeights {
+				// Assert each element is map[string]interface{}
+				rawMap, ok := lw.(map[string]interface{})
+				if !ok {
+					return nil, nil, fmt.Errorf("error converting lexical weight to map[string]interface{}, got %T", lw)
+				}
+
+				// Convert map[string]interface{} to map[uint]float32
+				convertedMap := make(map[uint]float32)
+				for key, value := range rawMap {
+					// Convert key from string to uint
+					keyUint, err := strconv.ParseUint(key, 10, 32)
+					if err != nil {
+						return nil, nil, fmt.Errorf("error converting key to uint, got %v", key)
+					}
+
+					// Assert value is float64 (common type for numbers in JSON)
+					floatValue, ok := value.(float64)
+					if !ok {
+						return nil, nil, fmt.Errorf("error converting value to float64, got %T", value)
+					}
+
+					// Convert float64 to float32
+					convertedMap[uint(keyUint)] = float32(floatValue)
+				}
+
+				// Add converted map to sparseEmbeddings
+				sparseEmbeddings[i] = convertedMap
+			}
 		}
 
 		// Mark that the first response has been received.
@@ -1528,7 +1579,7 @@ func llmHandlerPerformVectorEmbeddingRequest(input []string) (embeddedVectors []
 	// Close the response channel
 	close(responseChannel)
 
-	return embeddedVectors, nil
+	return embeddedVectors, sparseEmbeddings, nil
 }
 
 // llmHandlerPerformSummaryRequest performs a summary request to LLM Handler.
@@ -1609,6 +1660,11 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		// Check if the response is an error.
 		if response.Type == "error" {
 			return "", nil, fmt.Errorf("error in general llm request %v: %v (%v)", response.InstructionGuid, response.Error.Code, response.Error.Message)
+		}
+
+		if response.Type == "info" {
+			logging.Log.Infof(&logging.ContextMap{}, "Received info message for general llm request: %v: %v", response.InstructionGuid, response.InfoMessage)
+			continue
 		}
 
 		// Accumulate the responses.
@@ -1883,4 +1939,252 @@ func openAiTokenCount(modelName string, message string) (int, error) {
 
 	// Return the number of tokens
 	return len(tokens), nil
+}
+
+// codeGenerationProcessBatchEmbeddings processes the data extraction batch embeddings.
+//
+// Parameters:
+//   - documentData: the document data.
+//   - maxBatchSize: the max batch size.
+//
+// Returns:
+//   - error: an error if any
+func codeGenerationProcessBatchEmbeddings(elements []sharedtypes.CodeGenerationElement, maxBatchSize int) (elementEmbeddings [][]float32, err error) {
+	// Process data in batches
+	for i := 0; i < len(elements); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(elements) {
+			end = len(elements)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := elements[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = "Name: " + data.Name + "\nDescription: " + data.Description
+		}
+
+		// Perform vector embedding request to LLM handler
+		batchEmbeddings, _, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, false)
+		if err != nil {
+			return nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		elementEmbeddings = append(elementEmbeddings, batchEmbeddings...)
+	}
+
+	logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", len(elements))
+
+	return elementEmbeddings, nil
+}
+
+// codeGenerationProcessHybridSearchEmbeddings processes the data extraction batch embeddings.
+//
+// Parameters:
+//   - elements: the elements.
+//   - maxBatchSize: the max batch size.
+//
+// Returns:
+//   - error: an error if any
+func codeGenerationProcessHybridSearchEmbeddings(elements []sharedtypes.CodeGenerationElement, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+	processedEmbeddings := 0
+
+	// Process data in batches
+	for i := 0; i < len(elements); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(elements) {
+			end = len(elements)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := elements[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.NameFormatted + "\n" + data.NamePseudocode + "\n" + data.Summary + "\n" + strings.Join(data.Dependencies, " ") + "\n" + strings.Join(data.Dependencies, ".")
+		}
+
+		// Send http request
+		batchDenseEmbeddings, batchLexicalWeights, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, true)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
+		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
+
+		processedEmbeddings += len(batchData)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+	}
+
+	return denseEmbeddings, lexicalWeights, nil
+}
+
+// codeGenerationProcessHybridSearchEmbeddings processes the data extraction batch embeddings.
+//
+// Parameters:
+//   - elements: the elements.
+//   - maxBatchSize: the max batch size.
+//
+// Returns:
+//   - error: an error if any
+func codeGenerationProcessHybridSearchEmbeddingsForExamples(elements []codegeneration.VectorDatabaseExample, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+	processedEmbeddings := 0
+
+	// Process data in batches
+	for i := 0; i < len(elements); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(elements) {
+			end = len(elements)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := elements[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.Text
+		}
+
+		// Send http request
+		batchDenseEmbeddings, batchLexicalWeights, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, true)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
+		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
+
+		processedEmbeddings += len(batchData)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+	}
+
+	return denseEmbeddings, lexicalWeights, nil
+}
+
+func codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(sections []codegeneration.VectorDatabaseUserGuideSection, maxBatchSize int) (denseEmbeddings [][]float32, lexicalWeights []map[uint]float32, err error) {
+	processedEmbeddings := 0
+
+	// Process data in batches
+	for i := 0; i < len(sections); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(sections) {
+			end = len(sections)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchData := sections[i:end]
+		batchTextToEmbed := make([]string, len(batchData))
+		for j, data := range batchData {
+			batchTextToEmbed[j] = data.Text
+		}
+
+		// Send embedding request
+		batchDenseEmbeddings, batchLexicalWeights, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, true)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to perform vector embedding request: %w", err)
+		}
+
+		// Add the embeddings to the list
+		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
+		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
+
+		processedEmbeddings += len(batchData)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+	}
+
+	return denseEmbeddings, lexicalWeights, nil
+}
+
+type pythonEmbeddingRequest struct {
+	Passages          []string `json:"passages"`
+	ReturnDense       bool     `json:"return_dense"`
+	ReturnSparse      bool     `json:"return_sparse"`
+	ReturnColbertVecs bool     `json:"return_colbert_vecs"`
+	IsDocument        bool     `json:"is_document"`
+}
+
+type pythonEmbeddingResponse struct {
+	ColbertVecs    [][][]float32      `json:"colbert_vecs"`
+	LexicalWeights []map[uint]float32 `json:"lexical_weights"`
+	DenseVecs      [][]float32        `json:"dense_vecs"`
+}
+
+func CreateEmbeddings(dense bool, sparse bool, colbert bool, isDocument bool, passages []string) (dense_vector [][]float32, lexical_weights []map[uint]float32, colbert_vecs [][][]float32, func_error error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic occured in CreateEmbeddings: %v", r)
+			func_error = r.(error)
+		}
+	}()
+
+	// create embeddings
+	url := "http://localhost:8000/embedding"
+
+	request := pythonEmbeddingRequest{
+		Passages:          passages,
+		ReturnDense:       dense,
+		ReturnSparse:      sparse,
+		ReturnColbertVecs: colbert,
+		IsDocument:        isDocument,
+	}
+
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error marshalling request: %v", err)
+		return nil, nil, nil, err
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewReader(jsonData))
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error sending request to python helper server extract-text: %v", err)
+		return nil, nil, nil, err
+	}
+	defer resp.Body.Close()
+
+	// read response
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(resp.Body)
+
+	responseBody := buf.String()
+
+	// parse response
+	var response pythonEmbeddingResponse
+	err = json.Unmarshal([]byte(responseBody), &response)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error unmarshalling response: %v", err)
+		return nil, nil, nil, err
+	}
+
+	return response.DenseVecs, response.LexicalWeights, response.ColbertVecs, nil
+
+}
+
+func dataExtractionTextSplitter(input string, chunkSize int, chunkOverlap int) (chunks []string, err error) {
+	var splittedChunks []schema.Document
+
+	// Creating a reader from the content of the file.
+	reader := bytes.NewReader([]byte(input))
+
+	// Creating a splitter with the chunk size and overlap specified in the config file.
+	splitterOptions := []textsplitter.Option{}
+	splitterOptions = append(splitterOptions, textsplitter.WithChunkSize(chunkSize))
+	splitterOptions = append(splitterOptions, textsplitter.WithChunkOverlap(chunkOverlap))
+	splitter := textsplitter.NewTokenSplitter(splitterOptions...)
+
+	txtLoader := documentloaders.NewText(reader)
+	splittedChunks, err = txtLoader.LoadAndSplit(context.Background(), splitter)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return nil, err
+	}
+
+	for _, chunk := range splittedChunks {
+		chunks = append(chunks, chunk.PageContent)
+	}
+
+	return chunks, err
 }
