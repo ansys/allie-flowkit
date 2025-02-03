@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.22.5
 
 require (
-	github.com/ansys/allie-sharedtypes v0.0.0-20250123140401-761199b0fb2c
+	github.com/ansys/allie-sharedtypes v0.0.0-20250203115929-b37a165edb46
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/milvus-io/milvus-sdk-go/v2 v2.4.2
@@ -13,14 +13,14 @@ require (
 	github.com/pandodao/tokenizer-go v0.2.0
 	github.com/tiktoken-go/tokenizer v0.2.0
 	github.com/tmc/langchaingo v0.1.12
-	golang.org/x/oauth2 v0.23.0
-	google.golang.org/grpc v1.69.4
+	golang.org/x/oauth2 v0.24.0
+	google.golang.org/grpc v1.70.0
 	nhooyr.io/websocket v1.8.17
 )
 
 require (
 	github.com/texttheater/golang-levenshtein v1.0.1
-	google.golang.org/protobuf v1.36.3 // indirect
+	google.golang.org/protobuf v1.36.4 // indirect
 )
 
 require (
@@ -76,6 +76,6 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
