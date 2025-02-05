@@ -589,6 +589,21 @@ func AisReturnIndexList(accessPoint string, physics []string, version []string) 
 		switch {
 		case len(physics) == 1 && physics[0] == "scade":
 			// special case for Scade One
+			indexList = append(indexList,
+				"external-product-documentation-public",
+				"external-product-documentation-public-25r1",
+			)
+		case (len(physics) == 1 && physics[0] == "structures") && (len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1")):
+			// special case for Structures 25r1
+			indexList = append(indexList,
+				"granular-ansysgpt",
+				"external-marketing",
+				"external-learning-hub",
+				"external-crtech-thermal-desktop",
+				"external-release-notes",
+				"external-zemax-websites",
+				"external-product-documentation-public-25r1",
+			)
 		default:
 			// default ais case
 			indexList = append(indexList,
@@ -601,14 +616,6 @@ func AisReturnIndexList(accessPoint string, physics []string, version []string) 
 				"external-crtech-thermal-desktop",
 				"external-release-notes",
 				"external-zemax-websites",
-			)
-		}
-
-		// if version is only 25r1, add only the 25r1 index, otherwise add both
-		if len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1") {
-			indexList = append(indexList, "external-product-documentation-public-25r1")
-		} else {
-			indexList = append(indexList,
 				"external-product-documentation-public",
 				"external-product-documentation-public-25r1",
 			)
