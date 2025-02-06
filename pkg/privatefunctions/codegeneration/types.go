@@ -20,7 +20,7 @@ type XMLAssembly struct {
 type XMLAssemblyMember struct {
 	Name       string                       `xml:"name,attr"`
 	Summary    string                       `xml:"summary"`
-	ReturnType string                       `xml:"returnType"`
+	ReturnType string                       `xml:"returnType" json:"return_type"`
 	Returns    string                       `xml:"returns,omitempty"`
 	Params     []sharedtypes.XMLMemberParam `xml:"param" json:"parameters"` // Handles multiple <param> elements
 	Example    sharedtypes.XMLMemberExample `xml:"example,omitempty"`       // Optional <example> element
