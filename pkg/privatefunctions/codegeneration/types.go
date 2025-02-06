@@ -8,24 +8,24 @@ import (
 
 // Structs representing the XML structure
 type XMLObjectDefinitionDocument struct {
-	XMLName  xml.Name            `xml:"doc"`
-	Assembly XMLAssembly         `xml:"assembly"`
-	Members  []XMLAssemblyMember `xml:"members>member"`
+	XMLName  xml.Name         `xml:"doc"`
+	Assembly XMLAssembly      `xml:"assembly"`
+	Members  []AssemblyMember `xml:"members>member"`
 }
 
 type XMLAssembly struct {
 	Name string `xml:"name"`
 }
 
-type XMLAssemblyMember struct {
-	Name       string                       `xml:"name,attr"`
-	Summary    string                       `xml:"summary"`
+type AssemblyMember struct {
+	Name       string                       `xml:"name,attr" json:"name"`
+	Summary    string                       `xml:"summary" json:"summary"`
 	ReturnType string                       `xml:"returnType" json:"return_type"`
-	Returns    string                       `xml:"returns,omitempty"`
-	Params     []sharedtypes.XMLMemberParam `xml:"param" json:"parameters"` // Handles multiple <param> elements
-	Example    sharedtypes.XMLMemberExample `xml:"example,omitempty"`       // Optional <example> element
-	Remarks    string                       `xml:"remarks,omitempty"`
-	EnumValues string                       `xml:"enumValues,omitempty"`
+	Returns    string                       `xml:"returns,omitempty" json:"returns"`
+	Params     []sharedtypes.XMLMemberParam `xml:"param" json:"parameters"`          // Handles multiple <param> elements
+	Example    sharedtypes.XMLMemberExample `xml:"example,omitempty" json:"example"` // Optional <example> element
+	Remarks    string                       `xml:"remarks,omitempty" json:"remarks"` // Optional <remarks> element
+	EnumValues string                       `xml:"enumValues,omitempty" json:"enum_values"`
 }
 
 type CodeGenerationPseudocodeResponse struct {
