@@ -559,21 +559,14 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 //
 // Returns:
 //   - elements: code generation elements.
-func LoadCodeGenerationElements(elementsFilePath string) (elements []sharedtypes.CodeGenerationElement) {
-	// Read file from local path.
-	content, err := os.ReadFile(elementsFilePath)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
+func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elements []sharedtypes.CodeGenerationElement) {
 	// Get the file extension.
 	fileExtension := filepath.Ext(elementsFilePath)
 
 	// Create object definition document.
 	objectDefinitionDoc := codegeneration.XMLObjectDefinitionDocument{}
 
+	var err error
 	switch fileExtension {
 	case ".xml":
 		// Unmarshal the XML content into the object definition document.
