@@ -10,6 +10,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PerformGeneralRequestWithImages":                  PerformGeneralRequestWithImages,
 	"PerformGeneralRequestSpecificModel":               PerformGeneralRequestSpecificModel,
 	"PerformCodeLLMRequest":                            PerformCodeLLMRequest,
+	"PerformGeneralRequestNoStreaming":                 PerformGeneralRequestNoStreaming,
 	"BuildLibraryContext":                              BuildLibraryContext,
 	"BuildFinalQueryForGeneralLLMRequest":              BuildFinalQueryForGeneralLLMRequest,
 	"BuildFinalQueryForCodeLLMRequest":                 BuildFinalQueryForCodeLLMRequest,
