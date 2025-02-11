@@ -28,7 +28,7 @@ FROM python:3.11-alpine
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Install system dependencies for pyright and ansys-mapdl-core
-RUN apk add --no-cache --update npm
+RUN apk add --no-cache --update npm sqlite sqlite-dev
 RUN npm install -g pyright --quiet && npm cache clean --force
 
 # Upgrade pip and install Pyright
