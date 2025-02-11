@@ -820,7 +820,7 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 	}
 
 	// Insert the elements into the vector database.
-	err = milvus.InsertData(elementsCollectionName, elementsAsInterface)
+	err = milvus.InsertData(elementsCollectionName, elementsAsInterface, "Name", "name")
 	if err != nil {
 		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -1186,7 +1186,7 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 	}
 
 	// Insert the elements into the vector database.
-	err = milvus.InsertData(examplesCollectionName, elementsAsInterface)
+	err = milvus.InsertData(examplesCollectionName, elementsAsInterface, "DocumentName", "document_name")
 	if err != nil {
 		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -1422,7 +1422,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 	}
 
 	// Insert the elements into the vector database.
-	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface)
+	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface, "SectionName", "section_name")
 	if err != nil {
 		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
