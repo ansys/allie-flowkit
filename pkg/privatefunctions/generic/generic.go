@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
@@ -14,13 +15,14 @@ import (
 //
 // Parameters:
 //   - url: the URL to send the HTTP POST request to.
+//   - requestType: the type of HTTP request to send (POST, GET, PUT, DELETE).
 //   - requestObject: the request object to create the JSON payload from.
 //   - responsePtr: a pointer to the response object to decode the JSON response body into.
 //
 // Returns:
 //   - an error if there was an issue creating the JSON payload, sending the HTTP POST request, or decoding the JSON response body.
 //   - the status code of the HTTP response.
-func CreatePayloadAndSendHttpRequest(url string, requestObject interface{}, responsePtr interface{}) (funcError error, statusCode int) {
+func CreatePayloadAndSendHttpRequest(url string, requestType string, requestObject interface{}, responsePtr interface{}) (funcError error, statusCode int) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -29,6 +31,10 @@ func CreatePayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 			return
 		}
 	}()
+	// Check if the request type is valid (POST, GET, PUT, DELETE)
+	if requestType != "POST" && requestType != "GET" && requestType != "PUT" && requestType != "DELETE" {
+		return fmt.Errorf("invalid request type: %s", requestType), 0
+	}
 
 	// Define the JSON payload.
 	jsonPayload, err := json.Marshal(requestObject)
@@ -37,7 +43,7 @@ func CreatePayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 	}
 
 	// Create a new HTTP POST request.
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonPayload))
+	req, err := http.NewRequest(requestType, url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		return err, 0
 	}
@@ -65,4 +71,40 @@ func CreatePayloadAndSendHttpRequest(url string, requestObject interface{}, resp
 	}
 
 	return nil, 0
+}
+
+// ExtractStringFieldFromStruct extracts a string field from a struct.
+//
+// Parameters:
+//   - data: the struct to extract the string field from.
+//   - fieldName: the name of the field to extract.
+//
+// Returns:
+//   - the string field value.
+//   - an error if the field is not found or is not a string.
+func ExtractStringFieldFromStruct(data interface{}, fieldName string) (string, error) {
+	v := reflect.ValueOf(data)
+
+	// Dereference pointer if needed
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	// Ensure it's a struct
+	if v.Kind() != reflect.Struct {
+		return "", fmt.Errorf("expected struct but got %T", data)
+	}
+
+	// Get field by name
+	field := v.FieldByName(fieldName)
+	if !field.IsValid() {
+		return "", fmt.Errorf("field '%s' not found", fieldName)
+	}
+
+	// Ensure field is a string
+	if field.Kind() != reflect.String {
+		return "", fmt.Errorf("field '%s' is not a string", fieldName)
+	}
+
+	return field.String(), nil
 }

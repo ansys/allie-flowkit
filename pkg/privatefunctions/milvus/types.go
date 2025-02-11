@@ -53,3 +53,25 @@ type MilvusSearchResponse struct {
 type MilvusInsertData struct {
 	InsertCount int `json:"insertCount"`
 }
+
+type ArrayFilter struct {
+	NeedAll    bool     `json:"needAll"`
+	FilterData []string `json:"filterData"`
+}
+
+type JsonFilter struct {
+	FieldName  string   `json:"fieldName"`
+	FieldType  string   `json:"fieldType" description:"Can be either string or array."` // "string" or "array"
+	FilterData []string `json:"filterData"`
+	NeedAll    bool     `json:"needAll" description:"Only needed if the FieldType is array."` // only needed for array fields
+}
+
+type MilvusDeleteResponse struct {
+	Code    int              `json:"code"`
+	Data    MilvusDeleteData `json:"data"`
+	Message string           `json:"message"`
+}
+
+type MilvusDeleteData struct {
+	DeleteCount int `json:"deleteCount"`
+}

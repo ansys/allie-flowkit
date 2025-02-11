@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/generic"
@@ -476,10 +477,12 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 // Parameters:
 //   - collectionName: Name of the collection to send the data to.
 //   - dataToSend: Data to be sent to the Milvus DB.
+//   - objectFieldName: Name of the field in the data go object to be used as the object field.
+//   - idFieldName: Name of the field in the milvus schema to be used as the ID field.
 //
 // Returns:
 //   - error: Error if any issue occurs during sending the data to the Milvus DB.
-func InsertData(collectionName string, dataToSend []interface{}) (funcError error) {
+func InsertData(collectionName string, dataToSend []interface{}, objectFieldName string, idFieldName string) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -509,15 +512,169 @@ func InsertData(collectionName string, dataToSend []interface{}) (funcError erro
 		// Assign the data batch to the request object
 		request.Data = dataToSend[startIndex:stopIndex]
 
-		// Send the data batch to Milvus
-		err := sendInsertRequest(request)
+		// Remove duplicates inside milvus so updated data can be added
+		removedData, err := QueryAndRemoveDuplicates(collectionName, dataToSend[startIndex:stopIndex], objectFieldName, idFieldName)
 		if err != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendInsertRequest: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during QueryAndRemoveDuplicates: %v", err)
 			return err
 		}
 
+		// Send the data batch to Milvus
+		err = sendInsertRequest(request)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendInsertRequest: %v. Adding removed data.", err)
+			err := InsertData(collectionName, removedData, objectFieldName, idFieldName)
+			if err != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "Error adding the removed data after failure: %v", err)
+			}
+			return err
+		}
+
+		logging.Log.Infof(&logging.ContextMap{}, "Updated %d entries in Milvus", len(removedData))
+
 		// Move the start index to the next batch
 		startIndex = stopIndex
+	}
+
+	return nil
+}
+
+// Query queries the Milvus database.
+//
+// This function queries the Milvus database with an HTTP POST request.
+//
+// Parameters:
+//   - collectionName: Name of the collection to query.
+//   - responseLimit: Maximum number of responses.
+//   - outputFields: Fields to return in the response.
+//   - filterExpression: Filters to apply to the query.
+//
+// Returns:
+//   - response: Response from the Milvus database.
+//   - error: Error if any issue occurs while querying the Milvus database.
+func Query(collectionName string, responseLimit int, outputFields []string, filterExpression string) (response MilvusQueryResponse, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in Query: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Create a MilvusQueryRequest object
+	query := newMilvusQueryRequest(collectionName, outputFields, filterExpression, responseLimit, 0)
+
+	// Send the Milvus query request and receive the response.
+	response, err := sendQueryRequest(query)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during sendQueryRequest: %v", err)
+		return response, err
+	}
+
+	return response, nil
+}
+
+// QueryAndRemoveDuplicates queries the Milvus database for the provided data and retrieves the input data without duplicates.
+//
+// Parameters:
+//   - collectionName: Name of the collection in the Milvus database.
+//   - data: Data to send to the Milvus database.
+//   - objectFieldName: Name of the field in the data go object to be used as the object field.
+//   - idFieldName: Name of the field in the milvus schema to be used as the ID field.
+//
+// Returns:
+//   - removedData: Data that was removed from the Milvus database.
+//   - error: Error if any issue occurs during querying the Milvus database.
+func QueryAndRemoveDuplicates(collectionName string, data []interface{}, objectFieldName string, idFieldName string) (removedData []interface{}, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in QueryAndRemoveDuplicates: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	dataIds := make([]string, 0, len(data))
+	for _, entry := range data {
+		idStr, err := generic.ExtractStringFieldFromStruct(entry, objectFieldName)
+		if err != nil {
+			panic(fmt.Sprintf("Error extracting field: %v", err))
+		}
+
+		dataIds = append(dataIds, idStr)
+	}
+
+	// Query Milvus for entries in the current batch
+	filter, err := createStringFilterExpression(idFieldName, dataIds)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during createStringFilterExpression: %v", err)
+		return nil, err
+	}
+
+	response, err := Query(collectionName, 0, []string{idFieldName}, filter)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
+		return nil, err
+	}
+
+	if len(response.Data) > 0 {
+		// Remove duplicates from the milvus db
+		err = sendRemoveRequest(collectionName, filter)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendRemoveRequest: %v", err)
+			return nil, err
+		}
+
+		// Add the removed data to the list of removed data
+		removedData = response.Data
+	}
+
+	return removedData, nil
+}
+
+// sendRemoveRequest sends an HTTP POST request to the Milvus database for removing entries.
+//
+// Parameters:
+//   - collectionName: Name of the collection to remove entries from.
+//   - filter: Filter to apply to the remove request.
+//
+// Returns:
+//   - error: Error if any issue occurs while sending the request to the Milvus database.
+func sendRemoveRequest(collectionName string, filter string) (funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in sendRemoveRequest: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	// Create the URL for the Milvus delete request
+	url := fmt.Sprintf("http://%s:%s/v2/vectordb/entities/delete", config.GlobalConfig.MILVUS_HOST, config.GlobalConfig.MILVUS_PORT)
+
+	// Create MilvusDeleteRequest object
+	request := MilvusRequest{
+		CollectionName: collectionName,
+		Filter:         &filter,
+	}
+
+	// Create a MilvusDeleteResponse object
+	var response MilvusDeleteResponse
+
+	// Send the Milvus delete request and receive the response.
+	err, _ := generic.CreatePayloadAndSendHttpRequest(url, "POST", request, &response)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
+		return err
+	}
+
+	// Check the response status code.
+	if response.Code != 0 {
+		logging.Log.Errorf(&logging.ContextMap{}, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
+		return errors.New(response.Message)
 	}
 
 	return nil
@@ -548,7 +705,7 @@ func sendInsertRequest(request MilvusRequest) (funcError error) {
 	url := fmt.Sprintf("http://%s:%s/v1/vector/insert", config.GlobalConfig.MILVUS_HOST, config.GlobalConfig.MILVUS_PORT)
 
 	// Send the Milvus insert request and receive the response.
-	err, _ := generic.CreatePayloadAndSendHttpRequest(url, request, &response)
+	err, _ := generic.CreatePayloadAndSendHttpRequest(url, "POST", request, &response)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
 		return err
@@ -588,7 +745,7 @@ func sendQueryRequest(request MilvusRequest) (response MilvusQueryResponse, func
 	url := fmt.Sprintf("http://%s:%s/v1/vector/query", config.GlobalConfig.MILVUS_HOST, config.GlobalConfig.MILVUS_PORT)
 
 	// Send the Milvus query request and receive the response.
-	err, _ := generic.CreatePayloadAndSendHttpRequest(url, request, &response)
+	err, _ := generic.CreatePayloadAndSendHttpRequest(url, "POST", request, &response)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
 		return response, err
@@ -601,6 +758,199 @@ func sendQueryRequest(request MilvusRequest) (response MilvusQueryResponse, func
 	}
 
 	return response, nil
+}
+
+// newMilvusQueryRequest creates a Milvus request object for querying data.
+//
+// Parameters:
+//   - collectionName: Name of the collection to query.
+//   - outputFields: Fields to return in the response.
+//   - filter: Filter to apply to the query.
+//   - limit: Maximum number of responses.
+//   - ofset: Offset for the query.
+//
+// Returns:
+//   - request: Request sent to the Milvus database.
+func newMilvusQueryRequest(collectionName string, outputFields []string, filter string, limit int, ofset int) MilvusRequest {
+	return MilvusRequest{
+		CollectionName: collectionName,
+		OutputFields:   outputFields,
+		Filter:         &filter,
+		Limit:          &limit,
+		Offset:         &ofset,
+	}
+}
+
+// createFilterExpression creates a filter expression for the filtering option in the query and search requests.
+//
+// Parameters:
+//   - filterType: Type of the filter.
+//   - filters: Filters to apply.
+//
+// Returns:
+//   - filterExpression: Filter expression for the provided filterType.
+//   - error: Error if any issue occurs while creating the filter expression.
+func createJsonFilterExpression(filterType string, filters []JsonFilter) (filterExpression string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in createJsonFilterExpression: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	var expressions []string
+
+	for _, field := range filters {
+		switch field.FieldType {
+		case "string":
+			stringExpression := []string{}
+			for _, filterData := range field.FilterData {
+				expression := fmt.Sprintf("%s['%s'] == '%s'", filterType, field.FieldName, filterData)
+				stringExpression = append(stringExpression, expression)
+			}
+			expressions = append(expressions, strings.Join(stringExpression, " || "))
+
+		case "array":
+			containsFunc := ""
+			if field.NeedAll {
+				containsFunc = "json_contains_all"
+			} else {
+				containsFunc = "json_contains_any"
+			}
+
+			filterData := strings.Join(field.FilterData, "','")
+			expression := fmt.Sprintf("%s(%s['%s'], ['%s'])", containsFunc, filterType, field.FieldName, filterData)
+			expressions = append(expressions, expression)
+		}
+	}
+
+	filterExpression = strings.Join(expressions, " and ")
+
+	return filterExpression, nil
+}
+
+// createArrayFilterExpression creates a filter expression for the array filtering option in the query and search requests.
+//
+// Parameters:
+//   - filterType: Type of the filter.
+//   - filter: Filter to apply.
+//
+// Returns:
+//   - filterExpression: Filter expression for the provided filter types.
+//   - error: Error if any issue occurs while creating the filter expression.
+func createArrayFilterExpression(filterType string, filter ArrayFilter) (filterExpression string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in createArrayFilterExpression: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	var containsFunc string
+
+	if filter.NeedAll {
+		containsFunc = "array_contains_all"
+	} else {
+		containsFunc = "array_contains_any"
+	}
+
+	filterData := strings.Join(filter.FilterData, "','")
+	filterExpression = fmt.Sprintf("%s(%s, ['%s'])", containsFunc, filterType, filterData)
+
+	return filterExpression, nil
+}
+
+// createStringFilterExpression creates a filter expression for the string filtering option in the query and search requests.
+//
+// Parameters:
+//   - filterType: Type of the filter.
+//   - filter: Filter to apply.
+//
+// Returns:
+//   - filterExpression: Filter expression for the provided filter type.
+//   - error: Error if any issue occurs while creating the filter expression.
+func createStringFilterExpression(filterType string, filter []string) (filterExpression string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in createStringFilterExpression: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	filterExpression = fmt.Sprintf("%s in ['%s'", filterType, filter[0])
+	if len(filter) > 1 {
+		filterExpression += fmt.Sprintf(", '%s'", strings.Join(filter[1:], "', '"))
+	}
+
+	return filterExpression + "]", nil
+}
+
+// combineFilterExpressions combines the filter expressions for the filtering option in the query and search requests.
+// This function combines the filter expressions for the "guid", "keywords", "document_id" and "documents" fields.
+//
+// Parameters:
+//   - arrayFilters: Array filters to apply.
+//   - stringFilters: String filters to apply.
+//   - jsonFilters: JSON filters to apply.
+//
+// Returns:
+//   - filterExpression: Filter expression to use in the query and search requests.
+//   - error: Error if any issue occurs while combining the filter expressions.
+func combineFilterExpressions(arrayFilters map[string]ArrayFilter, stringFilters map[string][]string, jsonFilters map[string][]JsonFilter) (filterExpression string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in combineFilterExpressions: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+
+	var expressions []string
+
+	for field, filter := range arrayFilters {
+		if filter.FilterData != nil && len(filter.FilterData) > 0 {
+			filterExpr, err := createArrayFilterExpression(field, filter)
+			if err != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "Error in createArrayFilterExpression: %v", err)
+				return "", err
+			}
+			expressions = append(expressions, filterExpr)
+		}
+	}
+
+	for field, filter := range stringFilters {
+		if len(filter) > 0 {
+			filterExpr, err := createStringFilterExpression(field, filter)
+			if err != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "Error in createStringFilterExpression: %v", err)
+				return "", err
+			}
+			expressions = append(expressions, filterExpr)
+		}
+	}
+
+	for field, filter := range jsonFilters {
+		if len(filter) > 0 {
+			filterExpr, err := createJsonFilterExpression(field, filter)
+			if err != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "Error in createJsonFilterExpression: %v", err)
+				return "", err
+			}
+			expressions = append(expressions, filterExpr)
+		}
+	}
+
+	// Combine the filter expressions with "and"
+	filterExpression = strings.Join(expressions, " and ")
+
+	return filterExpression, nil
 }
 
 // sendSearchRequest sends an HTTP POST request to the Milvus DB.
@@ -626,7 +976,7 @@ func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, fu
 	url := fmt.Sprintf("http://%s:%s/v1/vector/search", config.GlobalConfig.MILVUS_HOST, config.GlobalConfig.MILVUS_PORT)
 
 	// Send the Milvus search request and receive the response.
-	err, _ := generic.CreatePayloadAndSendHttpRequest(url, request, &response)
+	err, _ := generic.CreatePayloadAndSendHttpRequest(url, "POST", request, &response)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
 		return response, err
@@ -639,30 +989,6 @@ func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, fu
 	}
 
 	return response, nil
-}
-
-func fromLexicalWeightsToSparseVector(lexicalWeights []map[uint]float32, dimension int) (sparseEmbeddings []entity.SparseEmbedding, err error) {
-	sparsePositions := make([]uint32, 0)
-	sparseValues := make([]float32, 0)
-	var sparseEmbedding entity.SparseEmbedding
-
-	for _, weightMap := range lexicalWeights {
-		for key, value := range weightMap {
-			sparsePositions = append(sparsePositions, uint32(key))
-			sparseValues = append(sparseValues, value)
-		}
-
-		// Now create the sparse embedding
-		sparseEmbedding, err = entity.NewSliceSparseEmbedding(sparsePositions, sparseValues)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create sparse embedding: %w", err)
-		}
-
-		// Append the sparse embedding to the list
-		sparseEmbeddings = append(sparseEmbeddings, sparseEmbedding)
-	}
-
-	return sparseEmbeddings, nil
 }
 
 // // Returns nil if threshhold is not reached
