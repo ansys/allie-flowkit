@@ -214,7 +214,10 @@ func sendTokenCountToEndpoint(userEmail string, tokenCountEndpoint string, input
 // Parameters:
 //   - data: the input string
 //   - chatRequestType: the chat request type
-//   - sc: the session context
+//   - maxKeywordsSearch: the maximum number of keywords to search for
+//   - llmHandlerEndpoint: the LLM Handler endpoint
+//   - modelIds: the model IDs
+//   - options: the model options
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
@@ -228,7 +231,11 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //   - data: the input string
 //   - chatRequestType: the chat request type
 //   - history: the conversation history
-//   - sc: the session context
+//   - maxKeywordsSearch: the maximum number of keywords to search for
+//   - systemPrompt: the system prompt
+//   - llmHandlerEndpoint: the LLM Handler endpoint
+//   - modelIds: the model IDs
+//   - options: the model options
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
@@ -239,7 +246,7 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
-	go listener(c, responseChannel)
+	go listener(c, responseChannel, false)
 	go writer(c, requestChannelChat, responseChannel)
 
 	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", false, history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options, images)
@@ -247,11 +254,51 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 	return responseChannel // Return the response channel
 }
 
+// sendChatRequestNoStreaming sends a chat request to LLM without streaming
+//
+// Parameters:
+//   - data: the input string
+//   - chatRequestType: the chat request type
+//   - history: the conversation history
+//   - maxKeywordsSearch: the maximum number of keywords to search for
+//   - systemPrompt: the system prompt
+//   - llmHandlerEndpoint: the LLM Handler endpoint
+//   - modelIds: the model IDs
+//   - options: the model options
+//
+// Returns:
+//   - string: the response
+func sendChatRequestNoStreaming(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions, images []string) string {
+	// Initiate the channels
+	requestChannelChat := make(chan []byte, 400)
+	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
+
+	// Initialize the client, handlers and send the request
+	c := initializeClient(llmHandlerEndpoint)
+	go shutdownHandler(c)
+	go listener(c, responseChannel, true)
+	go writer(c, requestChannelChat, responseChannel)
+	go sendRequest("chat", data, requestChannelChat, chatRequestType, "false", false, history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options, images)
+
+	// receive single answer from the response channel
+	response := <-responseChannel
+
+	// check for error
+	if response.Type == "error" {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error in request %v: %v\n", response.InstructionGuid, response.Error.Message)
+		panic(response.Error.Message)
+	}
+
+	return *response.ChatData
+}
+
 // sendEmbeddingsRequest sends an embeddings request to LLM
 //
 // Parameters:
 //   - data: the input string
-//   - sc: the session context
+//   - llmHandlerEndpoint: the LLM Handler endpoint
+//   - getSparseEmbeddings: the flag to indicate whether to get sparse embeddings
+//   - modelIds: the model IDs
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
@@ -262,7 +309,7 @@ func sendEmbeddingsRequest(data interface{}, llmHandlerEndpoint string, getSpars
 
 	c := initializeClient(llmHandlerEndpoint)
 	go shutdownHandler(c)
-	go listener(c, responseChannel)
+	go listener(c, responseChannel, false)
 	go writer(c, requestChannelEmbeddings, responseChannel)
 
 	go sendRequest("embeddings", data, requestChannelEmbeddings, "", "", getSparseEmbeddings, nil, 0, "", responseChannel, modelIds, nil, nil)
@@ -309,7 +356,7 @@ func initializeClient(llmHandlerEndpoint string) *websocket.Conn {
 // Parameters:
 //   - c: the websocket connection
 //   - responseChannel: the response channel
-func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerResponse) {
+func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerResponse, singleRequest bool) {
 
 	// Close the connection when the function returns
 	defer c.Close(websocket.StatusNormalClosure, "")
@@ -375,7 +422,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 			} else {
 				switch response.Type {
 				case "chat":
-					if !*(response.IsLast) {
+					if !singleRequest && !*(response.IsLast) {
 						// If it is not the last message, continue listening
 						stopListener = false
 					} else {

@@ -547,6 +547,29 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 	return responseAsStr, nil
 }
 
+// PerformGeneralRequestNoStreaming performs a general chat completion request to LLM without streaming
+//
+// Tags:
+//   - @displayName: General LLM Request (no streaming)
+//
+// Parameters:
+//   - input: the input string
+//   - history: the conversation history
+//   - systemPrompt: the system prompt
+//
+// Returns:
+//   - message: the generated message
+func PerformGeneralRequestNoStreaming(input string, history []sharedtypes.HistoricMessage, systemPrompt string) (message string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseString := sendChatRequestNoStreaming(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil, nil)
+
+	// Return the response
+	return responseString
+}
+
 // BuildLibraryContext builds the context string for the query
 //
 // Tags:
