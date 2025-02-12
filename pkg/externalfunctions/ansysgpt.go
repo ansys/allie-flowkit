@@ -587,14 +587,19 @@ func AisReturnIndexList(accessPoint string, physics []string, version []string) 
 	switch accessPoint {
 	case "ansysgpt-general", "ais-embedded":
 		switch {
+		case len(physics) == 1 && physics[0] == "scade" && (len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1")):
+			// special case for Scade One & 25r1
+			indexList = append(indexList,
+				"external-product-documentation-public-25r1",
+			)
 		case len(physics) == 1 && physics[0] == "scade":
 			// special case for Scade One
 			indexList = append(indexList,
 				"external-product-documentation-public",
 				"external-product-documentation-public-25r1",
 			)
-		case (len(physics) == 1 && physics[0] == "structures") && (len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1")):
-			// special case for Structures 25r1
+		case (len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1")):
+			// special case 25r1
 			indexList = append(indexList,
 				"granular-ansysgpt",
 				"external-marketing",
