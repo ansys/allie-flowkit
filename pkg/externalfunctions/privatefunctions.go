@@ -3,6 +3,8 @@ package externalfunctions
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -2234,4 +2236,84 @@ func dataExtractionTextSplitter(input string, chunkSize int, chunkOverlap int) (
 	}
 
 	return chunks, err
+}
+
+// getLocalFileContent reads local file and returns checksum and content.
+//
+// Parameters:
+//   - localFilePath: path to file.
+//
+// Returns:
+//   - checksum: checksum of file.
+//   - content: content of file.
+//   - error: error if any.
+func getLocalFileContent(localFilePath string) (checksum string, content []byte, err error) {
+	// Read file from local path.
+	content, err = os.ReadFile(localFilePath)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return "", nil, err
+	}
+
+	// Calculate checksum from file content.
+	hash := sha256.New()
+	_, err = hash.Write(content)
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return "", nil, err
+	}
+
+	// Convert checksum to a hexadecimal string.
+	checksum = hex.EncodeToString(hash.Sum(nil))
+
+	logging.Log.Debugf(&logging.ContextMap{}, "Got content from local file: %s", localFilePath)
+
+	return checksum, content, err
+}
+
+// downloadGithubFileContent downloads file content from github and returns checksum and content.
+//
+// Parameters:
+//   - githubRepoName: name of the github repository.
+//   - githubRepoOwner: owner of the github repository.
+//   - githubRepoBranch: branch of the github repository.
+//   - gihubFilePath: path to file in the github repository.
+//   - githubAccessToken: access token for github.
+//
+// Returns:
+//   - checksum: checksum of file.
+//   - content: content of file.
+func downloadGithubFileContent(githubRepoName string, githubRepoOwner string,
+	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content []byte, err error) {
+
+	// Create a new GitHub client and context.
+	client, ctx := dataExtractNewGithubClient(githubAccessToken)
+
+	// Retrieve the file content from the GitHub repository.
+	fileContent, _, _, err := client.Repositories.GetContents(ctx, githubRepoOwner, githubRepoName, gihubFilePath, &github.RepositoryContentGetOptions{Ref: githubRepoBranch})
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return "", nil, err
+	}
+
+	// Extract the content from the file content.
+	stringContent, err := fileContent.GetContent()
+	if err != nil {
+		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		return "", nil, err
+	}
+
+	// Extract the checksum from the file content.
+	checksum = fileContent.GetSHA()
+
+	// Convert the content to a byte slice.
+	content = []byte(stringContent)
+
+	logging.Log.Debugf(&logging.ContextMap{}, "Got content from github file: %s", gihubFilePath)
+
+	return checksum, content, nil
 }

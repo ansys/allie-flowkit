@@ -3,8 +3,6 @@ package externalfunctions
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -19,7 +17,6 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
-	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/pandodao/tokenizer-go"
 	"github.com/tmc/langchaingo/documentloaders"
@@ -175,34 +172,46 @@ func AppendStringSlices(slice1, slice2, slice3, slice4, slice5 []string) []strin
 func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	githubRepoBranch string, gihubFilePath string, githubAccessToken string) (checksum string, content []byte) {
 
-	// Create a new GitHub client and context.
-	client, ctx := dataExtractNewGithubClient(githubAccessToken)
-
-	// Retrieve the file content from the GitHub repository.
-	fileContent, _, _, err := client.Repositories.GetContents(ctx, githubRepoOwner, githubRepoName, gihubFilePath, &github.RepositoryContentGetOptions{Ref: githubRepoBranch})
+	checksum, content, err := downloadGithubFileContent(githubRepoName, githubRepoOwner, githubRepoBranch, gihubFilePath, githubAccessToken)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
+		errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
-
-	// Extract the content from the file content.
-	stringContent, err := fileContent.GetContent()
-	if err != nil {
-		errMessage := fmt.Sprintf("Error getting file content from github file %v: %v", gihubFilePath, err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	// Extract the checksum from the file content.
-	checksum = fileContent.GetSHA()
-
-	// Convert the content to a byte slice.
-	content = []byte(stringContent)
-
-	logging.Log.Debugf(&logging.ContextMap{}, "Got content from github file: %s", gihubFilePath)
 
 	return checksum, content
+}
+
+// DownloadGithubFilesContent downloads file content from github and returns checksum and content.
+//
+// Tags:
+//   - @displayName: Download Github Files Content
+//
+// Parameters:
+//   - githubRepoName: name of the github repository.
+//   - githubRepoOwner: owner of the github repository.
+//   - githubRepoBranch: branch of the github repository.
+//   - gihubFilePath: path to file in the github repository.
+//   - githubAccessToken: access token for github.
+//
+// Returns:
+//   - filesMap: map of file paths to file content.
+func DownloadGithubFilesContent(githubRepoName string, githubRepoOwner string,
+	githubRepoBranch string, gihubFilePaths []string, githubAccessToken string) (filesMap map[string][]byte) {
+	filesMap = make(map[string][]byte)
+
+	for _, gihubFilePath := range gihubFilePaths {
+		_, content, err := downloadGithubFileContent(githubRepoName, githubRepoOwner, githubRepoBranch, gihubFilePath, githubAccessToken)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error getting file content from github: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		filesMap[gihubFilePath] = content
+	}
+
+	return filesMap
 }
 
 // GetLocalFileContent reads local file and returns checksum and content.
@@ -217,29 +226,42 @@ func DownloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 //   - checksum: checksum of file.
 //   - content: content of file.
 func GetLocalFileContent(localFilePath string) (checksum string, content []byte) {
-	// Read file from local path.
-	content, err := os.ReadFile(localFilePath)
+	// Get the checksum and content of the local file.
+	checksum, content, err := getLocalFileContent(localFilePath)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		errMessage := fmt.Sprintf("Error getting file content from local: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
-
-	// Calculate checksum from file content.
-	hash := sha256.New()
-	_, err = hash.Write(content)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	// Convert checksum to a hexadecimal string.
-	checksum = hex.EncodeToString(hash.Sum(nil))
-
-	logging.Log.Debugf(&logging.ContextMap{}, "Got content from local file: %s", localFilePath)
 
 	return checksum, content
+}
+
+// GetLocalFilesContent reads local files and returns content.
+//
+// Tags:
+//   - @displayName: Get Local Files Content
+//
+// Parameters:
+//   - localFilePaths: paths to files.
+//
+// Returns:
+//   - filesMap: map of file paths to file content.
+func GetLocalFilesContent(localFilePaths []string) (filesMap map[string][]byte) {
+	filesMap = make(map[string][]byte)
+
+	for _, localFilePath := range localFilePaths {
+		_, content, err := getLocalFileContent(localFilePath)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error getting file content from local: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		filesMap[localFilePath] = content
+	}
+
+	return filesMap
 }
 
 // GetDocumentType returns the document type of a file.
@@ -856,22 +878,14 @@ func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) 
 //   - checkedDependenciesMap: checked dependencies.
 //   - equivalencesMap: equivalences.
 func LoadAndCheckExampleDependencies(
-	dependenciesFilePath string,
+	dependenciesContent []byte,
 	elements []sharedtypes.CodeGenerationElement,
 	instancesReplacementDict map[string]string,
 	InstancesReplacementPriorityList []string,
 ) (checkedDependenciesMap map[string][]string, equivalencesMap map[string]map[string]string) {
-	// Read file from local path.
-	content, err := os.ReadFile(dependenciesFilePath)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error getting local file content: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
 	// Unmarshal the JSON content into the dependencies map.
 	var dependenciesMap map[string][]string
-	err = json.Unmarshal(content, &dependenciesMap)
+	err := json.Unmarshal(dependenciesContent, &dependenciesMap)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error unmarshalling dependencies: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -1002,16 +1016,42 @@ func LoadAndCheckExampleDependencies(
 //
 // Returns:
 //   - examples: code generation examples.
-func LoadCodeGenerationExamples(examplesToExtract []string, dependencies map[string][]string, equivalencesMap map[string]map[string]string, chunkSize int, chunkOverlap int) (examples []sharedtypes.CodeGenerationExample) {
+func LoadCodeGenerationExamples(
+	source string,
+	examplesToExtract []string,
+	githubRepoName string,
+	githubRepoOwner string,
+	githubRepoBranch string,
+	githubAccessToken string,
+	dependencies map[string][]string,
+	equivalencesMap map[string]map[string]string,
+	chunkSize int,
+	chunkOverlap int) (examples []sharedtypes.CodeGenerationExample) {
 	// Initialize the examples slice.
 	examples = []sharedtypes.CodeGenerationExample{}
 
 	// Load the examples from the provided paths.
 	for _, examplePath := range examplesToExtract {
-		// Read file from local path.
-		content, err := os.ReadFile(examplePath)
-		if err != nil {
-			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+		// Read file from either local or github source.
+		var content []byte
+		var err error
+		switch source {
+		case "local":
+			_, content, err = getLocalFileContent(examplePath)
+			if err != nil {
+				errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
+				panic(errMessage)
+			}
+		case "github":
+			_, content, err = downloadGithubFileContent(githubRepoName, githubRepoOwner, githubRepoBranch, examplePath, githubAccessToken)
+			if err != nil {
+				errMessage := fmt.Sprintf("Error getting github file content: %v", err)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
+				panic(errMessage)
+			}
+		default:
+			errMessage := fmt.Sprintf("Unknown data source: %s", source)
 			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
@@ -1219,15 +1259,32 @@ func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) 
 //
 // Returns:
 //   - sections: user guide sections.
-func LoadUserGuideSections(paths []string) (sections []sharedtypes.CodeGenerationUserGuideSection) {
+func LoadUserGuideSections(source string, sectionFilePaths []string, githubRepoName string, githubRepoOwner string,
+	githubRepoBranch string, githubAccessToken string) (sections []sharedtypes.CodeGenerationUserGuideSection) {
 	// Initialize the sections.
 	sections = []sharedtypes.CodeGenerationUserGuideSection{}
 
-	for _, path := range paths {
-		// Read file from local path.
-		content, err := os.ReadFile(path)
-		if err != nil {
-			errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+	for _, path := range sectionFilePaths {
+		// Read file from either local or github source.
+		var content []byte
+		var err error
+		switch source {
+		case "local":
+			_, content, err = getLocalFileContent(path)
+			if err != nil {
+				errMessage := fmt.Sprintf("Error getting local file content: %v", err)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
+				panic(errMessage)
+			}
+		case "github":
+			_, content, err = downloadGithubFileContent(githubRepoName, githubRepoOwner, githubRepoBranch, path, githubAccessToken)
+			if err != nil {
+				errMessage := fmt.Sprintf("Error getting github file content: %v", err)
+				logging.Log.Error(&logging.ContextMap{}, errMessage)
+				panic(errMessage)
+			}
+		default:
+			errMessage := fmt.Sprintf("Unknown data source: %s", source)
 			logging.Log.Error(&logging.ContextMap{}, errMessage)
 			panic(errMessage)
 		}
