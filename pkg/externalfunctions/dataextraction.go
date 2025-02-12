@@ -577,6 +577,7 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 //   - @displayName: Load Code Generation Elements
 //
 // Parameters:
+//   - content: content of the file in []byte format.
 //   - elementsFilePath: path to the file.
 //
 // Returns:
@@ -871,8 +872,10 @@ func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) 
 //   - @displayName: Load and Check Example Dependencies
 //
 // Parameters:
-//   - dependenciesFilePath: path to the file.
+//   - dependenciesContent: content of the dependencies file in []byte format.
 //   - elements: code generation elements.
+//   - instancesReplacementDict: dictionary of instances replacements.
+//   - InstancesReplacementPriorityList: list of instances replacement priority.
 //
 // Returns:
 //   - checkedDependenciesMap: checked dependencies.
@@ -1008,7 +1011,12 @@ func LoadAndCheckExampleDependencies(
 //   - @displayName: Load Code Generation Examples
 //
 // Parameters:
+//   - source: source of the examples (local or github).
 //   - examplesToExtract: paths to the examples.
+//   - githubRepoName: name of the github repository.
+//   - githubRepoOwner: owner of the github repository.
+//   - githubRepoBranch: branch of the github repository.
+//   - githubAccessToken: access token for the github repository.
 //   - dependencies: dependencies of the examples.
 //   - equivalencesMap: equivalences of the examples.
 //   - chunkSize: size of the chunks.
@@ -1255,7 +1263,12 @@ func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) 
 //   - @displayName: Load User Guide Sections
 //
 // Parameters:
-//   - paths: paths to the sections.
+//   - source: source of the sections (local or github).
+//   - sectionFilePaths: paths to the sections.
+//   - githubRepoName: name of the github repository.
+//   - githubRepoOwner: owner of the github repository.
+//   - githubRepoBranch: branch of the github repository.
+//   - githubAccessToken: access token for the github repository.
 //
 // Returns:
 //   - sections: user guide sections.
