@@ -934,6 +934,11 @@ func createStringFilterExpression(filterType string, filter []string) (filterExp
 		}
 	}()
 
+	for i := range filter {
+		// Escape single quotes in the filter value
+		filter[i] = strings.ReplaceAll(filter[i], "'", "\\'")
+	}
+
 	filterExpression = fmt.Sprintf("%s in ['%s'", filterType, filter[0])
 	if len(filter) > 1 {
 		filterExpression += fmt.Sprintf(", '%s'", strings.Join(filter[1:], "', '"))
