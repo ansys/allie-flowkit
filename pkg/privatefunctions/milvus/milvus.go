@@ -21,7 +21,7 @@ import (
 
 // Global variables
 var (
-	CallsBatchSize          = 10000
+	CallsBatchSize          = 500
 	DumpBatchSize           = 10000
 	MilvusConnectionTimeout = 5 * time.Second
 	MilvusConnectionRetries = 40
