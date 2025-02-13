@@ -935,6 +935,8 @@ func createStringFilterExpression(filterType string, filter []string) (filterExp
 	}()
 
 	for i := range filter {
+		// Escape double backslashes in the filter value.
+		filter[i] = strings.ReplaceAll(filter[i], "\\", "\\\\")
 		// Escape single quotes in the filter value
 		filter[i] = strings.ReplaceAll(filter[i], "'", "\\'")
 	}
