@@ -1075,11 +1075,17 @@ func LoadCodeGenerationExamples(
 		// The name should be only the file name
 		fileName := filepath.Base(examplePath)
 
+		// Check if the example has dependencies.
+		exampleDependencies := []string{}
+		if dependencies[fileName] != nil {
+			exampleDependencies = dependencies[fileName]
+		}
+
 		// Create the object
 		example := sharedtypes.CodeGenerationExample{
 			Chunks:                 chunks,
 			Name:                   fileName,
-			Dependencies:           dependencies[fileName],
+			Dependencies:           exampleDependencies,
 			DependencyEquivalences: equivalencesMap[fileName],
 		}
 
@@ -1144,10 +1150,6 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 		{
 			Name: "text",
 			Type: "string",
-		},
-		{
-			Name: "dependencies",
-			Type: "[]string",
 		},
 		{
 			Name: "dependency_equivalences",
@@ -1434,6 +1436,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 				Guid:              chunkGuids[j], // Current chunk's GUID
 				SectionName:       section.Name,
 				DocumentName:      section.DocumentName,
+				Title:             section.Title,
 				ParentSectionName: section.Parent,
 				Level:             section.Level,
 				PreviousChunk:     "", // Default empty

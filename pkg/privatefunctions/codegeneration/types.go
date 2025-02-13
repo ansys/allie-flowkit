@@ -70,9 +70,10 @@ type GraphDatabaseElement struct {
 }
 
 type VectorDatabaseUserGuideSection struct {
-	Guid              string           `json:"guid"`
-	SectionName       string           `json:"section_name"`
-	DocumentName      string           `json:"document_name"`
+	Guid              string `json:"guid"`
+	SectionName       string `json:"section_name"`
+	DocumentName      string `json:"document_name"`
+	Title             string
 	ParentSectionName string           `json:"parent_section_name"`
 	Text              string           `json:"text"`
 	Level             int              `json:"level"`

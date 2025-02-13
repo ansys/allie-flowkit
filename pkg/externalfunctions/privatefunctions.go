@@ -2092,7 +2092,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForExamples(elements []codegener
 		batchData := elements[i:end]
 		batchTextToEmbed := make([]string, len(batchData))
 		for j, data := range batchData {
-			batchTextToEmbed[j] = data.Text
+			batchTextToEmbed[j] = data.DocumentName + "\n" + data.Text
 		}
 
 		// Send http request
@@ -2126,7 +2126,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(sections []
 		batchData := sections[i:end]
 		batchTextToEmbed := make([]string, len(batchData))
 		for j, data := range batchData {
-			batchTextToEmbed[j] = data.Text
+			batchTextToEmbed[j] = data.Title + "\n" + data.Text
 		}
 
 		// Send embedding request

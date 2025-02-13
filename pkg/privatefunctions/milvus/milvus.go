@@ -2,6 +2,7 @@ package milvus
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -236,6 +237,7 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 		context.Background(), // ctx
 		schema,
 		2, // shardNum
+		client.WithEnableDynamicSchema(true),
 	)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error during CreateCollection: %v", err)
@@ -408,10 +410,6 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.DataType = entity.FieldTypeDouble
 		case "string":
 			fieldSchema.DataType = entity.FieldTypeVarChar
-		case "[]string":
-			fieldSchema.DataType = entity.FieldTypeArray
-			fieldSchema.ElementType = entity.FieldTypeVarChar
-			fieldSchema.TypeParams = map[string]string{"max_length": "40000", "max_capacity": "1000"}
 		case "bool":
 			fieldSchema.DataType = entity.FieldTypeBool
 		case "map[string]string":
@@ -513,9 +511,9 @@ func InsertData(collectionName string, dataToSend []interface{}, objectFieldName
 		request.Data = dataToSend[startIndex:stopIndex]
 
 		// Remove duplicates inside milvus so updated data can be added
-		removedData, err := QueryAndRemoveDuplicates(collectionName, dataToSend[startIndex:stopIndex], objectFieldName, idFieldName)
+		entriesToRemove, err := QueryDuplicates(collectionName, dataToSend[startIndex:stopIndex], objectFieldName, idFieldName)
 		if err != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Error during QueryAndRemoveDuplicates: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during QueryDuplicates: %v", err)
 			return err
 		}
 
@@ -523,14 +521,17 @@ func InsertData(collectionName string, dataToSend []interface{}, objectFieldName
 		err = sendInsertRequest(request)
 		if err != nil {
 			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendInsertRequest: %v. Adding removed data.", err)
-			err := InsertData(collectionName, removedData, objectFieldName, idFieldName)
-			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error adding the removed data after failure: %v", err)
-			}
 			return err
 		}
 
-		logging.Log.Infof(&logging.ContextMap{}, "Updated %d entries in Milvus", len(removedData))
+		// If data was successfully inserted, remove the duplicates from the Milvus database
+		err = RemoveDuplicates(collectionName, entriesToRemove)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during RemoveDuplicates: %v", err)
+			return err
+		}
+
+		logging.Log.Infof(&logging.ContextMap{}, "Updated %d entries in Milvus", len(entriesToRemove))
 
 		// Move the start index to the next batch
 		startIndex = stopIndex
@@ -575,7 +576,7 @@ func Query(collectionName string, responseLimit int, outputFields []string, filt
 	return response, nil
 }
 
-// QueryAndRemoveDuplicates queries the Milvus database for the provided data and retrieves the input data without duplicates.
+// QueryDuplicates queries the Milvus database for the provided data and retrieves the duplicates.
 //
 // Parameters:
 //   - collectionName: Name of the collection in the Milvus database.
@@ -586,11 +587,11 @@ func Query(collectionName string, responseLimit int, outputFields []string, filt
 // Returns:
 //   - removedData: Data that was removed from the Milvus database.
 //   - error: Error if any issue occurs during querying the Milvus database.
-func QueryAndRemoveDuplicates(collectionName string, data []interface{}, objectFieldName string, idFieldName string) (removedData []interface{}, funcError error) {
+func QueryDuplicates(collectionName string, data []interface{}, objectFieldName string, idFieldName string) (duplicatedEntriesId []int64, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Panic in QueryAndRemoveDuplicates: %v", r)
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in QueryDuplicates: %v", r)
 			funcError = r.(error)
 			return
 		}
@@ -613,10 +614,63 @@ func QueryAndRemoveDuplicates(collectionName string, data []interface{}, objectF
 		return nil, err
 	}
 
-	response, err := Query(collectionName, 0, []string{idFieldName}, filter)
+	// Send the Milvus query request and receive the response.
+	response, err := Query(collectionName, 0, []string{"id", "document_name"}, filter)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
 		return nil, err
+	}
+
+	// Create a list of IDs for the duplicated entries
+	for _, item := range response.Data {
+		if obj, ok := item.(map[string]interface{}); ok {
+			// get the id field from the object
+			if idNum, ok := obj["id"].(json.Number); ok {
+				id, err := strconv.ParseInt(idNum.String(), 10, 64)
+				if err != nil {
+					logging.Log.Errorf(&logging.ContextMap{}, "Error parsing ID: %v", err)
+					continue
+				}
+				duplicatedEntriesId = append(duplicatedEntriesId, id)
+			}
+		}
+	}
+	return duplicatedEntriesId, nil
+}
+
+// RemoveDuplicates removes duplicates from the Milvus database.
+//
+// Parameters:
+//   - collectionName: Name of the collection in the Milvus database.
+//   - dataIds: IDs of the data to remove from the Milvus database.
+//
+// Returns:
+//   - error: Error if any issue occurs during querying the Milvus database.
+func RemoveDuplicates(collectionName string, dataIds []int64) (funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in RemoveDuplicates: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+	// If there are no data IDs, return
+	if len(dataIds) == 0 {
+		return nil
+	}
+
+	// Query Milvus for entries in the current batch
+	filter, err := createNumberFilterExpression("id", dataIds)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during createStringFilterExpression: %v", err)
+		return err
+	}
+
+	response, err := Query(collectionName, 0, []string{"*"}, filter)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
+		return err
 	}
 
 	if len(response.Data) > 0 {
@@ -624,14 +678,11 @@ func QueryAndRemoveDuplicates(collectionName string, data []interface{}, objectF
 		err = sendRemoveRequest(collectionName, filter)
 		if err != nil {
 			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendRemoveRequest: %v", err)
-			return nil, err
+			return err
 		}
-
-		// Add the removed data to the list of removed data
-		removedData = response.Data
 	}
 
-	return removedData, nil
+	return nil
 }
 
 // sendRemoveRequest sends an HTTP POST request to the Milvus database for removing entries.
@@ -891,6 +942,40 @@ func createStringFilterExpression(filterType string, filter []string) (filterExp
 	return filterExpression + "]", nil
 }
 
+// createNumberFilterExpression creates a filter expression for the number filtering option in the query and search requests.
+//
+// Parameters:
+//   - filterType: Type of the filter.
+//   - filter: Filter to apply.
+//
+// Returns:
+//   - filterExpression: Filter expression for the provided filter type.
+//   - error: Error if any issue occurs while creating the filter expression.
+func createNumberFilterExpression(filterType string, filter []int64) (filterExpression string, funcError error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in createStringFilterExpression: %v", r)
+			funcError = r.(error)
+			return
+		}
+	}()
+	// Ensure there is at least one filter value
+	if len(filter) == 0 {
+		return "", nil
+	}
+
+	// Convert numbers to string and join them properly
+	filterStrings := make([]string, len(filter))
+	for i, num := range filter {
+		filterStrings[i] = strconv.FormatInt(num, 10)
+	}
+
+	filterExpression = fmt.Sprintf("%s in [%s]", filterType, strings.Join(filterStrings, ", "))
+
+	return filterExpression, nil
+}
+
 // combineFilterExpressions combines the filter expressions for the filtering option in the query and search requests.
 // This function combines the filter expressions for the "guid", "keywords", "document_id" and "documents" fields.
 //
@@ -989,6 +1074,16 @@ func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, fu
 	}
 
 	return response, nil
+}
+
+func removeFieldFromData(data []interface{}, fieldToRemove string) []interface{} {
+	for i, item := range data {
+		if obj, ok := item.(map[string]interface{}); ok {
+			delete(obj, fieldToRemove)
+			data[i] = obj
+		}
+	}
+	return data
 }
 
 // // Returns nil if threshhold is not reached
