@@ -61,6 +61,7 @@ func CreatePayloadAndSendHttpRequest(url string, requestType string, requestObje
 
 	// Decode the JSON response body into the 'data' struct.
 	decoder := json.NewDecoder(resp.Body)
+	decoder.UseNumber()
 	if err := decoder.Decode(responsePtr); err != nil {
 		return err, 0
 	}
