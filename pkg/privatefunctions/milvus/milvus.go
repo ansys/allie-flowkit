@@ -21,7 +21,7 @@ import (
 
 // Global variables
 var (
-	CallsBatchSize          = 10000
+	CallsBatchSize          = 500
 	DumpBatchSize           = 10000
 	MilvusConnectionTimeout = 5 * time.Second
 	MilvusConnectionRetries = 40
@@ -933,6 +933,13 @@ func createStringFilterExpression(filterType string, filter []string) (filterExp
 			return
 		}
 	}()
+
+	for i := range filter {
+		// Escape double backslashes in the filter value.
+		filter[i] = strings.ReplaceAll(filter[i], "\\", "\\\\")
+		// Escape single quotes in the filter value
+		filter[i] = strings.ReplaceAll(filter[i], "'", "\\'")
+	}
 
 	filterExpression = fmt.Sprintf("%s in ['%s'", filterType, filter[0])
 	if len(filter) > 1 {
