@@ -416,8 +416,10 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.DataType = entity.FieldTypeJSON
 		case "[]float32":
 			fieldSchema.DataType = entity.FieldTypeFloatVector
+			field.Dimension = config.GlobalConfig.EMBEDDINGS_DIMENSIONS
 		case "map[uint]float32":
 			fieldSchema.DataType = entity.FieldTypeSparseVector
+			field.Dimension = config.GlobalConfig.EMBEDDINGS_DIMENSIONS
 		case "[]bool":
 			fieldSchema.DataType = entity.FieldTypeBinaryVector
 		default:

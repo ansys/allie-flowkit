@@ -783,14 +783,12 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 			Type: "string",
 		},
 		{
-			Name:      "dense_vector",
-			Type:      "[]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "dense_vector",
+			Type: "[]float32",
 		},
 		{
-			Name:      "sparse_vector",
-			Type:      "map[uint]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "sparse_vector",
+			Type: "map[uint]float32",
 		},
 		{
 			Name: "type",
@@ -1138,14 +1136,12 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 			Type: "string",
 		},
 		{
-			Name:      "dense_vector",
-			Type:      "[]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "dense_vector",
+			Type: "[]float32",
 		},
 		{
-			Name:      "sparse_vector",
-			Type:      "map[uint]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "sparse_vector",
+			Type: "map[uint]float32",
 		},
 		{
 			Name: "text",
@@ -1380,14 +1376,12 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 			Type: "string",
 		},
 		{
-			Name:      "dense_vector",
-			Type:      "[]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "dense_vector",
+			Type: "[]float32",
 		},
 		{
-			Name:      "sparse_vector",
-			Type:      "map[uint]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "sparse_vector",
+			Type: "map[uint]float32",
 		},
 		{
 			Name: "text",
@@ -1464,16 +1458,6 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
-
-	// dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
-	// for i := range dummyDenseVector {
-	// 	dummyDenseVector[i] = 0.5
-	// }
-
-	// dummySparseVector := make(map[uint]float32)
-	// for i := 0; i < config.GlobalConfig.EMBEDDINGS_DIMENSIONS; i++ {
-	// 	dummySparseVector[uint(i)] = 0.5
-	// }
 
 	// Assign embeddings to the vector database objects.
 	for i := range vectorUserGuideSectionChunks {

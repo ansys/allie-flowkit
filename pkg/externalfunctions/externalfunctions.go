@@ -75,4 +75,8 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"StoreExamplesInGraphDatabase":           StoreExamplesInGraphDatabase,
 	"StoreUserGuideSectionsInVectorDatabase": StoreUserGuideSectionsInVectorDatabase,
 	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
+
+	// milvus
+	"MilvusCreateCollection": MilvusCreateCollection,
+	// "MilvusInsertData":       MilvusInsertData,
 }
