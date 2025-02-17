@@ -5,7 +5,7 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
 
-func MilvusCreateCollection(collectionName string, schema []interface{}) {
+func MilvusCreateCollection(collectionName string, schema []map[string]interface{}) {
 	// Initialize Milvus client
 	client, err := milvus.Initialize()
 	if err != nil {
@@ -19,8 +19,8 @@ func MilvusCreateCollection(collectionName string, schema []interface{}) {
 	if len(schema) != 0 {
 		for _, field := range schema {
 			schemaField := milvus.SchemaField{
-				Name: field.(map[string]interface{})["name"].(string),
-				Type: field.(map[string]interface{})["type"].(string),
+				Name: field["name"].(string),
+				Type: field["type"].(string),
 			}
 			schemaObject = append(schemaObject, schemaField)
 		}

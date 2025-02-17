@@ -368,21 +368,23 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	}
 
 	// Create a vector index for the sparseVectorFieldName field
-	sparseIdx, err := entity.NewIndexSparseInverted(entity.IP, 0)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
-		return err
-	}
-	err = milvusClient.CreateIndex(
-		context.Background(),
-		collectionName,
-		sparseVectorFieldName,
-		sparseIdx,
-		false,
-	)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
-		return err
+	if sparseVectorFieldName != "" {
+		sparseIdx, err := entity.NewIndexSparseInverted(entity.IP, 0)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
+			return err
+		}
+		err = milvusClient.CreateIndex(
+			context.Background(),
+			collectionName,
+			sparseVectorFieldName,
+			sparseIdx,
+			false,
+		)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
+			return err
+		}
 	}
 
 	return nil
