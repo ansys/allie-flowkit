@@ -1465,12 +1465,13 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 //
 // Parameters:
 //   - elements: user guide sections.
-func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection) {
+//   - label: label for the sections (UserGuide by default).
+func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, label string) {
 	// Initialize the graph database.
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections)
+	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections, label)
 
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections)
