@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // CreatePayloadAndSendHttpRequest creates a JSON payload from a request object and sends an HTTP POST request to the specified URL.
@@ -108,4 +111,39 @@ func ExtractStringFieldFromStruct(data interface{}, fieldName string) (string, e
 	}
 
 	return field.String(), nil
+}
+
+// SnakeToCamel converts a snake_case string to camelCase or PascalCase based on upperFirst flag
+//
+// Parameters:
+//   - s: the snake_case string to convert.
+//   - upperFirst: a flag to determine if the first letter should be capitalized.
+//
+// Returns:
+//   - the camelCase or PascalCase string.
+func SnakeToCamel(s string, upperFirst bool) string {
+	parts := strings.Split(s, "_")
+	if len(parts) == 0 {
+		return s
+	}
+
+	// Use proper Unicode-aware title casing
+	titleCaser := cases.Title(language.English)
+
+	// Process the first part based on upperFirst flag
+	var result string
+	if upperFirst {
+		result = titleCaser.String(parts[0]) // PascalCase: Capitalize first letter
+	} else {
+		result = strings.ToLower(parts[0]) // camelCase: Keep lowercase for first word
+	}
+
+	// Capitalize the first letter of subsequent parts
+	for _, part := range parts[1:] {
+		if len(part) > 0 {
+			result += titleCaser.String(part) // Capitalize each word properly
+		}
+	}
+
+	return result
 }

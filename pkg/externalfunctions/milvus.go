@@ -1,8 +1,7 @@
 package externalfunctions
 
 import (
-	"strings"
-
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/generic"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
@@ -92,9 +91,8 @@ func MilvusCreateCollection(collectionName string, schema []map[string]interface
 //   - idFieldName (string): The name of the field to use as the ID
 //   - idField (string): The ID field
 func MilvusInsertData(collectionName string, data []interface{}, idFieldName string) {
-	// Assign the objectFieldName name -> Name (capitalize first letter)
-	firstLetter := string(idFieldName[0])
-	objectFieldName := strings.ToUpper(firstLetter) + idFieldName[1:]
+	// Convert the snake_case idFieldName to PascalCase
+	objectFieldName := generic.SnakeToCamel(idFieldName, true)
 
 	// Insert data
 	err := milvus.InsertData(collectionName, data, objectFieldName, idFieldName)

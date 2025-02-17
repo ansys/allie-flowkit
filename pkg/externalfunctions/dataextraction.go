@@ -1517,7 +1517,7 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 // Returns:
 //   - extractionData: general data extraction document objects in interface format.
 func CreateGeneralDataExtractionDocumentObjects(documentName string,
-	documentChunks string,
+	documentChunks []string,
 	denseEmbeddings [][]float32,
 	sparseEmbeddings []map[uint]float32,
 ) (extractionData []interface{}) {
@@ -1537,7 +1537,7 @@ func CreateGeneralDataExtractionDocumentObjects(documentName string,
 			DocumentName:  documentName,
 			PreviousChunk: "", // Default empty
 			NextChunk:     "", // Default empty
-			Text:          string(documentChunks[j]),
+			Text:          documentChunks[j],
 			DenseVector:   denseEmbeddings[j],
 			SparseVector:  sparseEmbeddings[j],
 		}
