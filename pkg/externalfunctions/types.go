@@ -215,3 +215,13 @@ type TokenCountUpdateRequest struct {
 	OutputToken int    `json:"output_token"`
 	Plattform   string `json:"plattform"`
 }
+
+type GeneralDataExtractionDocument struct {
+	DocumentName  string           `json:"document_name"`
+	Guid          string           `json:"guid"`
+	PreviousChunk string           `json:"previous_chunk"`
+	NextChunk     string           `json:"next_chunk"`
+	DenseVector   []float32        `json:"dense_vector"`
+	SparseVector  map[uint]float32 `json:"sparse_vector"`
+	Text          string           `json:"text"`
+}

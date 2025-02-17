@@ -1501,3 +1501,64 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 
 	return
 }
+
+// CreateGeneralDataExtractionDocumentObjects creates general data extraction document objects from
+// the provided document chunks, dense embeddings, and sparse embeddings.
+//
+// Tags:
+//   - @displayName: Create General Data Extraction Document Objects
+//
+// Parameters:
+//   - documentName: name of the document.
+//   - documentChunks: chunks of the document.
+//   - denseEmbeddings: dense embeddings of the document.
+//   - sparseEmbeddings: sparse embeddings of the document.
+//
+// Returns:
+//   - extractionData: general data extraction document objects in interface format.
+func CreateGeneralDataExtractionDocumentObjects(documentName string,
+	documentChunks string,
+	denseEmbeddings [][]float32,
+	sparseEmbeddings []map[uint]float32,
+) (extractionData []interface{}) {
+	extractionDataObjects := []GeneralDataExtractionDocument{}
+
+	// Generate GUIDs for each chunk in advance.
+	chunkGuids := make([]string, len(documentChunks))
+	for j := 0; j < len(documentChunks); j++ {
+		guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
+		chunkGuids[j] = guid
+	}
+
+	// Create vector database objects and assign PreviousChunk and NextChunk.
+	for j := 0; j < len(documentChunks); j++ {
+		documentChunkElement := GeneralDataExtractionDocument{
+			Guid:          chunkGuids[j], // Current chunk's GUID
+			DocumentName:  documentName,
+			PreviousChunk: "", // Default empty
+			NextChunk:     "", // Default empty
+			Text:          string(documentChunks[j]),
+			DenseVector:   denseEmbeddings[j],
+			SparseVector:  sparseEmbeddings[j],
+		}
+
+		// Assign PreviousChunk and NextChunk GUIDs.
+		if j > 0 {
+			documentChunkElement.PreviousChunk = chunkGuids[j-1]
+		}
+		if j < len(documentChunks)-1 {
+			documentChunkElement.NextChunk = chunkGuids[j+1]
+		}
+
+		// Add the new vector database object to the list.
+		extractionDataObjects = append(extractionDataObjects, documentChunkElement)
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	extractionData = make([]interface{}, len(extractionDataObjects))
+	for i, v := range extractionDataObjects {
+		extractionData[i] = v
+	}
+
+	return extractionData
+}

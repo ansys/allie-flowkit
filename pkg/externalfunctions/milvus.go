@@ -1,10 +1,20 @@
 package externalfunctions
 
 import (
+	"strings"
+
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
 
+// MilvusCreateCollection creates a collection in Milvus
+//
+// Tags:
+//   - @displayName: Create Milvus Collection
+//
+// Params:
+//   - collectionName (string): The name of the collection
+//   - schema (map[string]interface{}): The schema of the collection
 func MilvusCreateCollection(collectionName string, schema []map[string]interface{}) {
 	// Initialize Milvus client
 	client, err := milvus.Initialize()
@@ -66,6 +76,30 @@ func MilvusCreateCollection(collectionName string, schema []map[string]interface
 	err = milvus.CreateCollection(milvusSchema, client)
 	if err != nil {
 		errorMessage := "Failed to create collection: " + err.Error()
+		logging.Log.Errorf(&logging.ContextMap{}, "%s", errorMessage)
+		panic(errorMessage)
+	}
+}
+
+// MilvusInsertData inserts data into a collection in Milvus
+//
+// Tags:
+//   - @displayName: Insert Data into Milvus Collection
+//
+// Params:
+//   - collectionName (string): The name of the collection
+//   - data ([]interface{}): The data to insert
+//   - idFieldName (string): The name of the field to use as the ID
+//   - idField (string): The ID field
+func MilvusInsertData(collectionName string, data []interface{}, idFieldName string) {
+	// Assign the objectFieldName name -> Name (capitalize first letter)
+	firstLetter := string(idFieldName[0])
+	objectFieldName := strings.ToUpper(firstLetter) + idFieldName[1:]
+
+	// Insert data
+	err := milvus.InsertData(collectionName, data, objectFieldName, idFieldName)
+	if err != nil {
+		errorMessage := "Failed to insert data: " + err.Error()
 		logging.Log.Errorf(&logging.ContextMap{}, "%s", errorMessage)
 		panic(errorMessage)
 	}
