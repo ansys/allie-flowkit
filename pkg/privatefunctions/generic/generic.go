@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // CreatePayloadAndSendHttpRequest creates a JSON payload from a request object and sends an HTTP POST request to the specified URL.
@@ -91,21 +94,70 @@ func ExtractStringFieldFromStruct(data interface{}, fieldName string) (string, e
 		v = v.Elem()
 	}
 
-	// Ensure it's a struct
-	if v.Kind() != reflect.Struct {
-		return "", fmt.Errorf("expected struct but got %T", data)
+	// Ensure it's a struct or map[string]interface{}
+	if v.Kind() == reflect.Struct {
+		// Get field by name
+		field := v.FieldByName(fieldName)
+		if !field.IsValid() {
+			return "", fmt.Errorf("field '%s' not found", fieldName)
+		}
+
+		// Ensure field is a string
+		if field.Kind() != reflect.String {
+			return "", fmt.Errorf("field '%s' is not a string", fieldName)
+		}
+
+		return field.String(), nil
+	} else {
+		// If it's a map extract the field
+		field := v.MapIndex(reflect.ValueOf(fieldName))
+		if !field.IsValid() {
+			return "", fmt.Errorf("field '%s' not found", fieldName)
+		}
+
+		fieldValue := field.Interface()
+
+		// Check if the field is of type string
+		strVal, ok := fieldValue.(string)
+		if !ok {
+			return "", fmt.Errorf("field '%s' is not a string", fieldName)
+		}
+
+		return strVal, nil
+	}
+}
+
+// SnakeToCamel converts a snake_case string to camelCase or PascalCase based on upperFirst flag
+//
+// Parameters:
+//   - s: the snake_case string to convert.
+//   - upperFirst: a flag to determine if the first letter should be capitalized.
+//
+// Returns:
+//   - the camelCase or PascalCase string.
+func SnakeToCamel(s string, upperFirst bool) string {
+	parts := strings.Split(s, "_")
+	if len(parts) == 0 {
+		return s
 	}
 
-	// Get field by name
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return "", fmt.Errorf("field '%s' not found", fieldName)
+	// Use proper Unicode-aware title casing
+	titleCaser := cases.Title(language.English)
+
+	// Process the first part based on upperFirst flag
+	var result string
+	if upperFirst {
+		result = titleCaser.String(parts[0]) // PascalCase: Capitalize first letter
+	} else {
+		result = strings.ToLower(parts[0]) // camelCase: Keep lowercase for first word
 	}
 
-	// Ensure field is a string
-	if field.Kind() != reflect.String {
-		return "", fmt.Errorf("field '%s' is not a string", fieldName)
+	// Capitalize the first letter of subsequent parts
+	for _, part := range parts[1:] {
+		if len(part) > 0 {
+			result += titleCaser.String(part) // Capitalize each word properly
+		}
 	}
 
-	return field.String(), nil
+	return result
 }

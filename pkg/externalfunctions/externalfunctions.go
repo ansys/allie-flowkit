@@ -5,6 +5,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PerformVectorEmbeddingRequest":                    PerformVectorEmbeddingRequest,
 	"PerformVectorEmbeddingRequestWithTokenLimitCatch": PerformVectorEmbeddingRequestWithTokenLimitCatch,
 	"PerformBatchEmbeddingRequest":                     PerformBatchEmbeddingRequest,
+	"PerformBatchHybridEmbeddingRequest":               PerformBatchHybridEmbeddingRequest,
 	"PerformKeywordExtractionRequest":                  PerformKeywordExtractionRequest,
 	"PerformGeneralRequest":                            PerformGeneralRequest,
 	"PerformGeneralRequestWithImages":                  PerformGeneralRequestWithImages,
@@ -48,16 +49,17 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AisPerformLLMFinalRequest":                      AisPerformLLMFinalRequest,
 
 	// data extraction
-	"GetGithubFilesToExtract":   GetGithubFilesToExtract,
-	"GetLocalFilesToExtract":    GetLocalFilesToExtract,
-	"AppendStringSlices":        AppendStringSlices,
-	"DownloadGithubFileContent": DownloadGithubFileContent,
-	"GetLocalFileContent":       GetLocalFileContent,
-	"GetDocumentType":           GetDocumentType,
-	"LangchainSplitter":         LangchainSplitter,
-	"GenerateDocumentTree":      GenerateDocumentTree,
-	"AddDataRequest":            AddDataRequest,
-	"CreateCollectionRequest":   CreateCollectionRequest,
+	"GetGithubFilesToExtract":                    GetGithubFilesToExtract,
+	"GetLocalFilesToExtract":                     GetLocalFilesToExtract,
+	"AppendStringSlices":                         AppendStringSlices,
+	"DownloadGithubFileContent":                  DownloadGithubFileContent,
+	"GetLocalFileContent":                        GetLocalFileContent,
+	"GetDocumentType":                            GetDocumentType,
+	"LangchainSplitter":                          LangchainSplitter,
+	"GenerateDocumentTree":                       GenerateDocumentTree,
+	"AddDataRequest":                             AddDataRequest,
+	"CreateCollectionRequest":                    CreateCollectionRequest,
+	"CreateGeneralDataExtractionDocumentObjects": CreateGeneralDataExtractionDocumentObjects,
 
 	// generic
 	"AssignStringToString": AssignStringToString,
@@ -75,4 +77,8 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"StoreExamplesInGraphDatabase":           StoreExamplesInGraphDatabase,
 	"StoreUserGuideSectionsInVectorDatabase": StoreUserGuideSectionsInVectorDatabase,
 	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
+
+	// milvus
+	"MilvusCreateCollection": MilvusCreateCollection,
+	"MilvusInsertData":       MilvusInsertData,
 }

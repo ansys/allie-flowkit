@@ -256,10 +256,11 @@ func (neo4j_context *neo4j_Context) AddCodeGenerationExampleNodes(nodes []shared
 //
 // Parameters:
 //   - nodes: List of nodes to be added.
+//   - label: Label for the nodes.
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error) {
+func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []sharedtypes.CodeGenerationUserGuideSection, label string) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -281,6 +282,9 @@ func (neo4j_context *neo4j_Context) AddUserGuideSectionNodes(nodes []sharedtypes
 		for _, node := range nodes {
 			// Convert the node object to a map
 			nodeType := "UserGuide"
+			if label != "" {
+				nodeType = label
+			}
 			nodeName := node.Name
 			nodeMap := make(map[string]any)
 			nodeJSON, err := json.Marshal(node) // Convert struct to JSON
@@ -558,7 +562,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 
 					// Check if reference link references a document and create relationship
 					_, err = transaction.Run(db_ctx,
-						"MATCH (a {Name: $a}) MATCH (b:UserGuide {document_name: $b}) WITH a, b ORDER BY b.level ASC LIMIT 1 MERGE (a)-[:REFERENCES]->(b)",
+						"MATCH (a {Name: $a}) MATCH (b {document_name: $b}) WITH a, b ORDER BY b.level ASC LIMIT 1 MERGE (a)-[:REFERENCES]->(b)",
 						map[string]any{
 							"a": node.Name,
 							"b": referenceLink,

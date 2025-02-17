@@ -198,6 +198,50 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 	return embedding32Array
 }
 
+// PerformBatchHybridEmbeddingRequest performs a batch hybrid embedding request to LLM
+// returning the sparse and dense embeddings
+//
+// Tags:
+//   - @displayName: Batch Hybrid Embeddings
+//
+// Parameters:
+//   - input: the input strings
+//
+// Returns:
+//   - denseEmbeddings: the dense embeddings in float32 format
+//   - sparseEmbeddings: the sparse embeddings in map format
+func PerformBatchHybridEmbeddingRequest(input []string, maxBatchSize int) (denseEmbeddings [][]float32, sparseEmbeddings []map[uint]float32) {
+	processedEmbeddings := 0
+
+	// Process data in batches
+	for i := 0; i < len(input); i += maxBatchSize {
+		end := i + maxBatchSize
+		if end > len(input) {
+			end = len(input)
+		}
+
+		// Create a batch of data to send to LLM handler
+		batchTextToEmbed := input[i:end]
+
+		// Send http request
+		batchDenseEmbeddings, batchLexicalWeights, err := llmHandlerPerformVectorEmbeddingRequest(batchTextToEmbed, true)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error performing batch embedding request: %v", err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
+
+		// Add the embeddings to the list
+		denseEmbeddings = append(denseEmbeddings, batchDenseEmbeddings...)
+		sparseEmbeddings = append(sparseEmbeddings, batchLexicalWeights...)
+
+		processedEmbeddings += len(batchTextToEmbed)
+		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+	}
+
+	return denseEmbeddings, sparseEmbeddings
+}
+
 // PerformKeywordExtractionRequest performs a keywords extraction request to LLM
 //
 // Tags:

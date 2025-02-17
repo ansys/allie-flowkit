@@ -768,14 +768,6 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 		vectorElements = append(vectorElements, vectorElement)
 	}
 
-	// Initialize the vector database.
-	milvusClient, err := milvus.Initialize()
-	if err != nil {
-		errMessage := fmt.Sprintf("Error initializing the vector database: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
@@ -783,14 +775,12 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 			Type: "string",
 		},
 		{
-			Name:      "dense_vector",
-			Type:      "[]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "dense_vector",
+			Type: "[]float32",
 		},
 		{
-			Name:      "sparse_vector",
-			Type:      "map[uint]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "sparse_vector",
+			Type: "map[uint]float32",
 		},
 		{
 			Name: "type",
@@ -822,7 +812,7 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 	}
 
 	// Create the collection.
-	err = milvus.CreateCollection(schema, milvusClient)
+	err = milvus.CreateCollection(schema)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating the collection: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -1111,14 +1101,6 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 		batchSize = 2
 	}
 
-	// Initialize the vector database.
-	milvusClient, err := milvus.Initialize()
-	if err != nil {
-		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
@@ -1138,14 +1120,12 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 			Type: "string",
 		},
 		{
-			Name:      "dense_vector",
-			Type:      "[]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "dense_vector",
+			Type: "[]float32",
 		},
 		{
-			Name:      "sparse_vector",
-			Type:      "map[uint]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "sparse_vector",
+			Type: "map[uint]float32",
 		},
 		{
 			Name: "text",
@@ -1165,7 +1145,7 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 	}
 
 	// Create the collection.
-	err = milvus.CreateCollection(schema, milvusClient)
+	err = milvus.CreateCollection(schema)
 	if err != nil {
 		errMessage := "error creating the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
@@ -1341,14 +1321,6 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		batchSize = 2
 	}
 
-	// Initialize the vector database.
-	milvusClient, err := milvus.Initialize()
-	if err != nil {
-		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
@@ -1380,14 +1352,12 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 			Type: "string",
 		},
 		{
-			Name:      "dense_vector",
-			Type:      "[]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "dense_vector",
+			Type: "[]float32",
 		},
 		{
-			Name:      "sparse_vector",
-			Type:      "map[uint]float32",
-			Dimension: config.GlobalConfig.EMBEDDINGS_DIMENSIONS,
+			Name: "sparse_vector",
+			Type: "map[uint]float32",
 		},
 		{
 			Name: "text",
@@ -1403,7 +1373,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 	}
 
 	// Create the collection.
-	err = milvus.CreateCollection(schema, milvusClient)
+	err = milvus.CreateCollection(schema)
 	if err != nil {
 		errMessage := "error creating the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
@@ -1465,16 +1435,6 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		panic(errMessage)
 	}
 
-	// dummyDenseVector := make([]float32, config.GlobalConfig.EMBEDDINGS_DIMENSIONS)
-	// for i := range dummyDenseVector {
-	// 	dummyDenseVector[i] = 0.5
-	// }
-
-	// dummySparseVector := make(map[uint]float32)
-	// for i := 0; i < config.GlobalConfig.EMBEDDINGS_DIMENSIONS; i++ {
-	// 	dummySparseVector[uint(i)] = 0.5
-	// }
-
 	// Assign embeddings to the vector database objects.
 	for i := range vectorUserGuideSectionChunks {
 		vectorUserGuideSectionChunks[i].DenseVector = denseEmbeddings[i]
@@ -1505,15 +1465,77 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 //
 // Parameters:
 //   - elements: user guide sections.
-func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection) {
+//   - label: label for the sections (UserGuide by default).
+func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, label string) {
 	// Initialize the graph database.
 	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections)
+	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections, label)
 
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections)
 
 	return
+}
+
+// CreateGeneralDataExtractionDocumentObjects creates general data extraction document objects from
+// the provided document chunks, dense embeddings, and sparse embeddings.
+//
+// Tags:
+//   - @displayName: Create General Data Extraction Document Objects
+//
+// Parameters:
+//   - documentName: name of the document.
+//   - documentChunks: chunks of the document.
+//   - denseEmbeddings: dense embeddings of the document.
+//   - sparseEmbeddings: sparse embeddings of the document.
+//
+// Returns:
+//   - extractionData: general data extraction document objects in interface format.
+func CreateGeneralDataExtractionDocumentObjects(documentName string,
+	documentChunks []string,
+	denseEmbeddings [][]float32,
+	sparseEmbeddings []map[uint]float32,
+) (extractionData []interface{}) {
+	extractionDataObjects := []GeneralDataExtractionDocument{}
+
+	// Generate GUIDs for each chunk in advance.
+	chunkGuids := make([]string, len(documentChunks))
+	for j := 0; j < len(documentChunks); j++ {
+		guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
+		chunkGuids[j] = guid
+	}
+
+	// Create vector database objects and assign PreviousChunk and NextChunk.
+	for j := 0; j < len(documentChunks); j++ {
+		documentChunkElement := GeneralDataExtractionDocument{
+			Guid:          chunkGuids[j], // Current chunk's GUID
+			DocumentName:  documentName,
+			PreviousChunk: "", // Default empty
+			NextChunk:     "", // Default empty
+			Text:          documentChunks[j],
+			DenseVector:   denseEmbeddings[j],
+			SparseVector:  sparseEmbeddings[j],
+		}
+
+		// Assign PreviousChunk and NextChunk GUIDs.
+		if j > 0 {
+			documentChunkElement.PreviousChunk = chunkGuids[j-1]
+		}
+		if j < len(documentChunks)-1 {
+			documentChunkElement.NextChunk = chunkGuids[j+1]
+		}
+
+		// Add the new vector database object to the list.
+		extractionDataObjects = append(extractionDataObjects, documentChunkElement)
+	}
+
+	// Convert []VectorDatabaseElement to []interface{}
+	extractionData = make([]interface{}, len(extractionDataObjects))
+	for i, v := range extractionDataObjects {
+		extractionData[i] = v
+	}
+
+	return extractionData
 }

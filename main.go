@@ -17,6 +17,9 @@ var externalFunctionsFile string
 //go:embed pkg/externalfunctions/dataextraction.go
 var dataExtractionFile string
 
+//go:embed pkg/externalfunctions/milvus.go
+var milvusFile string
+
 //go:embed pkg/externalfunctions/generic.go
 var genericFile string
 
@@ -56,6 +59,7 @@ func main() {
 		"knowledge_db":    knowledgeDBFile,
 		"llm_handler":     llmHandlerFile,
 		"ansys_gpt":       ansysGPTFile,
+		"milvus":          milvusFile,
 	}
 
 	// Load function definitions

@@ -204,11 +204,10 @@ func loadCollection(collectionName string, milvusClient client.Client) (funcErro
 //
 // Parameters:
 //   - schema: Schema of the collection to be created.
-//   - milvusClient: Milvus client.
 //
 // Returns:
 //   - error: Error if any issue occurs during creating the collection.
-func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcError error) {
+func CreateCollection(schema *entity.Schema) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -217,6 +216,13 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 			return
 		}
 	}()
+	// Create Milvus client
+	milvusClient, err := newClient()
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "error during NewMilvusClient: %s", err.Error())
+		return err
+	}
+
 	// Check if the collection already exists
 	hasColl, err := milvusClient.HasCollection(
 		context.Background(),  // ctx
@@ -229,6 +235,11 @@ func CreateCollection(schema *entity.Schema, milvusClient client.Client) (funcEr
 
 	if hasColl {
 		logging.Log.Infof(&logging.ContextMap{}, "Collection already exists: %s\n", schema.CollectionName)
+		// Load the collection
+		err = loadCollection(schema.CollectionName, milvusClient)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during LoadCollection: %v", err)
+		}
 		return nil
 	}
 
@@ -368,21 +379,23 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 	}
 
 	// Create a vector index for the sparseVectorFieldName field
-	sparseIdx, err := entity.NewIndexSparseInverted(entity.IP, 0)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
-		return err
-	}
-	err = milvusClient.CreateIndex(
-		context.Background(),
-		collectionName,
-		sparseVectorFieldName,
-		sparseIdx,
-		false,
-	)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
-		return err
+	if sparseVectorFieldName != "" {
+		sparseIdx, err := entity.NewIndexSparseInverted(entity.IP, 0)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
+			return err
+		}
+		err = milvusClient.CreateIndex(
+			context.Background(),
+			collectionName,
+			sparseVectorFieldName,
+			sparseIdx,
+			false,
+		)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "failed to create index %v", err.Error())
+			return err
+		}
 	}
 
 	return nil
@@ -416,8 +429,10 @@ func CreateCustomSchema(collectionName string, fields []SchemaField, description
 			fieldSchema.DataType = entity.FieldTypeJSON
 		case "[]float32":
 			fieldSchema.DataType = entity.FieldTypeFloatVector
+			field.Dimension = config.GlobalConfig.EMBEDDINGS_DIMENSIONS
 		case "map[uint]float32":
 			fieldSchema.DataType = entity.FieldTypeSparseVector
+			field.Dimension = config.GlobalConfig.EMBEDDINGS_DIMENSIONS
 		case "[]bool":
 			fieldSchema.DataType = entity.FieldTypeBinaryVector
 		default:
