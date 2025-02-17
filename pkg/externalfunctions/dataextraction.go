@@ -768,14 +768,6 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 		vectorElements = append(vectorElements, vectorElement)
 	}
 
-	// Initialize the vector database.
-	milvusClient, err := milvus.Initialize()
-	if err != nil {
-		errMessage := fmt.Sprintf("Error initializing the vector database: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
@@ -820,7 +812,7 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 	}
 
 	// Create the collection.
-	err = milvus.CreateCollection(schema, milvusClient)
+	err = milvus.CreateCollection(schema)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating the collection: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
@@ -1109,14 +1101,6 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 		batchSize = 2
 	}
 
-	// Initialize the vector database.
-	milvusClient, err := milvus.Initialize()
-	if err != nil {
-		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
@@ -1161,7 +1145,7 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 	}
 
 	// Create the collection.
-	err = milvus.CreateCollection(schema, milvusClient)
+	err = milvus.CreateCollection(schema)
 	if err != nil {
 		errMessage := "error creating the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
@@ -1337,14 +1321,6 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		batchSize = 2
 	}
 
-	// Initialize the vector database.
-	milvusClient, err := milvus.Initialize()
-	if err != nil {
-		errMessage := "error initializing the vector database"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
 	// Create the schema for this collection
 	schemaFields := []milvus.SchemaField{
 		{
@@ -1397,7 +1373,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 	}
 
 	// Create the collection.
-	err = milvus.CreateCollection(schema, milvusClient)
+	err = milvus.CreateCollection(schema)
 	if err != nil {
 		errMessage := "error creating the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)

@@ -1,7 +1,6 @@
 package externalfunctions
 
 import (
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/generic"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
@@ -15,14 +14,6 @@ import (
 //   - collectionName (string): The name of the collection
 //   - schema (map[string]interface{}): The schema of the collection
 func MilvusCreateCollection(collectionName string, schema []map[string]interface{}) {
-	// Initialize Milvus client
-	client, err := milvus.Initialize()
-	if err != nil {
-		errorMessage := "Failed to initialize Milvus client: " + err.Error()
-		logging.Log.Errorf(&logging.ContextMap{}, "%s", errorMessage)
-		return
-	}
-
 	// From schema to field schema
 	schemaObject := []milvus.SchemaField{}
 	if len(schema) != 0 {
@@ -72,7 +63,7 @@ func MilvusCreateCollection(collectionName string, schema []map[string]interface
 	}
 
 	// Create collection
-	err = milvus.CreateCollection(milvusSchema, client)
+	err = milvus.CreateCollection(milvusSchema)
 	if err != nil {
 		errorMessage := "Failed to create collection: " + err.Error()
 		logging.Log.Errorf(&logging.ContextMap{}, "%s", errorMessage)
@@ -83,7 +74,7 @@ func MilvusCreateCollection(collectionName string, schema []map[string]interface
 // MilvusInsertData inserts data into a collection in Milvus
 //
 // Tags:
-//   - @displayName: Insert Data into Milvus Collection
+//   - @displayName: Insert Data into Milvus
 //
 // Params:
 //   - collectionName (string): The name of the collection
@@ -91,11 +82,8 @@ func MilvusCreateCollection(collectionName string, schema []map[string]interface
 //   - idFieldName (string): The name of the field to use as the ID
 //   - idField (string): The ID field
 func MilvusInsertData(collectionName string, data []interface{}, idFieldName string) {
-	// Convert the snake_case idFieldName to PascalCase
-	objectFieldName := generic.SnakeToCamel(idFieldName, true)
-
 	// Insert data
-	err := milvus.InsertData(collectionName, data, objectFieldName, idFieldName)
+	err := milvus.InsertData(collectionName, data, idFieldName, idFieldName)
 	if err != nil {
 		errorMessage := "Failed to insert data: " + err.Error()
 		logging.Log.Errorf(&logging.ContextMap{}, "%s", errorMessage)

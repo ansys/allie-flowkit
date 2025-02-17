@@ -94,23 +94,37 @@ func ExtractStringFieldFromStruct(data interface{}, fieldName string) (string, e
 		v = v.Elem()
 	}
 
-	// Ensure it's a struct
-	if v.Kind() != reflect.Struct {
-		return "", fmt.Errorf("expected struct but got %T", data)
-	}
+	// Ensure it's a struct or map[string]interface{}
+	if v.Kind() == reflect.Struct {
+		// Get field by name
+		field := v.FieldByName(fieldName)
+		if !field.IsValid() {
+			return "", fmt.Errorf("field '%s' not found", fieldName)
+		}
 
-	// Get field by name
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return "", fmt.Errorf("field '%s' not found", fieldName)
-	}
+		// Ensure field is a string
+		if field.Kind() != reflect.String {
+			return "", fmt.Errorf("field '%s' is not a string", fieldName)
+		}
 
-	// Ensure field is a string
-	if field.Kind() != reflect.String {
-		return "", fmt.Errorf("field '%s' is not a string", fieldName)
-	}
+		return field.String(), nil
+	} else {
+		// If it's a map extract the field
+		field := v.MapIndex(reflect.ValueOf(fieldName))
+		if !field.IsValid() {
+			return "", fmt.Errorf("field '%s' not found", fieldName)
+		}
 
-	return field.String(), nil
+		fieldValue := field.Interface()
+
+		// Check if the field is of type string
+		strVal, ok := fieldValue.(string)
+		if !ok {
+			return "", fmt.Errorf("field '%s' is not a string", fieldName)
+		}
+
+		return strVal, nil
+	}
 }
 
 // SnakeToCamel converts a snake_case string to camelCase or PascalCase based on upperFirst flag
