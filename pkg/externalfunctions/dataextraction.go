@@ -1365,7 +1365,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		},
 	}
 
-	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation examples")
+	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation user guide sections")
 	if err != nil {
 		errMessage := "error creating the schema for the collection"
 		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
