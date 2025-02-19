@@ -1474,7 +1474,7 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections, label)
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections)
+	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections, label)
 
 	return
 }

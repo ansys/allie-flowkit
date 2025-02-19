@@ -505,10 +505,11 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []sh
 //
 // Parameters:
 //   - nodes: List of relationships to be created.
+//   - label: Label for the nodes (UserGuide by default).
 //
 // Returns:
 //   - funcError: Error object.
-func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error) {
+func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []sharedtypes.CodeGenerationUserGuideSection, label string) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -524,6 +525,12 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 	defer session.Close(db_ctx)
 
 	counter := 0
+
+	// Set label (node type)
+	nodeType := "UserGuide"
+	if label != "" {
+		nodeType = label
+	}
 
 	// Create relationships in batches
 	maxBatchSize := 1000
@@ -548,25 +555,32 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 					}
 
 					// Check if reference link references the link of another section and create relationship
-					_, err := transaction.Run(db_ctx,
-						"MATCH (a {Name: $a}) MATCH (b {link: $b}) MERGE (a)-[:REFERENCES]->(b)",
-						map[string]any{
-							"a": node.Name,
-							"b": referenceLink,
-						},
+					query := fmt.Sprintf(
+						"MATCH (a:%s {Name: $a}) MATCH (b:%s {link: $b}) MERGE (a)-[:REFERENCES]->(b)",
+						nodeType,
+						nodeType,
 					)
+
+					_, err := transaction.Run(db_ctx, query, map[string]any{
+						"a": node.Name,
+						"b": referenceLink,
+					})
 					if err != nil {
 						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
 					}
 
 					// Check if reference link references a document and create relationship
-					_, err = transaction.Run(db_ctx,
-						"MATCH (a {Name: $a}) MATCH (b {document_name: $b}) WITH a, b ORDER BY b.level ASC LIMIT 1 MERGE (a)-[:REFERENCES]->(b)",
-						map[string]any{
-							"a": node.Name,
-							"b": referenceLink,
-						},
+					query = fmt.Sprintf(
+						"MATCH (a:%s {Name: $a}) MATCH (b:%s {document_name: $b}) WITH a, b ORDER BY b.level ASC LIMIT 1 MERGE (a)-[:REFERENCES]->(b)",
+						nodeType,
+						nodeType,
+					)
+
+					_, err = transaction.Run(db_ctx, query, map[string]any{
+						"a": node.Name,
+						"b": referenceLink,
+					},
 					)
 					if err != nil {
 						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
@@ -576,13 +590,16 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 
 				// Create relationship between each section and the next section
 				if node.NextSibling != "" {
-					_, err := transaction.Run(db_ctx,
-						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:NEXT_SIBLING]->(b)",
-						map[string]any{
-							"a": node.Name,
-							"b": node.NextSibling,
-						},
+					query := fmt.Sprintf(
+						"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (a)-[:NEXT_SIBLING]->(b)",
+						nodeType,
+						nodeType,
 					)
+
+					_, err := transaction.Run(db_ctx, query, map[string]any{
+						"a": node.Name,
+						"b": node.NextSibling,
+					})
 					if err != nil {
 						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
@@ -591,13 +608,16 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 
 				// Create relationship between last child and following section parent
 				if node.NextParent != "" {
-					_, err := transaction.Run(db_ctx,
-						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:NEXT_PARENT]->(b)",
-						map[string]any{
-							"a": node.Name,
-							"b": node.NextParent,
-						},
+					query := fmt.Sprintf(
+						"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (a)-[:NEXT_PARENT]->(b)",
+						nodeType,
+						nodeType,
 					)
+
+					_, err := transaction.Run(db_ctx, query, map[string]any{
+						"a": node.Name,
+						"b": node.NextParent,
+					})
 					if err != nil {
 						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
@@ -606,13 +626,16 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 
 				// Create relationship between each first child and its parent
 				if node.IsFirstChild {
-					_, err := transaction.Run(db_ctx,
-						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (b)-[:HAS_FIRST_CHILD]->(a)",
-						map[string]any{
-							"a": node.Name,
-							"b": node.Parent,
-						},
+					query := fmt.Sprintf(
+						"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (b)-[:HAS_FIRST_CHILD]->(a)",
+						nodeType,
+						nodeType,
 					)
+
+					_, err := transaction.Run(db_ctx, query, map[string]any{
+						"a": node.Name,
+						"b": node.Parent,
+					})
 					if err != nil {
 						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 						return false, err
@@ -620,13 +643,16 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 				}
 
 				// Create relationships between each of the dependencies and the adjacent dependency
-				_, err := transaction.Run(db_ctx,
-					"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)<-[:HAS_CHILD]-(b)",
-					map[string]any{
-						"a": node.Name,
-						"b": node.Parent,
-					},
+				query := fmt.Sprintf(
+					"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (a)<-[:HAS_CHILD]-(b)",
+					nodeType,
+					nodeType,
 				)
+
+				_, err := transaction.Run(db_ctx, query, map[string]any{
+					"a": node.Name,
+					"b": node.Parent,
+				})
 				if err != nil {
 					logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
 					return false, err
