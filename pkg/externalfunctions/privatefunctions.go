@@ -2023,7 +2023,7 @@ func codeGenerationProcessBatchEmbeddings(elements []sharedtypes.CodeGenerationE
 		elementEmbeddings = append(elementEmbeddings, batchEmbeddings...)
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", len(elements))
+	logging.Log.Debugf(&logging.ContextMap{}, "Processed %d embeddings", len(elements))
 
 	return elementEmbeddings, nil
 }
@@ -2064,7 +2064,7 @@ func codeGenerationProcessHybridSearchEmbeddings(elements []sharedtypes.CodeGene
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchData)
-		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Debugf(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, lexicalWeights, nil
@@ -2106,7 +2106,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForExamples(elements []codegener
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchData)
-		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Debugf(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, lexicalWeights, nil
@@ -2140,7 +2140,7 @@ func codeGenerationProcessHybridSearchEmbeddingsForUserGuideSections(sections []
 		lexicalWeights = append(lexicalWeights, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchData)
-		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Debugf(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, lexicalWeights, nil
