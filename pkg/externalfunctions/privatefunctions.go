@@ -2317,3 +2317,39 @@ func downloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 
 	return checksum, content, nil
 }
+
+func updateMeshPilotActionProperty(list []map[string]string, findKey, findValue, assignKey, assignValue string) bool {
+	for _, item := range list {
+		if v, ok := item[findKey]; ok && v == findValue {
+			item[assignKey] = assignValue
+			return true
+		}
+	}
+	return false
+}
+
+func getIndexNameFromToolName(toolName string) (string, error) {
+	var indexName string
+
+	if toolName == "ExecuteUserSelectedSolution" {
+		indexName = "state_description_embeddings"
+	} else if toolName == "ExplainExecutionOfUserSelectedSolution" {
+		indexName = "state_description_embeddings"
+	} else if toolName == "Delete" {
+		indexName = "delete_description_embeddings"
+	} else if toolName == "CreateOrInsertOrAdd" {
+		indexName = "insert_description_embeddings"
+	} else if toolName == "UpdateOrSet" {
+		indexName = "update_description_embeddings"
+	} else if toolName == "Execute" {
+		indexName = "execute_description_embeddings"
+	} else if toolName == "Revert" {
+		indexName = "revert_description_embeddings"
+	} else if toolName == "Connect" {
+		indexName = "connect_description_embeddings"
+	} else {
+		return "", fmt.Errorf("Invalid toolName: %s", toolName)
+	}
+
+	return indexName, nil
+}

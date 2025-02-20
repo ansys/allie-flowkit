@@ -2,6 +2,8 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/AndreasBriese/bbloom v0.0.0-20190306092124-e2d15f34fcf9/go.mod h1:bOvUY6CB00SOBii9/FifXqc0awNKxLFCL/+pkDPuyl8=
 github.com/AssemblyAI/assemblyai-go-sdk v1.7.0 h1:BoqkOoDyffe8z7JeQVO8H7I1Al3REyCDPUZjgRnMvbs=
 github.com/AssemblyAI/assemblyai-go-sdk v1.7.0/go.mod h1:ytTvsjAVL+nXZnzBfDagQ/LxDQaKL9W/eTiCo3ZuPJA=
+github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2 h1:+hDUZnYHHoXu05iXiJcL53MZW7raZZejB8ZtzVW7yyc=
+github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2/go.mod h1:49PyorVrwk6G+e8Vghvn7EkAS6wSPdXEu5a8iW2/vC8=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 h1:g0EZJwz7xkXQiZAI5xi9f3WWFYBlX1CPTrR+NDToRkQ=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0/go.mod h1:XCW7KnZet0Opnr7HccfUw1PLc4CjHqpcaxW8DHklNkQ=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2 h1:F0gBpfdPLGsw+nsgk6aqqkZS1jiixa5WwFe3fk/T3Ys=
