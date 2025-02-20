@@ -60,7 +60,7 @@ func StartServer() {
 	// Create the gRPC server with the options
 	s := grpc.NewServer(opts...)
 	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
-	logging.Log.Infof(&logging.ContextMap{}, "gRPC server listening at %v", lis.Addr())
+	logging.Log.Infof(&logging.ContextMap{}, "Allie FlowKit started successfully; gRPC server listening on port %v...", config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
 	if err := s.Serve(lis); err != nil {
 		logging.Log.Fatalf(&logging.ContextMap{}, "failed to serve: %v", err)
 	}

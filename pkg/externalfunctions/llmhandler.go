@@ -236,7 +236,7 @@ func PerformBatchHybridEmbeddingRequest(input []string, maxBatchSize int) (dense
 		sparseEmbeddings = append(sparseEmbeddings, batchLexicalWeights...)
 
 		processedEmbeddings += len(batchTextToEmbed)
-		logging.Log.Infof(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
+		logging.Log.Debugf(&logging.ContextMap{}, "Processed %d embeddings", processedEmbeddings)
 	}
 
 	return denseEmbeddings, sparseEmbeddings
