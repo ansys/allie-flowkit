@@ -85,8 +85,14 @@ func MeshPilotReAct(instruction string,
 
 	messages := []azopenai.ChatRequestMessageClassification{}
 
-	// system prompt
-	messages = append(messages, &azopenai.ChatRequestSystemMessage{Content: azopenai.NewChatRequestSystemMessageContent("You are a helpful AI agent called MeshPilot, helps user based on provided tools only. Give highly specific answers based on the information you're provided. The response from AI agent has to be markdown strictly.")})
+	// get system prompt from the configuration
+	system_prompt, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_SYSTEM_PROMPT"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load system prompt from the configuration")
+		return
+	}
+
+	messages = append(messages, &azopenai.ChatRequestSystemMessage{Content: azopenai.NewChatRequestSystemMessageContent(system_prompt)})
 
 	// populate history
 	for _, message := range history {
@@ -140,34 +146,34 @@ func MeshPilotReAct(instruction string,
 		Messages:       messages,
 		Tools: []azopenai.ChatCompletionsToolDefinitionClassification{
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.GetSolutionsToFixProblemToolDef(),
+				Function: azure.Tool1(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.ExecuteUserSelectedSolutionToolDef(),
+				Function: azure.Tool2(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.ExplainExecutionOfUserSelectedSolutionToolDef(),
+				Function: azure.Tool3(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.DeleteToolDef(),
+				Function: azure.Tool4(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.CreateOrInsertOrAddToolDef(),
+				Function: azure.Tool5(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.UpdateOrSetToolDef(),
+				Function: azure.Tool6(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.ExecuteToolDef(),
+				Function: azure.Tool7(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.RevertToolDef(),
+				Function: azure.Tool8(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.UndoToolDef(),
+				Function: azure.Tool9(),
 			},
 			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.ConnectToolDef(),
+				Function: azure.Tool10(),
 			},
 		},
 		Temperature: to.Ptr[float32](0.0),
@@ -263,8 +269,6 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	username := config.GlobalConfig.NEO4J_USERNAME
 	password := config.GlobalConfig.NEO4J_PASSWORD
 
-	logging.Log.Infof(ctx, "Workflow Config Variables: %q", config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES)
-
 	var api_key string
 	var resource string
 	var deployment string
@@ -281,7 +285,8 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 		return
 	}
 
-	dimension := "1536"
+	// get azure openai dimension from the configuration
+	dimension := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_EMBEDDINGS_DIMENSION"]
 
 	// Create a driver instance
 	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
@@ -295,24 +300,12 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 
 	defer neo4jSession.Close(db_ctx)
 
-	query := `
-		WITH genai.vector.encode(
-			$instruction,
-			"AzureOpenAI",
-			{
-			token: $token,
-			resource: $resource,
-			deployment: $deployment,
-			dimension: $dimension
-			}) AS instruction_embedding
-			
-		CALL db.index.vector.queryNodes(
-			$index,
-			$topK,
-			instruction_embedding
-			) YIELD node AS instruction, score
-		RETURN instruction {.Description } AS instruction, score
-	`
+	// get similarity search query from the configuration
+	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load similarity search query from the configuration")
+		return
+	}
 
 	indexName, err := getIndexNameFromToolName(toolName)
 
@@ -337,13 +330,35 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 		return
 	}
 
+	// Get the query node name from the configuration
+	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_NODE_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+		return
+	}
+
+	// Get the query node property name from the configuration
+	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_NODE_PROPERTY_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
+		return
+	}
+
+	// Get the query score name from the configuration
+	queryScoreName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_SCORE_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query score name from the configuration")
+		return
+	}
+
+	// Get the descriptions
 	for result.Next(db_ctx) {
 		record := result.Record()
-		score, _ := record.Get("score")
-		instruction, _ := record.Get("instruction")
+		score, _ := record.Get(queryScoreName)
+		rawNode, _ := record.Get(queryNodeName)
 
-		node := instruction.(map[string]interface{})
-		description, _ := node["Description"].(string)
+		node := rawNode.(map[string]interface{})
+		description, _ := node[queryNodePropertyName].(string)
 		descriptionScore := score.(float64)
 		if descriptionScore > 0.8 {
 			descriptions = append(descriptions, description)
@@ -415,20 +430,12 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		return
 	}
 
-	prompt_template := `
-		You are given a dynamic list of descriptions and a user input. 
-		Your task is to find the index of the description in the list that has the relevant meaning to the user input.
-		The indexing of the list of description start from 0, if there is no relevant description then return -1.
-		Return only the index of the relevant description in the following JSON format:
-		{ "index": <index> }
-
-		List of descriptions:
-		%q
-
-		User input: %s
-
-		Return the index of the most relevant description:
-	`
+	// get the prompt template from the configuration
+	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load prompt template from the configuration")
+		return
+	}
 
 	prompt := fmt.Sprintf(prompt_template, descriptions, instruction)
 
@@ -519,13 +526,12 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 
 	defer neo4jSession.Close(db_ctx)
 
-	query := `
-		MATCH (desc:Description)
-		WHERE 'ACTION_SEQUENCE_BEGIN' IN desc.node_category
-		AND desc.Description = $description
-
-		RETURN desc AS descNode
-	`
+	// Get the query from the configuration
+	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query from the configuration")
+		return
+	}
 
 	params := map[string]interface{}{
 		"description": description,
@@ -537,12 +543,26 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 		return
 	}
 
+	// Get the query node name from the configuration
+	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY_NODE_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+		return
+	}
+
+	// Get the query node property name from the configuration
+	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY_NODE_PROPERTY_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
+		return
+	}
+
 	for result.Next(db_ctx) {
 		record := result.Record()
-		node, _ := record.Get("descNode")
+		node, _ := record.Get(queryNodeName)
 
 		descNode := node.(neo4j.Node)
-		props := descNode.Props["properties"].([]interface{})
+		props := descNode.Props[queryNodePropertyName].([]interface{})
 
 		for _, property := range props {
 			properties = append(properties, property.(string))
@@ -593,19 +613,12 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 
 	defer neo4jSession.Close(db_ctx)
 
-	query := `
-		MATCH (start:State)
-		WHERE 'Error' IN start.object_state
-		AND start.Description = $description
-
-		MATCH path = (start)-[:NEXT*]->(end:State)
-		WHERE 'Succeeded' IN end.object_state
-
-		WITH nodes(path) AS allNodes
-		WITH allNodes[1..-1] AS middleNodes
-
-		RETURN DISTINCT middleNodes
-	`
+	// Get the query from the configuration
+	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query from the configuration")
+		return
+	}
 
 	params := map[string]interface{}{
 		"description": description,
@@ -617,10 +630,24 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 		return
 	}
 
+	// Get the query node name from the configuration
+	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+		return
+	}
+
+	// Get the query node property name from the configuration
+	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_PROPERTY_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
+		return
+	}
+
 	nodeDescriptions := []string{}
 	for result.Next(db_ctx) {
 		record := result.Record()
-		middleNodes, _ := record.Get("middleNodes")
+		middleNodes, _ := record.Get(queryNodeName)
 
 		nodes := middleNodes.([]interface{})
 
@@ -629,7 +656,7 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 			props := node.Props
 
 			for key, value := range props {
-				if key == "Description" {
+				if key == queryNodePropertyName {
 					nodeDescriptions = append(nodeDescriptions, value.(string))
 				}
 			}
@@ -685,35 +712,35 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 
 	defer neo4jSession.Close(db_ctx)
 
+	// Get the node label 1 from the configuration
+	nodeLabel1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load node label 1 from the configuration")
+		return
+	}
+
+	// Get the node label 2 from the configuration
+	nodeLabel2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_2"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load node label 2 from the configuration")
+		return
+	}
+
 	var query string
-	if nodeLabel == "Description" {
-		query = `
-			MATCH (start:Description)
-			WHERE 'ACTION_SEQUENCE_BEGIN' IN start.node_category
-			AND start.Description = $description
-
-			MATCH path = (start)-[:NEXT*]->(end:Description)
-			WHERE 'ACTION_SEQUENCE_END' IN end.node_category
-
-			WITH nodes(path) AS allNodes
-			WITH allNodes[1..-1] AS middleNodes
-
-			RETURN DISTINCT middleNodes
-		`
-	} else if nodeLabel == "State" {
-		query = `
-			MATCH (start:State)
-			WHERE 'Error' IN start.object_state
-			AND start.Description = $description
-
-			MATCH path = (start)-[:NEXT*]->(end:State)
-			WHERE 'Succeeded' IN end.object_state
-
-			WITH nodes(path) AS allNodes
-			WITH allNodes[1..-1] AS middleNodes
-
-			RETURN DISTINCT middleNodes
-		`
+	if nodeLabel == nodeLabel2 {
+		// Get the query from the configuration
+		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_2"]
+		if !exists {
+			logging.Log.Fatal(ctx, "failed to load query from the configuration")
+			return
+		}
+	} else if nodeLabel == nodeLabel1 {
+		// Get the query from the configuration
+		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY"]
+		if !exists {
+			logging.Log.Fatal(ctx, "failed to load query from the configuration")
+			return
+		}
 	} else {
 		logging.Log.Infof(ctx, "Invalid Node Label: %q", nodeLabel)
 		return
@@ -729,12 +756,17 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 		return
 	}
 
+	// Get the query node name from the configuration
+	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+		return
+	}
+
 	for result.Next(db_ctx) {
 		record := result.Record()
-		middleNodes, _ := record.Get("middleNodes")
-
+		middleNodes, _ := record.Get(queryNodeName)
 		nodes := middleNodes.([]interface{})
-
 		for _, node := range nodes {
 			node := node.(neo4j.Node)
 			props := node.Props
@@ -756,7 +788,7 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 	return
 }
 
-// SynthesizeActions update action act api's as per user instruction
+// SynthesizeActions update action as per user instruction
 //
 // Tags:
 //   - @displayName: SynthesizeActions
@@ -809,55 +841,12 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		return
 	}
 
-	prompt_template := `
-		You are given a list of JSON keys and a user question. Follow the instructions and generate the desired JSON format as shown in the example.
-		
-		Instructions:
-		
-		1. Identify the keys from the list that are explicitly mentioned in the user question.
-		2. Extract the corresponding values from the user question.
-		3. If a value has units, create a nested dictionary with "value" and "units".
-		4. For boolean values, assign "1" for true and "0" for false.
-		5. Ensure the output is in JSON format.
-		6. **Only include keys that are explicitly mentioned in the user question. Do not infer or assume any additional keys or values.**
-		7. Do not confuse different properties. Each key should be matched exactly as mentioned in the user question.
-		8. Do not include properties that are not explicitly mentioned in the user question, even if they are listed in the properties.
-
-		Example:
-		
-		List of JSON keys: ["temperature", "Status", "humidity"]
-		
-		User question: "The Temperature is 25 degrees and the status is true."
-		
-		Desired JSON output:
-		
-		{
-			"temperature": {
-				"value": "25",
-				"units": "deg"
-			},
-			"Status": "1"
-		}
-
-		List of JSON keys: ["temperature", "Status", "humidity"]
-
-		User question: "The boiling temperature of water is 100 Celsius at a pressure of 1 bar."
-		
-		Desired JSON output:
-		
-		{
-			"temperature": {
-				"value": "100",
-				"units": "Celsius"
-			}
-		}
-
-		List of JSON keys: %q
-		
-		User question: %s
-
-		Desired JSON output:
-	`
+	// get prompt template from the configuration
+	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load prompt template from the configuration")
+		return
+	}
 
 	prompt := fmt.Sprintf(prompt_template, properties, instruction)
 
@@ -899,24 +888,64 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		return
 	}
 
+	// Get synthesize actions find key from configuration
+	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load synthesize actions find key from the configuration")
+		return
+	}
+
+	// Get synthesize actions replace key 1 from configuration
+	synthesizeActionsReplaceKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load synthesize actions replace key 1 from the configuration")
+		return
+	}
+
+	// Get synthesize actions replace key 2 from configuration
+	synthesizeActionsReplaceKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_2"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load synthesize actions replace key 2 from the configuration")
+		return
+	}
+
+	// Get synthesize output key 1 from configuration
+	synthesizeOutputKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_OUTPUT_KEY_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load synthesize output key 1 from the configuration")
+		return
+	}
+
+	// Get synthesize output key 2 from configuration
+	synthesizeOutputKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_OUTPUT_KEY_2"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load synthesize output key 2 from the configuration")
+		return
+	}
+
+	// Update the actions
 	for key, value := range output {
 		switch v := value.(type) {
 		case string:
-			updateMeshPilotActionProperty(updatedActions, "ActApi", key, "Argument", v)
+			updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey1, v)
 		case int:
 		case int64:
 		case int32:
 			convValue := fmt.Sprintf("%d", v)
-			updateMeshPilotActionProperty(updatedActions, "ActApi", key, "Argument", convValue)
+			updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey1, convValue)
 		case float32:
 		case float64:
 			convValue := fmt.Sprintf("%f", v)
-			updateMeshPilotActionProperty(updatedActions, "ActApi", key, "Argument", convValue)
+			updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey1, convValue)
 		case map[string]interface{}:
-			argumentValue := v["value"].(string)
-			argumentUnits := v["units"].(string)
-			updateMeshPilotActionProperty(updatedActions, "ActApi", key, "Argument", argumentValue)
-			updateMeshPilotActionProperty(updatedActions, "ActApi", key, "ArgumentUnits", argumentUnits)
+			for key, value := range v {
+				switch key {
+				case synthesizeOutputKey1:
+					updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey1, value.(string))
+				case synthesizeOutputKey2:
+					updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey2, value.(string))
+				}
+			}
 		default:
 			logging.Log.Infof(ctx, "Key: %s, Value is of a different type: %T", key, v)
 		}
@@ -949,36 +978,148 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		hasActions = false
 	}
 
-	message = "Succesfully executed user instruction"
-	if toolName == "ExecuteUserSelectedSolution" {
+	// Get tool 2 name from the configuration
+	tool2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 2 name from the configuration")
+		return
+	}
+
+	// Get tool 4 name from the configuration
+	tool4Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 4 name from the configuration")
+		return
+	}
+
+	// Get tool 5 name from the configuration
+	tool5Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 5 name from the configuration")
+		return
+	}
+
+	// Get tool 6 name from the configuration
+	tool6Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 6 name from the configuration")
+		return
+	}
+
+	// Get tool 7 name from the configuration
+	tool7Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 7 name from the configuration")
+		return
+	}
+
+	// Get tool 8 name from the configuration
+	tool8Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 8 name from the configuration")
+		return
+	}
+
+	// Get tool 10 name from the configuration
+	tool10Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 10 name from the configuration")
+		return
+	}
+
+	// Get tool action success message from configuration
+	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
+		return
+	}
+
+	// Get tool 2 action message from configuration
+	tool2ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 2 action message from the configuration")
+		return
+	}
+
+	// Get tool 2 no action message from configuration
+	tool2NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 2 no action message from the configuration")
+		return
+	}
+
+	// Get tool 4 no action message from configuration
+	tool4NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 4 no action message from the configuration")
+		return
+	}
+
+	// Get tool 5 no action message from configuration
+	tool5NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 5 no action message from the configuration")
+		return
+	}
+
+	// Get tool 6 no action message from configuration
+	tool6NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 6 no action message from the configuration")
+		return
+	}
+
+	// Get tool 7 no action message from configuration
+	tool7NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 7 no action message from the configuration")
+		return
+	}
+
+	// Get tool 8 no action message from configuration
+	tool8NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 8 no action message from the configuration")
+		return
+	}
+
+	// Get tool 10 no action message from configuration
+	tool10NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NO_ACTION_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool 10 no action message from the configuration")
+		return
+	}
+
+	message = toolActionSuccessMessage
+	if toolName == tool2Name {
 		if hasActions {
-			message = "Executed the solution sucessfully"
+			message = tool2ActionMessage
 		} else {
-			message = "No actions found for the selected solution"
+			message = tool2NoActionMessage
 		}
-	} else if toolName == "Delete" {
+	} else if toolName == tool4Name {
 		if !hasActions {
-			message = "No actions found for the given delete instruction"
+			message = tool4NoActionMessage
 		}
-	} else if toolName == "CreateOrInsertOrAdd" {
+	} else if toolName == tool5Name {
 		if !hasActions {
-			message = "No actions found for the given insert instruction"
+			message = tool5NoActionMessage
 		}
-	} else if toolName == "UpdateOrSet" {
+	} else if toolName == tool6Name {
 		if !hasActions {
-			message = "No actions found for the given update instruction"
+			message = tool6NoActionMessage
 		}
-	} else if toolName == "Execute" {
+	} else if toolName == tool7Name {
 		if !hasActions {
-			message = "No actions found for the given execute instruction"
+			message = tool7NoActionMessage
 		}
-	} else if toolName == "Revert" {
+	} else if toolName == tool8Name {
 		if !hasActions {
-			message = "No actions found for the given revert instruction"
+			message = tool8NoActionMessage
 		}
-	} else if toolName == "Connect" {
+	} else if toolName == tool10Name {
 		if !hasActions {
-			message = "No actions found for the given connect instruction"
+			message = tool10NoActionMessage
 		}
 	} else {
 		logging.Log.Errorf(ctx, "Invalid toolName %s", toolName)
@@ -1042,13 +1183,26 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 	logging.Log.Info(ctx, fmt.Sprintf("GetSolutionsFromFailureCodes: %s, %s\n", fmFailureCode, primeMeshFailureCode))
 
-	query := `
-		MATCH (state:State)
-		WHERE 'Error' IN state.object_state
-		AND state.fm_failure_code = $fm_failure_code
-		AND state.prime_mesh_failure_code = $prime_mesh_failure_code
-		RETURN state
-	`
+	// Get the query from the configuration
+	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query from the configuration")
+		return
+	}
+
+	// Get the query node name from the configuration
+	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY_NODE_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+		return
+	}
+
+	// Get the query node property name from the configuration
+	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY_NODE_PROPERTY_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
+		return
+	}
 
 	params := map[string]interface{}{
 		"fm_failure_code":         strings.TrimSpace(fmFailureCode),
@@ -1065,9 +1219,9 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 		for result.Next(db_ctx) {
 			record := result.Record()
-			state, _ := record.Get("state")
+			state, _ := record.Get(queryNodeName)
 			node := state.(neo4j.Node)
-			description, _ := node.Props["Description"].(string)
+			description, _ := node.Props[queryNodePropertyName].(string)
 			solutionsVec = append(solutionsVec, description)
 		}
 		return true, nil

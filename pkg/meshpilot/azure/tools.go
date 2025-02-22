@@ -5,9 +5,24 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/ansys/allie-sharedtypes/pkg/config"
+	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
 
-func GetSolutionsToFixProblemToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool1() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	ctx := &logging.ContextMap{}
+
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_1_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_1_DESCRIPTION not found in configuration")
+	}
 
 	jsonBytes, err := json.Marshal(map[string]any{
 		"type":       "object",
@@ -19,23 +34,53 @@ func GetSolutionsToFixProblemToolDef() *azopenai.ChatCompletionsFunctionToolDefi
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("GetSolutionsToFixProblem"),
-		Description: to.Ptr("This function return solutions to fix a problem"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func ExecuteUserSelectedSolutionToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool2() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_2_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_2_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool properties from the configuration
+	toolProperty1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_NAME not found in configuration")
+	}
+
+	toolProperty1Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_TYPE not found in configuration")
+	}
+
+	toolProperty1Description, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_DESCRIPTION not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"solution_description"},
+		"required": []string{toolProperty1Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"solution_description": map[string]any{
-				"type":        "string",
-				"description": "user selected solution description, the selected solution description is from one of the previous chat that listed solutions, send complete sentence (solution description that listed in previous chat) as an argument to this method",
+			toolProperty1Name: map[string]any{
+				"type":        toolProperty1Type,
+				"description": toolProperty1Description,
 			},
 		},
 	})
@@ -45,23 +90,54 @@ func ExecuteUserSelectedSolutionToolDef() *azopenai.ChatCompletionsFunctionToolD
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("ExecuteUserSelectedSolution"),
-		Description: to.Ptr("Get list of actions from the given solution description to execute the solution"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func ExplainExecutionOfUserSelectedSolutionToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool3() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	ctx := &logging.ContextMap{}
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_3_NAME not found in configuration")
+	}
 
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_3_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool 1 property name from the configuration
+	toolProperty1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_NAME not found in configuration")
+	}
+
+	// Get the tool 1 property type from the configuration
+	toolProperty1Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_TYPE not found in configuration")
+	}
+
+	// Get the tool 1 property description from the configuration
+	toolProperty1Description, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_DESCRIPTION not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"solution_description"},
+		"required": []string{toolProperty1Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"solution_description": map[string]any{
-				"type":        "string",
-				"description": "user selected solution description, the selected solution description is from one of the previous chat that listed solutions, send complete sentence (solution description that listed in previous chat) as an argument to this method",
+			toolProperty1Name: map[string]any{
+				"type":        toolProperty1Type,
+				"description": toolProperty1Description,
 			},
 		},
 	})
@@ -71,23 +147,56 @@ func ExplainExecutionOfUserSelectedSolutionToolDef() *azopenai.ChatCompletionsFu
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("ExplainExecutionOfUserSelectedSolution"),
-		Description: to.Ptr("From the selected solution describe how it is executed, share the details for selected solutionn"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func DeleteToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool4() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_4_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_4_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool property 2 name from the configuration
+	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
+	}
+
+	// Get the tool property 2 type from the configuration
+	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
+	}
+
+	// Get the tool property 2 description 1 from the configuration
+	toolProperty2Description1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_1 not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"instruction"},
+		"required": []string{toolProperty2Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"instruction": map[string]any{
-				"type":        "string",
-				"description": "Get list of actions to Delete either step/operation/control/outcome or label/part",
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description1,
 			},
 		},
 	})
@@ -97,23 +206,56 @@ func DeleteToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("Delete"),
-		Description: to.Ptr("Delete instruction of any form as an argument to this method"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func CreateOrInsertOrAddToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool5() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_5_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_5_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool property 2 name from the configuration
+	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
+	}
+
+	// Get the tool property 2 type from the configuration
+	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
+	}
+
+	// Get the tool property 2 description 2 from the configuration
+	toolProperty2Description2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_2"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_2 not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"instruction"},
+		"required": []string{toolProperty2Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"instruction": map[string]any{
-				"type":        "string",
-				"description": "User provided an create instruction of any form as an argument to this method",
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description2,
 			},
 		},
 	})
@@ -123,23 +265,55 @@ func CreateOrInsertOrAddToolDef() *azopenai.ChatCompletionsFunctionToolDefinitio
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("CreateOrInsertOrAdd"),
-		Description: to.Ptr("Get list of actions from the user provided instruction to create step/operation/control/outcome"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func UpdateOrSetToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool6() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
+
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_6_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_6_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool property 2 name from the configuration
+	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
+	}
+
+	// Get the tool property 2 type from the configuration
+	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
+	}
+
+	// Get the tool property 2 description 3 from the configuration
+	toolProperty2Description3, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_3"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_3 not found in configuration")
+	}
 
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"instruction"},
+		"required": []string{toolProperty2Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"instruction": map[string]any{
-				"type":        "string",
-				"description": "set/update instruction of any form as an argument to this method",
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description3,
 			},
 		},
 	})
@@ -149,23 +323,56 @@ func UpdateOrSetToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunctio
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("UpdateOrSet"),
-		Description: to.Ptr("Get list of actions to update/set properties of step/operation/control/outcome"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func ExecuteToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool7() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_7_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_7_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool property 2 name from the configuration
+	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
+	}
+
+	// Get the tool property 2 type from the configuration
+	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
+	}
+
+	// Get the tool property 2 description 4 from the configuration
+	toolProperty2Description4, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_4"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_4 not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"instruction"},
+		"required": []string{toolProperty2Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"instruction": map[string]any{
-				"type":        "string",
-				"description": "execute instruction of any form as an argument to this method",
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description4,
 			},
 		},
 	})
@@ -175,23 +382,56 @@ func ExecuteToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("Execute"),
-		Description: to.Ptr("Get list of actions to execute step"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func RevertToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool8() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_8_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_8_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool property 2 name from the configuration
+	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
+	}
+
+	// Get the tool property 2 type from the configuration
+	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
+	}
+
+	// Get the tool property 2 description 5 from the configuration
+	toolProperty2Description5, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_5"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_5 not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"instruction"},
+		"required": []string{toolProperty2Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"instruction": map[string]any{
-				"type":        "string",
-				"description": "revert instruction of any form as an argument to this method",
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description5,
 			},
 		},
 	})
@@ -201,16 +441,31 @@ func RevertToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("Revert"),
-		Description: to.Ptr("Get List of actions to Revert steps"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func UndoToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool9() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_9_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_9_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_9_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_9_DESCRIPTION not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
 		"type":       "object",
 		"properties": map[string]any{},
@@ -221,23 +476,56 @@ func UndoToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("Undo"),
-		Description: to.Ptr("user can ask for either undo session or just undo, undo session changes that have done so far by this service"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 
 	return funcDef
 }
 
-func ConnectToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+func Tool10() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
 
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_10_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_10_DESCRIPTION not found in configuration")
+	}
+
+	// Get the tool property 2 name from the configuration
+	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
+	}
+
+	// Get the tool property 2 type from the configuration
+	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
+	}
+
+	// Get the tool property 2 description 6 from the configuration
+	toolProperty2Description6, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_6"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_6 not found in configuration")
+	}
+
+	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"required": []string{"instruction"},
+		"required": []string{toolProperty2Name},
 		"type":     "object",
 		"properties": map[string]any{
-			"instruction": map[string]any{
-				"type":        "string",
-				"description": "Connect instruction of any form as an argument to this method",
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description6,
 			},
 		},
 	})
@@ -247,8 +535,8 @@ func ConnectToolDef() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	}
 
 	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
-		Name:        to.Ptr("Connect"),
-		Description: to.Ptr("Get list of actions to Connect either outcome to control or connect labels or parts"),
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
 		Parameters:  jsonBytes,
 	}
 

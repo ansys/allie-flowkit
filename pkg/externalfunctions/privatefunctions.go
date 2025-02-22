@@ -2273,6 +2273,62 @@ func getLocalFileContent(localFilePath string) (checksum string, content []byte,
 	return checksum, content, err
 }
 
+// updateMeshPilotActionProperty update action property by given key-value pair.
+//
+// Parameters:
+//   - list: list of actions
+//   - findKey: key for search
+//   - findValue: value for search
+//   - assignKey: need update for a key
+//   - assignValue: assign value to a assignKey
+//
+// Returns:
+//   - updated: boolean returns true if updated else false.
+func updateMeshPilotActionProperty(list []map[string]string, findKey, findValue, assignKey, assignValue string) (updated bool) {
+	updated = false
+	for _, item := range list {
+		if v, ok := item[findKey]; ok && v == findValue {
+			item[assignKey] = assignValue
+			updated = true
+			return
+		}
+	}
+	return
+}
+
+// getIndexNameFromToolName index name by tool
+//
+// Parameters:
+//   - toolName: path to file.
+//
+// Returns:
+//   - indexName: index name.
+//   - err: error if any.
+func getIndexNameFromToolName(toolName string) (indexName string, err error) {
+	err = nil
+	if toolName == "ExecuteUserSelectedSolution" {
+		indexName = "state_description_embeddings"
+	} else if toolName == "ExplainExecutionOfUserSelectedSolution" {
+		indexName = "state_description_embeddings"
+	} else if toolName == "Delete" {
+		indexName = "delete_description_embeddings"
+	} else if toolName == "CreateOrInsertOrAdd" {
+		indexName = "insert_description_embeddings"
+	} else if toolName == "UpdateOrSet" {
+		indexName = "update_description_embeddings"
+	} else if toolName == "Execute" {
+		indexName = "execute_description_embeddings"
+	} else if toolName == "Revert" {
+		indexName = "revert_description_embeddings"
+	} else if toolName == "Connect" {
+		indexName = "connect_description_embeddings"
+	} else {
+		err = fmt.Errorf("Invalid toolName: %s", toolName)
+	}
+
+	return
+}
+
 // downloadGithubFileContent downloads file content from github and returns checksum and content.
 //
 // Parameters:
@@ -2316,40 +2372,4 @@ func downloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	logging.Log.Debugf(&logging.ContextMap{}, "Got content from github file: %s", gihubFilePath)
 
 	return checksum, content, nil
-}
-
-func updateMeshPilotActionProperty(list []map[string]string, findKey, findValue, assignKey, assignValue string) bool {
-	for _, item := range list {
-		if v, ok := item[findKey]; ok && v == findValue {
-			item[assignKey] = assignValue
-			return true
-		}
-	}
-	return false
-}
-
-func getIndexNameFromToolName(toolName string) (string, error) {
-	var indexName string
-
-	if toolName == "ExecuteUserSelectedSolution" {
-		indexName = "state_description_embeddings"
-	} else if toolName == "ExplainExecutionOfUserSelectedSolution" {
-		indexName = "state_description_embeddings"
-	} else if toolName == "Delete" {
-		indexName = "delete_description_embeddings"
-	} else if toolName == "CreateOrInsertOrAdd" {
-		indexName = "insert_description_embeddings"
-	} else if toolName == "UpdateOrSet" {
-		indexName = "update_description_embeddings"
-	} else if toolName == "Execute" {
-		indexName = "execute_description_embeddings"
-	} else if toolName == "Revert" {
-		indexName = "revert_description_embeddings"
-	} else if toolName == "Connect" {
-		indexName = "connect_description_embeddings"
-	} else {
-		return "", fmt.Errorf("Invalid toolName: %s", toolName)
-	}
-
-	return indexName, nil
 }
