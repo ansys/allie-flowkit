@@ -630,7 +630,7 @@ func QueryDuplicates(collectionName string, data []interface{}, objectFieldName 
 	}
 
 	// Send the Milvus query request and receive the response.
-	response, err := Query(collectionName, 0, []string{"id", "document_name"}, filter)
+	response, err := Query(collectionName, 0, []string{"id"}, filter)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
 		return nil, err
@@ -954,6 +954,10 @@ func createStringFilterExpression(filterType string, filter []string) (filterExp
 		filter[i] = strings.ReplaceAll(filter[i], "\\", "\\\\")
 		// Escape single quotes in the filter value
 		filter[i] = strings.ReplaceAll(filter[i], "'", "\\'")
+		// Escape new lines in the filter value
+		filter[i] = strings.ReplaceAll(filter[i], "\n", "\\n")
+		// Escape carriage returns in the filter value
+		filter[i] = strings.ReplaceAll(filter[i], "\r", "\\r")
 	}
 
 	filterExpression = fmt.Sprintf("%s in ['%s'", filterType, filter[0])
