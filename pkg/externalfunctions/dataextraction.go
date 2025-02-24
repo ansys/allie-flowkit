@@ -640,7 +640,7 @@ func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elemen
 		}
 
 		// Create a list with all the return types of the element.
-		element.ReturnElementList, err = codegeneration.CreateReturnListMechanical(objectDefinition.ReturnType)
+		element.ReturnElementList, err = codegeneration.CreateReturnList(objectDefinition.ReturnType)
 		if err != nil {
 			errMessage := fmt.Sprintf("Error creating return element list: %v", err)
 			logging.Log.Error(&logging.ContextMap{}, errMessage)
