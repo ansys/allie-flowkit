@@ -26,6 +26,7 @@ require (
 
 require (
 	github.com/AssemblyAI/assemblyai-go-sdk v1.7.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect

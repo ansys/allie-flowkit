@@ -32,6 +32,9 @@ var llmHandlerFile string
 //go:embed pkg/externalfunctions/ansysgpt.go
 var ansysGPTFile string
 
+//go:embed pkg/externalfunctions/ansysmeshpilot.go
+var ansysMeshPilotFile string
+
 func init() {
 	// initialize config
 	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
@@ -54,12 +57,13 @@ func main() {
 
 	// Create file list
 	files := map[string]string{
-		"data_extraction": dataExtractionFile,
-		"generic":         genericFile,
-		"knowledge_db":    knowledgeDBFile,
-		"llm_handler":     llmHandlerFile,
-		"ansys_gpt":       ansysGPTFile,
-		"milvus":          milvusFile,
+		"data_extraction":  dataExtractionFile,
+		"generic":          genericFile,
+		"knowledge_db":     knowledgeDBFile,
+		"llm_handler":      llmHandlerFile,
+		"ansys_gpt":        ansysGPTFile,
+		"milvus":           milvusFile,
+		"ansys_mesh_pilot": ansysMeshPilotFile,
 	}
 
 	// Load function definitions

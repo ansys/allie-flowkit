@@ -78,6 +78,20 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"StoreUserGuideSectionsInVectorDatabase": StoreUserGuideSectionsInVectorDatabase,
 	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
 
+	// ansys mesh pilot
+	"MeshPilotReAct":                           MeshPilotReAct,
+	"SimilartitySearchOnPathDescriptions":      SimilartitySearchOnPathDescriptions,
+	"FindRelevantPathDescriptionByPrompt":      FindRelevantPathDescriptionByPrompt,
+	"FetchPropertiesFromPathDescription":       FetchPropertiesFromPathDescription,
+	"FetchNodeDescriptionsFromPathDescription": FetchNodeDescriptionsFromPathDescription,
+	"FetchActionsPathFromPathDescription":      FetchActionsPathFromPathDescription,
+	"SynthesizeActions":                        SynthesizeActions,
+	"FinalizeResult":                           FinalizeResult,
+	"GetSolutionsToFixProblem":                 GetSolutionsToFixProblem,
+	"GetSelectedSolution":                      GetSelectedSolution,
+	"AppendToolHistory":                        AppendToolHistory,
+	"AppendMeshPilotHistory":                   AppendMeshPilotHistory,
+
 	// milvus
 	"MilvusCreateCollection": MilvusCreateCollection,
 	"MilvusInsertData":       MilvusInsertData,
