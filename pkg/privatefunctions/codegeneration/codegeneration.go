@@ -43,7 +43,7 @@ func SplitByCapitalLetters(s string) string {
 	return strings.Join(words, " ")
 }
 
-// CreateReturnListMechanical creates a list of return elements from a string
+// CreateReturnList creates a list of return elements from a string
 //
 // Parameters:
 //   - returnString: the string to create the list from
@@ -51,20 +51,61 @@ func SplitByCapitalLetters(s string) string {
 // Returns:
 //   - the list of return elements
 //   - an error if the string is empty
-func CreateReturnListMechanical(returnString string) (returnElementList []string, err error) {
-	// Split the string by comma
-	returnList := strings.Split(returnString, " ")
-	// Trim the spaces from the strings
-	for _, returnElement := range returnList {
-		// Check if the string contains 'Ansys.'
-		if strings.Contains(returnElement, "Ansys.") {
-			// Start the string when the 'Ansys.' appears and remove the last ']' if it exists
-			returnElement = returnElement[strings.Index(returnElement, "Ansys."):]
-			returnElement = strings.TrimSuffix(returnElement, "]")
-			// Add the element to the list
-			returnElementList = append(returnElementList, returnElement)
+func CreateReturnList(returnString string) (returnElementList []string, err error) {
+	if returnString == "" {
+		return returnElementList, nil
+	}
+
+	// Regular expression to extract types inside brackets
+	re := regexp.MustCompile(`([\w.]+|\[[\w.,\s]+\])`)
+
+	// Clean and extract the types
+	cleanedString := strings.ReplaceAll(returnString, " ", "")
+	cleanedString = strings.Trim(cleanedString, "[]") // Remove outer brackets if any
+
+	// Extract matches
+	matches := re.FindAllString(cleanedString, -1)
+
+	// Set subtypes to ignore
+	ignoreTypes := []string{
+		// Container types
+		"list", "tuple", "dict", "set", "frozenset", "deque",
+		"Union", "Optional", "List", "Dict", "Set", "FrozenSet", "Deque",
+
+		// Built-in types
+		"None", "str", "int", "float", "bool", "complex", "bytes", "bytearray",
+		"memoryview", "range", "slice",
+
+		// Function-related types
+		"Callable", "Coroutine", "Generator", "AsyncGenerator", "Iterable", "Iterator",
+		"AsyncIterable", "AsyncIterator",
+
+		// Special typing types
+		"Type", "Any", "Literal", "Final", "ClassVar", "NoReturn", "Self", "NewType",
+	}
+
+	for _, match := range matches {
+		// Remove brackets from individual types
+		match = strings.Trim(match, "[]")
+		subTypes := strings.Split(match, ",")
+		for _, subType := range subTypes {
+			// Check if the type should be ignored
+			ignore := false
+			for _, ignoreType := range ignoreTypes {
+				if subType == ignoreType {
+					ignore = true
+					break
+				}
+			}
+
+			if ignore {
+				continue
+			}
+
+			returnElementList = append(returnElementList, strings.TrimSpace(subType))
 		}
 	}
+
 	return returnElementList, nil
 }
 
