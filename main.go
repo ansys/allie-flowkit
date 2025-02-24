@@ -74,9 +74,6 @@ func main() {
 		}
 	}
 
-	// Log the version of the system
-	logging.Log.Info(&logging.ContextMap{}, "Launching Allie Flowkit")
-
 	// start the gRPC server
 	grpcserver.StartServer()
 	logging.Log.Fatalf(&logging.ContextMap{}, "Error in gRPC server. Exiting application.")

@@ -719,7 +719,7 @@ func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elemen
 		elements = append(elements, element)
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v code generation elements from file: %s", len(elements), elementsFilePath)
+	logging.Log.Debugf(&logging.ContextMap{}, "Loaded %v code generation elements from file: %s", len(elements), elementsFilePath)
 
 	return elements
 }
@@ -739,7 +739,7 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 		batchSize = 2
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Storing %v code generation elements in the vector database", len(elements))
+	logging.Log.Debugf(&logging.ContextMap{}, "Storing %v code generation elements in the vector database", len(elements))
 
 	// Generate dense and sparse embeddings
 	denseEmbeddings, sparseEmbeddings, err := codeGenerationProcessHybridSearchEmbeddings(elements, batchSize)
@@ -1299,7 +1299,7 @@ func LoadUserGuideSections(source string, sectionFilePaths []string, githubRepoN
 		sections = append(sections, newSections...)
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Loaded %v user guide sections \n", len(sections))
+	logging.Log.Debugf(&logging.ContextMap{}, "Loaded %v user guide sections \n", len(sections))
 
 	return sections
 }

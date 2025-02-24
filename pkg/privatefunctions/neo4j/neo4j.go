@@ -74,7 +74,7 @@ func Initialize(uri string, username string, password string) (funcError error) 
 	}
 
 	// Log successfull connection
-	logging.Log.Infof(&logging.ContextMap{}, "Initialized neo4j database connection to %v", uri)
+	logging.Log.Debugf(&logging.ContextMap{}, "Initialized neo4j database connection to %v", uri)
 
 	return nil
 }
@@ -364,7 +364,7 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationExampleRelationships(nod
 		// Create batch of nodes
 		batch := nodes[i:end]
 
-		logging.Log.Infof(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
+		logging.Log.Debugf(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
 
 		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
 			for _, node := range batch {
@@ -391,7 +391,7 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationExampleRelationships(nod
 		}
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Created relationships for %v nodes", len(nodes))
+	logging.Log.Debugf(&logging.ContextMap{}, "Created relationships for %v nodes", len(nodes))
 	return nil
 }
 
@@ -432,7 +432,7 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []sh
 		// Create batch of nodes
 		batch := nodes[i:end]
 
-		logging.Log.Infof(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
+		logging.Log.Debugf(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
 
 		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
 			for _, node := range batch {
@@ -543,7 +543,7 @@ func (neo4j_context *neo4j_Context) CreateUserGuideSectionRelationships(nodes []
 		// Create batch of nodes
 		batch := nodes[i:end]
 
-		logging.Log.Infof(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
+		logging.Log.Debugf(&logging.ContextMap{}, "Creating relationships for batch %v-%v", i, end)
 
 		// Create relationships between sections and their references
 		_, err := session.ExecuteWrite(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {

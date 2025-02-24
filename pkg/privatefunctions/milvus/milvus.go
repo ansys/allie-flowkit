@@ -70,7 +70,7 @@ func Initialize() (milvusClient client.Client, funcError error) {
 		}
 	}
 
-	logging.Log.Info(&logging.ContextMap{}, "Initialized Milvus")
+	logging.Log.Debugf(&logging.ContextMap{}, "Initialized Milvus")
 
 	return milvusClient, nil
 }
@@ -162,7 +162,7 @@ func listCollections(milvusClient client.Client) (collections []string, funcErro
 		}
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Collections listed: %v", collections)
+	logging.Log.Debugf(&logging.ContextMap{}, "Collections listed: %v", collections)
 
 	return collections, nil
 }
@@ -195,7 +195,7 @@ func loadCollection(collectionName string, milvusClient client.Client) (funcErro
 		return err
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Collection loaded: %v", collectionName)
+	logging.Log.Debugf(&logging.ContextMap{}, "Collection loaded: %v", collectionName)
 
 	return nil
 }
@@ -234,7 +234,7 @@ func CreateCollection(schema *entity.Schema) (funcError error) {
 	}
 
 	if hasColl {
-		logging.Log.Infof(&logging.ContextMap{}, "Collection already exists: %s\n", schema.CollectionName)
+		logging.Log.Debugf(&logging.ContextMap{}, "Collection already exists: %s\n", schema.CollectionName)
 		// Load the collection
 		err = loadCollection(schema.CollectionName, milvusClient)
 		if err != nil {
@@ -287,7 +287,7 @@ func CreateCollection(schema *entity.Schema) (funcError error) {
 		return err
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Created collection: %s\n", schema.CollectionName)
+	logging.Log.Debugf(&logging.ContextMap{}, "Created collection: %s\n", schema.CollectionName)
 
 	return nil
 }
@@ -326,7 +326,7 @@ func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldN
 		return err
 	}
 
-	logging.Log.Info(&logging.ContextMap{}, "Scalar index created")
+	logging.Log.Debugf(&logging.ContextMap{}, "Scalar index created")
 
 	///////////////////////////////////////////
 	// 2. Create Vector Index
@@ -546,7 +546,7 @@ func InsertData(collectionName string, dataToSend []interface{}, objectFieldName
 			return err
 		}
 
-		logging.Log.Infof(&logging.ContextMap{}, "Updated %d entries in Milvus", len(entriesToRemove))
+		logging.Log.Debugf(&logging.ContextMap{}, "Updated %d entries in Milvus", len(entriesToRemove))
 
 		// Move the start index to the next batch
 		startIndex = stopIndex
@@ -783,7 +783,7 @@ func sendInsertRequest(request MilvusRequest) (funcError error) {
 		return errors.New(response.Message)
 	}
 
-	logging.Log.Infof(&logging.ContextMap{}, "Added %v entries to the DB.", response.InsertData.InsertCount)
+	logging.Log.Debugf(&logging.ContextMap{}, "Added %v entries to the DB.", response.InsertData.InsertCount)
 
 	return nil
 }
