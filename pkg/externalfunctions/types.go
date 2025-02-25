@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // similarityElement represents a single element in the similarity search result.
@@ -224,4 +225,27 @@ type GeneralDataExtractionDocument struct {
 	DenseVector   []float32        `json:"dense_vector"`
 	SparseVector  map[uint]float32 `json:"sparse_vector"`
 	Text          string           `json:"text"`
+}
+
+// MongoDbContext is the structure for the mongodb client
+type MongoDbContext struct {
+	Client     *mongo.Client
+	Database   *mongo.Database
+	Collection *mongo.Collection
+}
+
+type MongoDbCustomerObject struct {
+	ApiKey          string `bson:"api_key"`
+	CustomerName    string `bson:"customer_name"`
+	AccessDenied    bool   `bson:"access_denied"`
+	TotalTokenCount int    `bson:"total_token_usage"`
+	TokenLimit      int    `bson:"token_limit"`
+	WarningSent     bool   `bson:"warning_sent"`
+}
+
+// EmailRequest represents the structure of the POST request body
+type EmailRequest struct {
+	Email   string `json:"email"`
+	Subject string `json:"subject"`
+	Content string `json:"content"`
 }

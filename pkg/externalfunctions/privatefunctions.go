@@ -31,6 +31,10 @@ import (
 	"github.com/tmc/langchaingo/documentloaders"
 	"github.com/tmc/langchaingo/schema"
 	"github.com/tmc/langchaingo/textsplitter"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"golang.org/x/oauth2"
 	"nhooyr.io/websocket"
 )
@@ -2372,4 +2376,181 @@ func downloadGithubFileContent(githubRepoName string, githubRepoOwner string,
 	logging.Log.Debugf(&logging.ContextMap{}, "Got content from github file: %s", gihubFilePath)
 
 	return checksum, content, nil
+}
+
+// mongoDbInitializeClient initializes the mongodb client
+// This function should be called at the beginning of the agent
+// to initialize the mongodb client
+//
+// Parameters:
+//   - mongoDbEndpoint: The MongoDB endpoint.
+//   - databaseName: The name of the database.
+//
+// Returns:
+//   - mongoDbClient: The MongoDB client.
+//   - err: An error if any.
+func mongoDbInitializeClient(mongoDbEndpoint string, databaseName string, collectionName string) (mongoDbContext *MongoDbContext, err error) {
+	// Set the server API options
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	opts := options.Client().ApplyURI(mongoDbEndpoint).SetServerAPIOptions(serverAPI)
+
+	// create context
+	mongoDbCtx := context.Background()
+
+	// Create a new client and connect to the server
+	client, err := mongo.Connect(mongoDbCtx, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error in mongo.Connect: %v", err)
+	}
+
+	// Ping to verify connection
+	err = client.Ping(mongoDbCtx, readpref.Primary())
+	if err != nil {
+		return nil, fmt.Errorf("failed to ping MongoDB: %v", err)
+	}
+
+	// create database
+	database := client.Database(databaseName)
+
+	// check if collection exists
+	exists, err := mongoDbCollectionExists(database, collectionName)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error checking if collection exists: %v", err)
+		panic(err)
+	}
+	if !exists {
+		logging.Log.Errorf(&logging.ContextMap{}, "Collection %s does not exist", collectionName)
+		panic("Collection " + collectionName + " does not exist")
+	}
+
+	// create collection
+	collection := database.Collection(collectionName)
+
+	// create mongodb client
+	mongoDbContext = &MongoDbContext{
+		Client:     client,
+		Database:   database,
+		Collection: collection,
+	}
+
+	return mongoDbContext, nil
+}
+
+// mongoDbCollectionExists checks if a collection exists in the database
+//
+// Parameters:
+//   - database: The MongoDB database.
+//   - collectionName: The name of the collection.
+//
+// Returns:
+//   - exists: True if the collection exists, false otherwise.
+//   - err: An error if any.
+func mongoDbCollectionExists(database *mongo.Database, collectionName string) (exists bool, err error) {
+	// Get the list of collections in the database
+	collections, err := database.ListCollectionNames(context.Background(), map[string]interface{}{})
+	if err != nil {
+		return false, err
+	}
+
+	// Check if the collection name exists in the list
+	for _, name := range collections {
+		if name == collectionName {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// mongoDbGetCustomerByApiKey retrieves
+// the customer object from the database using the API key
+//
+// Parameters:
+//   - mongoDbContext: The MongoDB context.
+//   - apiKey: The API key.
+//
+// Returns:
+//   - exists: True if the customer exists, false otherwise.
+//   - customer: The customer object.
+//   - err: An error if any.
+func mongoDbGetCustomerByApiKey(mongoDbContext *MongoDbContext, apiKey string) (exists bool, customer *MongoDbCustomerObject, err error) {
+	// Create filter for API key
+	filter := bson.M{"api_key": apiKey}
+
+	// Find one document
+	err = mongoDbContext.Collection.FindOne(context.Background(), filter).Decode(&customer)
+	if err != nil {
+		// No matching document found
+		if err == mongo.ErrNoDocuments {
+			return false, customer, nil
+		}
+		// other error
+		return false, customer, err
+	}
+
+	return true, customer, nil
+}
+
+// mongoDbAddToTotalTokenCount increments the total token count for a customer
+//
+// Parameters:
+//   - mongoDbContext: The MongoDB context.
+//   - apiKey: The API key.
+//   - additionalTokenCount: The number of tokens to add.
+//
+// Returns:
+//   - err: An error if any.
+func mongoDbAddToTotalTokenCount(mongoDbContext *MongoDbContext, apiKey string, additionalTokenCount int) (err error) {
+	// Create filter for API key & update for total token count
+	filter := bson.M{"api_key": apiKey}
+	update := bson.M{
+		"$inc": bson.M{
+			"total_token_usage": additionalTokenCount,
+		},
+	}
+
+	// Update the document
+	result, err := mongoDbContext.Collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update token usage: %v", err)
+	}
+
+	// Check if the document was updated
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no customer found with api_key: %s", apiKey)
+	}
+
+	return nil
+}
+
+// mongoDbUpdateAccessAndWarning updates the access_denied and warning_sent fields
+//
+// Parameters:
+//   - mongoDbContext: The MongoDB context.
+//   - apiKey: The API key.
+//
+// Returns:
+//   - err: An error if any.
+func mongoDbUpdateAccessAndWarning(mongoDbContext *MongoDbContext, apiKey string) (err error) {
+	// Create filter for API key & update access_denied and warning_sent
+	filter := bson.M{"api_key": apiKey}
+	update := bson.M{
+		"$set": bson.M{
+			"access_denied": true,
+			"warning_sent":  true,
+		},
+	}
+
+	// Update the document
+	result, err := mongoDbContext.Collection.UpdateOne(context.Background(), filter, update)
+	if err != nil {
+		return fmt.Errorf("failed to update token usage: %v", err)
+	}
+
+	// Check if the document was updated
+	if result.MatchedCount == 0 {
+		return fmt.Errorf("no customer found with api_key: %s", apiKey)
+	}
+
+	return nil
 }

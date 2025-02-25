@@ -508,6 +508,84 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 	return responseAsStr, nil
 }
 
+// PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput performs a general request to LLM with a specific model
+// and returns the token count using OpenAI token count model. Does not stream the response.
+//
+// Tags:
+//   - @displayName: General LLM Request (Specific Models, No Stream, OpenAI Token Output)
+//
+// Parameters:
+//   - input: the user input
+//   - history: the conversation history
+//   - systemPrompt: the system prompt
+//   - modelIds: the model IDs of the AI models to use
+//   - tokenCountModelName: the model name to use for token count
+//
+// Returns:
+//   - message: the response message
+//   - tokenCount: the token count
+func PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput(input string, history []sharedtypes.HistoricMessage, systemPrompt string, modelIds []string, tokenCountModelName string) (message string, tokenCount int) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil, nil)
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// get input token count
+	totalTokenCount, err := openAiTokenCount(tokenCountModelName, input+systemPrompt)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Error getting input token count: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+		panic(errorMessage)
+	}
+
+	// get history token count
+	for _, message := range history {
+		historyTokenCount, err := openAiTokenCount(tokenCountModelName, message.Content)
+		if err != nil {
+			errorMessage := fmt.Sprintf("Error getting history token count: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+			panic(errorMessage)
+		}
+		totalTokenCount += historyTokenCount
+	}
+
+	// get the output token count
+	outputTokenCount, err := openAiTokenCount(tokenCountModelName, responseAsStr)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Error getting output token count: %v", err)
+		logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+		panic(errorMessage)
+	}
+	totalTokenCount += outputTokenCount
+
+	// log token count
+	logging.Log.Debugf(&logging.ContextMap{}, "Total token count: %d", totalTokenCount)
+
+	// Return the response
+	return responseAsStr, totalTokenCount
+}
+
 // PerformCodeLLMRequest performs a code generation request to LLM
 //
 // Tags:
