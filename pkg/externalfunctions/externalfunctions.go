@@ -2,21 +2,22 @@ package externalfunctions
 
 var ExternalFunctionsMap = map[string]interface{}{
 	// llm handler
-	"PerformVectorEmbeddingRequest":                    PerformVectorEmbeddingRequest,
-	"PerformVectorEmbeddingRequestWithTokenLimitCatch": PerformVectorEmbeddingRequestWithTokenLimitCatch,
-	"PerformBatchEmbeddingRequest":                     PerformBatchEmbeddingRequest,
-	"PerformBatchHybridEmbeddingRequest":               PerformBatchHybridEmbeddingRequest,
-	"PerformKeywordExtractionRequest":                  PerformKeywordExtractionRequest,
-	"PerformGeneralRequest":                            PerformGeneralRequest,
-	"PerformGeneralRequestWithImages":                  PerformGeneralRequestWithImages,
-	"PerformGeneralRequestSpecificModel":               PerformGeneralRequestSpecificModel,
-	"PerformCodeLLMRequest":                            PerformCodeLLMRequest,
-	"PerformGeneralRequestNoStreaming":                 PerformGeneralRequestNoStreaming,
-	"BuildLibraryContext":                              BuildLibraryContext,
-	"BuildFinalQueryForGeneralLLMRequest":              BuildFinalQueryForGeneralLLMRequest,
-	"BuildFinalQueryForCodeLLMRequest":                 BuildFinalQueryForCodeLLMRequest,
-	"AppendMessageHistory":                             AppendMessageHistory,
-	"ShortenMessageHistory":                            ShortenMessageHistory,
+	"PerformVectorEmbeddingRequest":                                   PerformVectorEmbeddingRequest,
+	"PerformVectorEmbeddingRequestWithTokenLimitCatch":                PerformVectorEmbeddingRequestWithTokenLimitCatch,
+	"PerformBatchEmbeddingRequest":                                    PerformBatchEmbeddingRequest,
+	"PerformBatchHybridEmbeddingRequest":                              PerformBatchHybridEmbeddingRequest,
+	"PerformKeywordExtractionRequest":                                 PerformKeywordExtractionRequest,
+	"PerformGeneralRequest":                                           PerformGeneralRequest,
+	"PerformGeneralRequestWithImages":                                 PerformGeneralRequestWithImages,
+	"PerformGeneralRequestSpecificModel":                              PerformGeneralRequestSpecificModel,
+	"PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput": PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput,
+	"PerformCodeLLMRequest":                                           PerformCodeLLMRequest,
+	"PerformGeneralRequestNoStreaming":                                PerformGeneralRequestNoStreaming,
+	"BuildLibraryContext":                                             BuildLibraryContext,
+	"BuildFinalQueryForGeneralLLMRequest":                             BuildFinalQueryForGeneralLLMRequest,
+	"BuildFinalQueryForCodeLLMRequest":                                BuildFinalQueryForCodeLLMRequest,
+	"AppendMessageHistory":                                            AppendMessageHistory,
+	"ShortenMessageHistory":                                           ShortenMessageHistory,
 
 	// knowledge db
 	"SendVectorsToKnowledgeDB": SendVectorsToKnowledgeDB,
@@ -95,4 +96,11 @@ var ExternalFunctionsMap = map[string]interface{}{
 	// milvus
 	"MilvusCreateCollection": MilvusCreateCollection,
 	"MilvusInsertData":       MilvusInsertData,
+
+	// auth
+	"CheckApiKeyAuthMongoDb":                  CheckApiKeyAuthMongoDb,
+	"UpdateTotalTokenCountForCustomerMongoDb": UpdateTotalTokenCountForCustomerMongoDb,
+	"DenyCustomerAccessAndSendWarningMongoDb": DenyCustomerAccessAndSendWarningMongoDb,
+	"SendLogicAppNotificationEmail":           SendLogicAppNotificationEmail,
+	"CreateMessageWithVariable":               CreateMessageWithVariable,
 }

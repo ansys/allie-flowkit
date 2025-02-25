@@ -11,9 +11,6 @@ import (
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
 )
 
-//go:embed pkg/externalfunctions/externalfunctions.go
-var externalFunctionsFile string
-
 //go:embed pkg/externalfunctions/dataextraction.go
 var dataExtractionFile string
 
@@ -34,6 +31,9 @@ var ansysGPTFile string
 
 //go:embed pkg/externalfunctions/ansysmeshpilot.go
 var ansysMeshPilotFile string
+
+//go:embed pkg/externalfunctions/auth.go
+var authFile string
 
 func init() {
 	// initialize config
@@ -64,6 +64,7 @@ func main() {
 		"ansys_gpt":        ansysGPTFile,
 		"milvus":           milvusFile,
 		"ansys_mesh_pilot": ansysMeshPilotFile,
+		"auth":             authFile,
 	}
 
 	// Load function definitions
