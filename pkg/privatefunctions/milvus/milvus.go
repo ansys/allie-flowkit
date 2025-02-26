@@ -511,6 +511,16 @@ func InsertData(collectionName string, dataToSend []interface{}, objectFieldName
 		Data:           nil,
 	}
 
+	// Query duplicates inside milvus so updated data can be added
+	entriesToRemove, err := QueryDuplicates(collectionName, dataToSend, objectFieldName, idFieldName)
+	if err != nil {
+		logging.Log.Errorf(&logging.ContextMap{}, "Error during QueryDuplicates: %v", err)
+		return err
+	}
+
+	batchCount := 0
+	totalDeleteCount := 0
+
 	startIndex := 0
 	stopIndex := 0
 
@@ -525,13 +535,6 @@ func InsertData(collectionName string, dataToSend []interface{}, objectFieldName
 		// Assign the data batch to the request object
 		request.Data = dataToSend[startIndex:stopIndex]
 
-		// Remove duplicates inside milvus so updated data can be added
-		entriesToRemove, err := QueryDuplicates(collectionName, dataToSend[startIndex:stopIndex], objectFieldName, idFieldName)
-		if err != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Error during QueryDuplicates: %v", err)
-			return err
-		}
-
 		// Send the data batch to Milvus
 		err = sendInsertRequest(request)
 		if err != nil {
@@ -540,17 +543,21 @@ func InsertData(collectionName string, dataToSend []interface{}, objectFieldName
 		}
 
 		// If data was successfully inserted, remove the duplicates from the Milvus database
-		err = RemoveDuplicates(collectionName, entriesToRemove)
+		deleteCount, err := RemoveDuplicates(collectionName, entriesToRemove[batchCount])
 		if err != nil {
 			logging.Log.Errorf(&logging.ContextMap{}, "Error during RemoveDuplicates: %v", err)
 			return err
 		}
 
-		logging.Log.Debugf(&logging.ContextMap{}, "Updated %d entries in Milvus", len(entriesToRemove))
-
 		// Move the start index to the next batch
 		startIndex = stopIndex
+
+		totalDeleteCount += deleteCount
+		batchCount++
 	}
+
+	logging.Log.Debugf(&logging.ContextMap{}, "Inserted a total of %d entries in Milvus", len(dataToSend))
+	logging.Log.Debugf(&logging.ContextMap{}, "Updated %d entries in Milvus", totalDeleteCount)
 
 	return nil
 }
@@ -602,7 +609,7 @@ func Query(collectionName string, responseLimit int, outputFields []string, filt
 // Returns:
 //   - removedData: Data that was removed from the Milvus database.
 //   - error: Error if any issue occurs during querying the Milvus database.
-func QueryDuplicates(collectionName string, data []interface{}, objectFieldName string, idFieldName string) (duplicatedEntriesId []int64, funcError error) {
+func QueryDuplicates(collectionName string, data []interface{}, objectFieldName string, idFieldName string) (duplicatedEntriesId [][]int64, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -622,33 +629,60 @@ func QueryDuplicates(collectionName string, data []interface{}, objectFieldName 
 		dataIds = append(dataIds, idStr)
 	}
 
-	// Query Milvus for entries in the current batch
-	filter, err := createStringFilterExpression(idFieldName, dataIds)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "Error during createStringFilterExpression: %v", err)
-		return nil, err
-	}
+	startIndex := 0
+	stopIndex := 0
+	batchCount := 0
 
-	// Send the Milvus query request and receive the response.
-	response, err := Query(collectionName, 0, []string{"id"}, filter)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
-		return nil, err
-	}
+	uniqueIdsMap := make(map[int64]bool)
 
-	// Create a list of IDs for the duplicated entries
-	for _, item := range response.Data {
-		if obj, ok := item.(map[string]interface{}); ok {
-			// get the id field from the object
-			if idNum, ok := obj["id"].(json.Number); ok {
-				id, err := strconv.ParseInt(idNum.String(), 10, 64)
-				if err != nil {
-					logging.Log.Errorf(&logging.ContextMap{}, "Error parsing ID: %v", err)
-					continue
+	// Send data to insert in batches of CallsBatchSize
+	for stopIndex < len(dataIds) {
+		batchDuplicates := make([]int64, 0, CallsBatchSize)
+
+		// Calculate the batch stop index, considering the array bounds
+		stopIndex += CallsBatchSize
+		if stopIndex > len(dataIds) {
+			stopIndex = len(dataIds)
+		}
+
+		// Query Milvus for entries in the current batch
+		filter, err := createStringFilterExpression(idFieldName, dataIds[startIndex:stopIndex])
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during createStringFilterExpression: %v", err)
+			return nil, err
+		}
+
+		// Send the Milvus query request and receive the response.
+		response, err := Query(collectionName, 0, []string{"id"}, filter)
+		if err != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
+			return nil, err
+		}
+
+		// Create a list of IDs for the duplicated entries
+		for _, item := range response.Data {
+			if obj, ok := item.(map[string]interface{}); ok {
+				// get the id field from the object
+				if idNum, ok := obj["id"].(json.Number); ok {
+					id, err := strconv.ParseInt(idNum.String(), 10, 64)
+					if err != nil {
+						logging.Log.Errorf(&logging.ContextMap{}, "Error parsing ID: %v", err)
+						continue
+					}
+					// Check if the ID is unique, if so add it to the map and list of duplicates
+					if _, ok := uniqueIdsMap[id]; !ok {
+						uniqueIdsMap[id] = true
+						batchDuplicates = append(batchDuplicates, id)
+					}
 				}
-				duplicatedEntriesId = append(duplicatedEntriesId, id)
 			}
 		}
+
+		// Move the start index to the next batch
+		startIndex = stopIndex
+
+		duplicatedEntriesId = append(duplicatedEntriesId, batchDuplicates)
+		batchCount++
 	}
 	return duplicatedEntriesId, nil
 }
@@ -660,8 +694,9 @@ func QueryDuplicates(collectionName string, data []interface{}, objectFieldName 
 //   - dataIds: IDs of the data to remove from the Milvus database.
 //
 // Returns:
+//   - deleteCount: Number of entries removed from the Milvus database.
 //   - error: Error if any issue occurs during querying the Milvus database.
-func RemoveDuplicates(collectionName string, dataIds []int64) (funcError error) {
+func RemoveDuplicates(collectionName string, dataIds []int64) (deleteCount int, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -672,32 +707,32 @@ func RemoveDuplicates(collectionName string, dataIds []int64) (funcError error) 
 	}()
 	// If there are no data IDs, return
 	if len(dataIds) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	// Query Milvus for entries in the current batch
 	filter, err := createNumberFilterExpression("id", dataIds)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error during createStringFilterExpression: %v", err)
-		return err
+		return 0, err
 	}
 
 	response, err := Query(collectionName, 0, []string{"*"}, filter)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error during Query: %v", err)
-		return err
+		return 0, err
 	}
 
 	if len(response.Data) > 0 {
 		// Remove duplicates from the milvus db
-		err = sendRemoveRequest(collectionName, filter)
+		deleteCount, err = sendRemoveRequest(collectionName, filter)
 		if err != nil {
 			logging.Log.Errorf(&logging.ContextMap{}, "Error during sendRemoveRequest: %v", err)
-			return err
+			return 0, err
 		}
 	}
 
-	return nil
+	return deleteCount, nil
 }
 
 // sendRemoveRequest sends an HTTP POST request to the Milvus database for removing entries.
@@ -708,7 +743,7 @@ func RemoveDuplicates(collectionName string, dataIds []int64) (funcError error) 
 //
 // Returns:
 //   - error: Error if any issue occurs while sending the request to the Milvus database.
-func sendRemoveRequest(collectionName string, filter string) (funcError error) {
+func sendRemoveRequest(collectionName string, filter string) (deleteCount int, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -734,16 +769,16 @@ func sendRemoveRequest(collectionName string, filter string) (funcError error) {
 	err, _ := generic.CreatePayloadAndSendHttpRequest(url, "POST", request, &response)
 	if err != nil {
 		logging.Log.Errorf(&logging.ContextMap{}, "Error in CreatePayloadAndSendHttpRequest: %s", err)
-		return err
+		return 0, err
 	}
 
 	// Check the response status code.
 	if response.Code != 0 {
 		logging.Log.Errorf(&logging.ContextMap{}, "Request failed with status code %d and message: %s\n", response.Code, response.Message)
-		return errors.New(response.Message)
+		return 0, errors.New(response.Message)
 	}
 
-	return nil
+	return response.Data.DeleteCount, nil
 }
 
 // sendInsertRequest sends an HTTP POST request to the Milvus DB.
