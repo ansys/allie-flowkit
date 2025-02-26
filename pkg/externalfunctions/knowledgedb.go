@@ -734,8 +734,6 @@ func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 	}
 
 	logging.Log.Debugf(&logging.ContextMap{}, "Added data to collection: %s \n", collectionName)
-
-	return
 }
 
 // CreateCollectionRequest sends a request to the collection endpoint.
@@ -768,6 +766,4 @@ func CreateCollectionRequest(collectionName string) {
 	}
 
 	logging.Log.Debugf(&logging.ContextMap{}, "Created collection: %s \n", collectionName)
-
-	return
 }
