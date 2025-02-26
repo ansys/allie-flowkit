@@ -832,8 +832,6 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
-
-	return
 }
 
 // StoreElementsInGraphDatabase stores elements in the graph database.
@@ -852,8 +850,6 @@ func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) 
 
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateCodeGenerationRelationships(elements)
-
-	return
 }
 
 // LoadAndCheckExampleDependencies loads and checks the dependencies of the examples.
@@ -1215,8 +1211,6 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
-
-	return
 }
 
 // StoreExamplesInGraphDatabase stores examples in the graph database.
@@ -1235,8 +1229,6 @@ func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) 
 
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(examples)
-
-	return
 }
 
 // LoadUserGuideSections loads user guide sections from the provided paths.
@@ -1454,8 +1446,6 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
-
-	return
 }
 
 // StoreUserGuideSectionsInGraphDatabase stores user guide sections in the graph database.
@@ -1475,8 +1465,6 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 
 	// Add the dependencies to the graph database.
 	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections, label)
-
-	return
 }
 
 // CreateGeneralDataExtractionDocumentObjects creates general data extraction document objects from

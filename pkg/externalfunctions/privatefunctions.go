@@ -1851,9 +1851,7 @@ func httpRequest(method string, url string, headers map[string]string, body []by
 	}
 
 	// Create a new HTTP client and set timeout.
-	client := &http.Client{
-		Timeout: time.Second * 30,
-	}
+	client := &http.Client{}
 
 	// Send the request.
 	resp, err := client.Do(req)
@@ -2327,7 +2325,7 @@ func getIndexNameFromToolName(toolName string) (indexName string, err error) {
 	} else if toolName == "Connect" {
 		indexName = "connect_description_embeddings"
 	} else {
-		err = fmt.Errorf("Invalid toolName: %s", toolName)
+		err = fmt.Errorf("invalid toolName: %s", toolName)
 	}
 
 	return
