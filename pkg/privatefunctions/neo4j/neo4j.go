@@ -141,7 +141,14 @@ func (neo4j_context *neo4j_Context) AddCodeGenerationElementNodes(nodes []shared
 			delete(nodeMap, "parameters")
 			parameters := make([]string, 0)
 			for _, parameter := range node.Parameters {
-				parameters = append(parameters, parameter.Name+": "+parameter.Description)
+				parameterString := "Name: " + parameter.Name
+				if parameter.Type != "" {
+					parameterString += "\nType: " + parameter.Type
+				}
+				if parameter.Description != "" {
+					parameterString += "\nDescription: " + parameter.Description
+				}
+				parameters = append(parameters, parameterString)
 			}
 			nodeMap["parameters"] = parameters
 
@@ -481,6 +488,31 @@ func (neo4j_context *neo4j_Context) CreateCodeGenerationRelationships(nodes []sh
 						map[string]any{
 							"a": node.Name,
 							"b": returnElement,
+						},
+					)
+					if err != nil {
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during transaction.Run: %v", err)
+						return false, err
+					}
+				}
+
+				// Create relationships between the node and its parameters
+				parameterList := []string{}
+				for _, parameter := range node.Parameters {
+					patameterTypes, err := codegeneration.CreateReturnList(parameter.Type)
+					if err != nil {
+						logging.Log.Errorf(&logging.ContextMap{}, "Error during codegeneration.CreateReturnList: %v", err)
+						return false, err
+					}
+					parameterList = append(parameterList, patameterTypes...)
+				}
+
+				for _, parameter := range parameterList {
+					_, err := transaction.Run(db_ctx,
+						"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:USES_PARAMETER]->(b)",
+						map[string]any{
+							"a": node.Name,
+							"b": parameter,
 						},
 					)
 					if err != nil {
