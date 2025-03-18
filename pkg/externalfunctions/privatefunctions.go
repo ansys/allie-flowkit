@@ -181,7 +181,7 @@ func sendTokenCountToEndpoint(userEmail string, tokenCountEndpoint string, input
 		Email:       userEmail,
 		InputToken:  inputTokenCount,
 		OutputToken: ouputTokenCount,
-		Plattform:   "Allie",
+		Platform:    "Eng. Copilot",
 	}
 
 	// Convert payload to JSON

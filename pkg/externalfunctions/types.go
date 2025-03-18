@@ -214,7 +214,7 @@ type TokenCountUpdateRequest struct {
 	Email       string `json:"email"`
 	InputToken  int    `json:"input_token"`
 	OutputToken int    `json:"output_token"`
-	Plattform   string `json:"plattform"`
+	Platform    string `json:"platform"`
 }
 
 type GeneralDataExtractionDocument struct {
