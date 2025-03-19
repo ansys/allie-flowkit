@@ -9,6 +9,7 @@ import (
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/russross/blackfriday/v2"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -206,7 +207,7 @@ func MeshPilotReAct(instruction string,
 		actions := []map[string]string{}
 		finalResult := make(map[string]interface{})
 		finalResult["Actions"] = actions
-		finalResult["Message"] = content
+		finalResult["Message"] = string(blackfriday.Run([]byte(content)))
 
 		bytesStream, err := json.Marshal(finalResult)
 		if err != nil {
@@ -976,6 +977,7 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		hasActions = true
 	} else {
 		hasActions = false
+		actions = make([]map[string]string, 0)
 	}
 
 	// Get tool 2 name from the configuration
@@ -1353,5 +1355,93 @@ func AppendMeshPilotHistory(history []map[string]string, role, content string) (
 	})
 
 	logging.Log.Infof(ctx, "Updated history: %q", updatedHistory)
+	return
+}
+
+// FinalizeResult converts actions to json string to send back data
+//
+// Tags:
+//   - @displayName: GetActionsFromConfig
+//
+// Parameters:
+//   - toolName: tool name to create customize messages
+//
+// Returns:
+//   - result: the actions in json format
+func GetActionsFromConfig(toolName string) (result string) {
+	ctx := &logging.ContextMap{}
+
+	toolResultName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool result name from the configuration")
+		return
+	}
+
+	toolResultMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool result message from the configuration")
+		return
+	}
+
+	// Get tool action success message from configuration
+	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
+		return
+	}
+
+	// Get tool action success message from configuration
+	actionKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
+		return
+	}
+
+	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
+		return
+	}
+
+	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_1"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
+		return
+	}
+
+	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_2"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
+		return
+	}
+
+	message := toolActionSuccessMessage
+	actions := []map[string]string{}
+	if toolName == toolResultName {
+		message = toolResultMessage
+		actions = append(actions, map[string]string{
+			actionKey1: actionValue1,
+			actionKey2: actionValue2,
+		})
+	} else {
+		logging.Log.Errorf(ctx, "Invalid toolName %s", toolName)
+		return
+	}
+
+	finalMessage := make(map[string]interface{})
+	finalMessage["Message"] = message
+	finalMessage["Actions"] = actions
+
+	// Marshal the actions
+	bytesStream, err := json.Marshal(finalMessage)
+
+	if err != nil {
+		logging.Log.Errorf(ctx, "failed to convert actions to json: %v", err)
+		return
+	}
+
+	result = string(bytesStream)
+	logging.Log.Info(ctx, "successfully converted actions to json")
+
 	return
 }
