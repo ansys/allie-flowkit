@@ -2316,7 +2316,7 @@ func getIndexNameFromToolName(toolName string) (indexName string, err error) {
 		indexName = "delete_description_embeddings"
 	} else if toolName == "CreateOrInsertOrAdd" {
 		indexName = "insert_description_embeddings"
-	} else if toolName == "UpdateOrSet" {
+	} else if toolName == "SetOrUpdate" {
 		indexName = "update_description_embeddings"
 	} else if toolName == "Execute" {
 		indexName = "execute_description_embeddings"
