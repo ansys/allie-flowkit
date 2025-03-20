@@ -86,7 +86,7 @@ type RLAgent struct {
 	Reward float64          `json:"reward"`
 }
 ```
-### Step 3: Include the Type
+### Step 3: Configure the Type
 Now you must make the changes in the `allie-agent-configurator` repo. 
 
 Example:
@@ -140,12 +140,7 @@ export const goTypes: string[] = [
 ```
 
 
-
-### Step 3: JSON Decode
-
 ## 3. Adding a New Category
-__________
-add to constants.ts in allie-agent config
 
 ### Step 1: Make a New Category File
 
