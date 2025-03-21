@@ -833,6 +833,11 @@ func ansysGPTACSSemanticHybridSearch(
 		filterData = append(filterData, "product eq 'scade one'")
 	}
 
+	// append with 'n/a' filter
+	if indexName == "external-marketing" && len(physics) > 0 {
+		filterData = append(filterData, "physics eq 'n/a'")
+	}
+
 	// join filter data
 	filterQuery := strings.Join(filterData, " or ")
 	logging.Log.Debugf(&logging.ContextMap{}, "filter_data is : %s\n", filterQuery)
