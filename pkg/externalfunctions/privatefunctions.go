@@ -25,6 +25,8 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+
+	// "github.com/ansys/allie-llm/pkg/confstructs"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/tiktoken-go/tokenizer"
@@ -245,7 +247,7 @@ func sendChatRequestNoHistory(data string, chatRequestType string, maxKeywordsSe
 //
 // Returns:
 //   - chan sharedtypes.HandlerResponse: the response channel
-func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions, images []string) chan sharedtypes.HandlerResponse {
+func sendChatRequest(data string, chatRequestType string, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt interface{}, llmHandlerEndpoint string, modelIds []string, options *sharedtypes.ModelOptions, images []string) chan sharedtypes.HandlerResponse {
 	// Initiate the channels
 	requestChannelChat := make(chan []byte, 400)
 	responseChannel := make(chan sharedtypes.HandlerResponse) // Create a channel for responses
@@ -254,7 +256,6 @@ func sendChatRequest(data string, chatRequestType string, history []sharedtypes.
 	go shutdownHandler(c)
 	go listener(c, responseChannel, false)
 	go writer(c, requestChannelChat, responseChannel)
-
 	go sendRequest("chat", data, requestChannelChat, chatRequestType, "true", false, history, maxKeywordsSearch, systemPrompt, responseChannel, modelIds, options, images)
 
 	return responseChannel // Return the response channel
@@ -499,7 +500,7 @@ func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan 
 //   - dataStream: the data stream flag
 //   - history: the conversation history
 //   - sc: the session context
-func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, getSparseEmbeddings bool, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt string, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions, images []string) {
+func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, chatRequestType string, dataStream string, getSparseEmbeddings bool, history []sharedtypes.HistoricMessage, maxKeywordsSearch uint32, systemPrompt interface{}, responseChannel chan sharedtypes.HandlerResponse, modelIds []string, options *sharedtypes.ModelOptions, images []string) {
 	request := sharedtypes.HandlerRequest{
 		Adapter:         adapter,
 		InstructionGuid: strings.Replace(uuid.New().String(), "-", "", -1),
@@ -564,7 +565,42 @@ func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, c
 
 		if request.ChatRequestType == "general" {
 			// Define the system prompt
-			request.SystemPrompt = systemPrompt
+			var typePrompt string
+			switch v := systemPrompt.(type) {
+			case string:
+				typePrompt = v
+			case map[string]string:
+				if defaultPrompt, exists := v["notThere"]; exists {
+					typePrompt = defaultPrompt
+				} else if defaultPrompt, exists := v["default"]; exists {
+					typePrompt = defaultPrompt
+				} else {
+					errMessage := "Property 'default' is required for 'SystemPrompt' in requests to allie-llm."
+					logging.Log.Warn(&logging.ContextMap{}, errMessage)
+					response := sharedtypes.HandlerResponse{
+						Type: "error",
+						Error: &sharedtypes.ErrorResponse{
+							Code:    4,
+							Message: errMessage,
+						},
+					}
+					responseChannel <- response
+					return
+				}
+			default:
+				errMessage := "SystemPrompt must be string or map[string]string in requests to allie-llm."
+				logging.Log.Warn(&logging.ContextMap{}, errMessage)
+				response := sharedtypes.HandlerResponse{
+					Type: "error",
+					Error: &sharedtypes.ErrorResponse{
+						Code:    4,
+						Message: errMessage,
+					},
+				}
+				responseChannel <- response
+				return
+			}
+			request.SystemPrompt = typePrompt
 		}
 
 		if options != nil {
