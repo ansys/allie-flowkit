@@ -26,7 +26,6 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 
-	// "github.com/ansys/allie-llm/pkg/confstructs"
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
 	"github.com/tiktoken-go/tokenizer"
