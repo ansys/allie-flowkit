@@ -3,10 +3,9 @@
 ## 1. Adding a New Function
 
 ### Step 1: Define the Function
-Define the new function in the appropriate package. If you were adding a function related to data extraction, you would need to add it to the `data_extraction` package.
+Define the new function in the appropriate package. If you were adding a function related to data extraction, you would need to add it to the `data_extraction` package. Ensure the inclusion of `displayName` as that's what you'll see on the UI interface to pick the method.
 
 ____________________
-Add infos about the params displayname
 
 Example:
 ```go
@@ -34,8 +33,8 @@ Example (continued):
 var ExternalFunctionsMap = map[string]interface{}{
     // llm handler
     "PerformVectorEmbeddingRequest":                                   PerformVectorEmbeddingRequest,
-    // . . . 
-    
+    // . . .
+
     // data extraction
     "GetGithubFilesToExtract":                    GetGithubFilesToExtract,
     "GetLocalFilesToExtract":                     GetLocalFilesToExtract,
@@ -87,7 +86,7 @@ type RLAgent struct {
 }
 ```
 ### Step 3: Configure the Type
-Now you must make the changes in the `allie-agent-configurator` repo. 
+Now you must make the changes in the `allie-agent-configurator` repo.
 
 Example:
 ```ts
@@ -136,7 +135,7 @@ export const goTypes: string[] = [
     "[]CodeGenerationUserGuideSection"
     "[]RLAgent" // added new type here
   ]
-  // . . . 
+  // . . .
 ```
 
 ### Step 4: Update Type Checking
@@ -312,8 +311,8 @@ Example (continued):
 var ExternalFunctionsMap = map[string]interface{}{
     // llm handler
     "PerformVectorEmbeddingRequest":                                   PerformVectorEmbeddingRequest,
-    // . . . 
-    
+    // . . .
+
     // generic
     "AssignStringToString":   AssignStringToString,
     "SendRestAPICall":        SendRestAPICall,
@@ -327,4 +326,3 @@ var ExternalFunctionsMap = map[string]interface{}{
 Below is an easy demonstration on how to visualize and verify both the method's availability as well as the output in a simple workflow. Use port 9008 on localhost to develop a workflow, and localhost 9006 to chat with a selected workflow!
 ![Allie Workflow](tutorial/workflow_ex.png)
 ![Allie Chat](tutorial/testMethod.png)
-
