@@ -564,43 +564,7 @@ func sendRequest(adapter string, data interface{}, RequestChannel chan []byte, c
 		}
 
 		if request.ChatRequestType == "general" {
-			// Define the system prompt
-			var typePrompt string
-			switch v := systemPrompt.(type) {
-			case string:
-				typePrompt = v
-			case map[string]string:
-				if defaultPrompt, exists := v["notThere"]; exists {
-					typePrompt = defaultPrompt
-				} else if defaultPrompt, exists := v["default"]; exists {
-					typePrompt = defaultPrompt
-				} else {
-					errMessage := "Property 'default' is required for 'SystemPrompt' in requests to allie-llm."
-					logging.Log.Warn(&logging.ContextMap{}, errMessage)
-					response := sharedtypes.HandlerResponse{
-						Type: "error",
-						Error: &sharedtypes.ErrorResponse{
-							Code:    4,
-							Message: errMessage,
-						},
-					}
-					responseChannel <- response
-					return
-				}
-			default:
-				errMessage := "SystemPrompt must be string or map[string]string in requests to allie-llm."
-				logging.Log.Warn(&logging.ContextMap{}, errMessage)
-				response := sharedtypes.HandlerResponse{
-					Type: "error",
-					Error: &sharedtypes.ErrorResponse{
-						Code:    4,
-						Message: errMessage,
-					},
-				}
-				responseChannel <- response
-				return
-			}
-			request.SystemPrompt = typePrompt
+			request.SystemPrompt = systemPrompt
 		}
 
 		if options != nil {

@@ -1,5 +1,5 @@
 # Stage 1: Build the Go service using a non-root user
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Create a non-root user and group
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup

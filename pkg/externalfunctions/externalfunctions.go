@@ -9,6 +9,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PerformKeywordExtractionRequest":                                 PerformKeywordExtractionRequest,
 	"PerformGeneralRequest":                                           PerformGeneralRequest,
 	"PerformGeneralRequestWithImages":                                 PerformGeneralRequestWithImages,
+	"PerformGeneralModelSpecificationRequest":                         PerformGeneralModelSpecificationRequest,
 	"PerformGeneralRequestSpecificModel":                              PerformGeneralRequestSpecificModel,
 	"PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput": PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput,
 	"PerformCodeLLMRequest":                                           PerformCodeLLMRequest,
