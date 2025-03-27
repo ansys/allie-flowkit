@@ -1,21 +1,25 @@
 module github.com/ansys/allie-flowkit
 
-go 1.22.0
+go 1.23.0
 
-toolchain go1.22.5
+toolchain go1.23.4
 
 require (
-	github.com/ansys/allie-sharedtypes v0.0.0-20250217150414-2bee9f9ca77e
+	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
+	github.com/ansys/allie-sharedtypes v0.0.0-20250326144345-08846395d576
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/milvus-io/milvus-sdk-go/v2 v2.4.2
 	github.com/neo4j/neo4j-go-driver/v5 v5.26.0
 	github.com/pandodao/tokenizer-go v0.2.0
+	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/tiktoken-go/tokenizer v0.2.0
 	github.com/tmc/langchaingo v0.1.12
-	golang.org/x/oauth2 v0.24.0
-	golang.org/x/text v0.22.0
-	google.golang.org/grpc v1.70.0
+	go.mongodb.org/mongo-driver v1.17.2
+	golang.org/x/oauth2 v0.25.0
+	golang.org/x/text v0.23.0
+	google.golang.org/grpc v1.71.0
 	nhooyr.io/websocket v1.8.17
 )
 
@@ -26,8 +30,6 @@ require (
 
 require (
 	github.com/AssemblyAI/assemblyai-go-sdk v1.7.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.3.1 // indirect
@@ -77,14 +79,13 @@ require (
 	gitlab.com/golang-commonmark/markdown v0.0.0-20211110145824-bf3e522c626a // indirect
 	gitlab.com/golang-commonmark/mdurl v0.0.0-20191124015652-932350d1cb84 // indirect
 	gitlab.com/golang-commonmark/puny v0.0.0-20191124015043-9f83538fa04f // indirect
-	go.mongodb.org/mongo-driver v1.17.2 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
+	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
