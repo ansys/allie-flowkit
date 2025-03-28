@@ -832,6 +832,11 @@ func ansysGPTACSSemanticHybridSearch(
 		filterData = append(filterData, "product eq 'scade one'")
 	}
 
+	// append with 'n/a' filter
+	if indexName == "external-marketing" && len(physics) > 0 {
+		filterData = append(filterData, "physics eq 'n/a'")
+	}
+
 	// join filter data
 	filterQuery := strings.Join(filterData, " or ")
 	logging.Log.Debugf(&logging.ContextMap{}, "filter_data is : %s\n", filterQuery)
@@ -2315,7 +2320,7 @@ func getIndexNameFromToolName(toolName string) (indexName string, err error) {
 		indexName = "delete_description_embeddings"
 	} else if toolName == "CreateOrInsertOrAdd" {
 		indexName = "insert_description_embeddings"
-	} else if toolName == "UpdateOrSet" {
+	} else if toolName == "SetOrUpdate" {
 		indexName = "update_description_embeddings"
 	} else if toolName == "Execute" {
 		indexName = "execute_description_embeddings"

@@ -93,6 +93,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"GetSelectedSolution":                      GetSelectedSolution,
 	"AppendToolHistory":                        AppendToolHistory,
 	"AppendMeshPilotHistory":                   AppendMeshPilotHistory,
+	"GetActionsFromConfig":                     GetActionsFromConfig,
 
 	// milvus
 	"MilvusCreateCollection": MilvusCreateCollection,
