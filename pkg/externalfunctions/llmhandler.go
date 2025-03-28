@@ -453,7 +453,7 @@ func PerformGeneralRequestWithImages(input string, history []sharedtypes.Histori
 // PerformGeneralModelSpecificationRequest performs a specified request to LLM with a configured model and Systemprompt.
 //
 // Tags:
-//   - @displayName: Testing Model Specification LLM Request (Specific System Prompt)
+//   - @displayName: General LLM Request (Specified System Prompt)
 //
 // Parameters:
 //   - input: the user input
