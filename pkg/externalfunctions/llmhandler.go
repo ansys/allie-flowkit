@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -467,8 +468,10 @@ func PerformGeneralRequestWithImages(input string, history []sharedtypes.Histori
 //   - stream: the stream channel
 func PerformGeneralModelSpecificationRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt map[string]string, modelIds []string) (message string, stream *chan string) {
 	// get the LLM handler endpoint
-	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+	fmt.Printf("[%s] type of alpsRequest inside modelspecification %T\n", time.Now().Format("2006-01-02 15:04:05.000"), systemPrompt)
+	logging.Log.Infof(&logging.ContextMap{}, "[%s] type of alpsRequest inside modelspecification %T\n", time.Now().Format("2006-01-02 15:04:05.000"), systemPrompt)
 
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil, nil)
 
