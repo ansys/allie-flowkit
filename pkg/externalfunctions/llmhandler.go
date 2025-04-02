@@ -352,7 +352,7 @@ func PerformSummaryRequest(input string) (summary string) {
 // Returns:
 //   - message: the generated message
 //   - stream: the stream channel
-func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt interface{}) (message string, stream *chan string) {
+func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string) (message string, stream *chan string) {
 	// get the LLM handler endpoint
 	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
 
