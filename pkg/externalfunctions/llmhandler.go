@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -414,6 +415,66 @@ func PerformGeneralRequestWithImages(input string, history []sharedtypes.Histori
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, nil, nil, images)
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", false, "")
+
+		// Return the stream channel
+		return "", &streamChannel
+	}
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Close the response channel
+	close(responseChannel)
+
+	// Return the response
+	return responseAsStr, nil
+}
+
+// PerformGeneralModelSpecificationRequest performs a specified request to LLM with a configured model and Systemprompt.
+//
+// Tags:
+//   - @displayName: General LLM Request (Specified System Prompt)
+//
+// Parameters:
+//   - input: the user input
+//   - history: the conversation history
+//   - isStream: the flag to indicate whether the response should be streamed
+//   - systemPrompt: the system prompt
+//   - modelId: the model ID
+//
+// Returns:
+//   - message: the response message
+//   - stream: the stream channel
+func PerformGeneralModelSpecificationRequest(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt map[string]string, modelIds []string) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	fmt.Printf("[%s] type of alpsRequest inside modelspecification %T\n", time.Now().Format("2006-01-02 15:04:05.000"), systemPrompt)
+	logging.Log.Infof(&logging.ContextMap{}, "[%s] type of alpsRequest inside modelspecification %T\n", time.Now().Format("2006-01-02 15:04:05.000"), systemPrompt)
+
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil, nil)
+
 	// If isStream is true, create a stream channel and return asap
 	if isStream {
 		// Create a stream channel
