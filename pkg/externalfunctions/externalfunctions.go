@@ -11,6 +11,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PerformGeneralRequestWithImages":                                 PerformGeneralRequestWithImages,
 	"PerformGeneralModelSpecificationRequest":                         PerformGeneralModelSpecificationRequest,
 	"PerformGeneralRequestSpecificModel":                              PerformGeneralRequestSpecificModel,
+	"PerformGeneralRequestSpecificModelAndModelOptions":               PerformGeneralRequestSpecificModelAndModelOptions,
 	"PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput": PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput,
 	"PerformCodeLLMRequest":                                           PerformCodeLLMRequest,
 	"PerformGeneralRequestNoStreaming":                                PerformGeneralRequestNoStreaming,
