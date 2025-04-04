@@ -1,0 +1,1614 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API reference &#8212; allie-flowkit</title>
+  
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/ansys_sphinx_theme.css?v=0909a4fa" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://www.nerdfonts.com/assets/css/webfont.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+  <!-- Include desired assets -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  
+
+  
+    <link href="../../_static/css/breadcrumbs.css" rel="stylesheet" />
+  
+    <script src="../../_static/documentation_options.js?v=7838c05f"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_reference/test/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://ansys.github.io/allie-flowkit/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../_static/ansys-favicon.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.6.dev0" />
+  <link rel="canonical" href="https://laughing-guide-5m1lvq6.pages.github.io/version/stable/api_reference/privatefunctions/milvus/index.html" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/pyansys_logo_transparent_black.png" class="logo__image only-light" alt="allie-flowkit - Home"/>
+    <img src="../../_static/pyansys_logo_transparent_white.png" class="logo__image only-dark pst-js-only" alt="allie-flowkit - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../index.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<div class="search-bar pst-js-only" id="search-bar">
+  <form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="search" class="form-control" name="q" placeholder="Search the docs ..."
+      aria-label="Search the docs ..." autocomplete="off" autocorrect="off"
+      autocapitalize="off" spellcheck="false" />
+    <span class="search-button__kbd-shortcut">
+      <kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd>
+    </span>
+  </form>
+  <div id="static-search-results" class="static-search-results" style="display:none;" tabindex="0"></div>
+</div>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/ansys/allie-flowkit" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<div class="search-bar pst-js-only" id="search-bar">
+  <form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="search" class="form-control" name="q" placeholder="Search the docs ..."
+      aria-label="Search the docs ..." autocomplete="off" autocorrect="off"
+      autocapitalize="off" spellcheck="false" />
+    <span class="search-button__kbd-shortcut">
+      <kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd>
+    </span>
+  </form>
+  <div id="static-search-results" class="static-search-results" style="display:none;" tabindex="0"></div>
+</div>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+  
+    <div id="announcement_msg"></div>
+<script>
+  fetch("announcement.html")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(
+      (text) => (document.getElementById("announcement_msg").innerHTML = text),
+    )
+    .catch((error) => console.error(`Fetch problem: ${error.message}`));
+</script>
+  
+
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../index.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/ansys/allie-flowkit" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+         
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="https://allie.docs.pyansys.com/" class="nav-link">Allie</a>
+    </li>
+     
+    <li class="breadcrumb-item">
+      <a
+        href="../../index.html"
+        class="nav-link"
+        aria-label="Home"
+      >
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+      
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">API reference</span></li>
+    
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package milvus
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+				<dd><a href="#pkg-variables">Variables</a></dd>
+			
+			
+				
+				<dd><a href="#CreateCollection">func CreateCollection(schema *entity.Schema) (funcError error)</a></dd>
+			
+				
+				<dd><a href="#CreateCustomSchema">func CreateCustomSchema(collectionName string, fields []SchemaField, description string) (*entity.Schema, error)</a></dd>
+			
+				
+				<dd><a href="#CreateIndexes">func CreateIndexes(collectionName string, milvusClient client.Client, guidFieldName string, denseVectorFieldName string, sparseVectorFieldName string) (funcError error)</a></dd>
+			
+				
+				<dd><a href="#Initialize">func Initialize() (milvusClient client.Client, funcError error)</a></dd>
+			
+				
+				<dd><a href="#InsertData">func InsertData(collectionName string, dataToSend []interface{}, objectFieldName string, idFieldName string) (funcError error)</a></dd>
+			
+				
+				<dd><a href="#QueryDuplicates">func QueryDuplicates(collectionName string, data []interface{}, objectFieldName string, idFieldName string) (duplicatedEntriesId [][]int64, funcError error)</a></dd>
+			
+				
+				<dd><a href="#RemoveDuplicates">func RemoveDuplicates(collectionName string, dataIds []int64) (deleteCount int, funcError error)</a></dd>
+			
+				
+				<dd><a href="#combineFilterExpressions">func combineFilterExpressions(arrayFilters map[string]ArrayFilter, stringFilters map[string][]string, jsonFilters map[string][]JsonFilter) (filterExpression string, funcError error)</a></dd>
+			
+				
+				<dd><a href="#createArrayFilterExpression">func createArrayFilterExpression(filterType string, filter ArrayFilter) (filterExpression string, funcError error)</a></dd>
+			
+				
+				<dd><a href="#createJsonFilterExpression">func createJsonFilterExpression(filterType string, filters []JsonFilter) (filterExpression string, funcError error)</a></dd>
+			
+				
+				<dd><a href="#createNumberFilterExpression">func createNumberFilterExpression(filterType string, filter []int64) (filterExpression string, funcError error)</a></dd>
+			
+				
+				<dd><a href="#createStringFilterExpression">func createStringFilterExpression(filterType string, filter []string) (filterExpression string, funcError error)</a></dd>
+			
+				
+				<dd><a href="#listCollections">func listCollections(milvusClient client.Client) (collections []string, funcError error)</a></dd>
+			
+				
+				<dd><a href="#loadCollection">func loadCollection(collectionName string, milvusClient client.Client) (funcError error)</a></dd>
+			
+				
+				<dd><a href="#newClient">func newClient() (milvusClient client.Client, funcError error)</a></dd>
+			
+				
+				<dd><a href="#removeFieldFromData">func removeFieldFromData(data []interface{}, fieldToRemove string) []interface{}</a></dd>
+			
+				
+				<dd><a href="#sendInsertRequest">func sendInsertRequest(request MilvusRequest) (funcError error)</a></dd>
+			
+				
+				<dd><a href="#sendRemoveRequest">func sendRemoveRequest(collectionName string, filter string) (deleteCount int, funcError error)</a></dd>
+			
+			
+				
+				<dd><a href="#ArrayFilter">type ArrayFilter</a></dd>
+				
+				
+			
+				
+				<dd><a href="#AutoIdFlex">type AutoIdFlex</a></dd>
+				
+				
+			
+				
+				<dd><a href="#JsonFilter">type JsonFilter</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusDeleteData">type MilvusDeleteData</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusDeleteResponse">type MilvusDeleteResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusInsertData">type MilvusInsertData</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusInsertResponse">type MilvusInsertResponse</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusQueryResponse">type MilvusQueryResponse</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#Query">func Query(collectionName string, responseLimit int, outputFields []string, filterExpression string) (response MilvusQueryResponse, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#sendQueryRequest">func sendQueryRequest(request MilvusRequest) (response MilvusQueryResponse, funcError error)</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusRequest">type MilvusRequest</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#newMilvusQueryRequest">func newMilvusQueryRequest(collectionName string, outputFields []string, filter string, limit int, ofset int) MilvusRequest</a></dd>
+				
+				
+			
+				
+				<dd><a href="#MilvusSearchResponse">type MilvusSearchResponse</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#sendSearchRequest">func sendSearchRequest(request MilvusRequest) (response MilvusSearchResponse, funcError error)</a></dd>
+				
+				
+			
+				
+				<dd><a href="#SchemaField">type SchemaField</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go">milvus.go</a>
+			
+				<a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go">types.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+			<h2 id="pkg-variables">Variables</h2>
+			
+				<p>Global variables
+
+				<pre>var (
+    <span id="CallsBatchSize">CallsBatchSize</span>          = 500
+    <span id="DumpBatchSize">DumpBatchSize</span>           = 10000
+    <span id="MilvusConnectionTimeout">MilvusConnectionTimeout</span> = 5 * <a href="https://pkg.go.dev/time/">time</a>.<a href="https://pkg.go.dev/time/#Second">Second</a>
+    <span id="MilvusConnectionRetries">MilvusConnectionRetries</span> = 40
+    <span id="MaxSearchRetrievalCount">MaxSearchRetrievalCount</span> = 16384
+)</pre>
+			
+		
+		
+			
+			
+			<h2 id="CreateCollection">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L210">CreateCollection</a>
+				<a class="permalink" href="#CreateCollection">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateCollection(schema *<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/entity/">entity</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/entity/#Schema">Schema</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>CreateCollection creates a collection in the Milvus DB.
+<p>Parameters:
+<ul>
+<li>schema: Schema of the collection to be created.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs during creating the collection.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateCustomSchema">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L405">CreateCustomSchema</a>
+				<a class="permalink" href="#CreateCustomSchema">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateCustomSchema(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, fields []<a href="#SchemaField">SchemaField</a>, description <a href="https://pkg.go.dev/builtin/#string">string</a>) (*<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/entity/">entity</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/entity/#Schema">Schema</a>, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>CreateCustomSchema function to generate a Milvus schema based on user input
+
+			
+			
+
+		
+			
+			
+			<h2 id="CreateIndexes">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L304">CreateIndexes</a>
+				<a class="permalink" href="#CreateIndexes">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func CreateIndexes(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, milvusClient <a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/">client</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/#Client">Client</a>, guidFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>, denseVectorFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>, sparseVectorFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>CreateIndexes creates indexes for the Milvus DB.
+Firstly, a scalar index is created for the guid field. Secondly, a vector index is created for the embeddings field.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to create the indexes for.
+<li>milvusClient: Milvus client.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs during creating the indexes.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="Initialize">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L40">Initialize</a>
+				<a class="permalink" href="#Initialize">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func Initialize() (milvusClient <a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/">client</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/#Client">Client</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>Initialize initializes the Milvus DB.
+The function first creates a Milvus client, then creates a collection with the specified name,
+creates indexes on the collection, and loads the collection.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to be initialized.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs during initializing the Milvus DB.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="InsertData">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L498">InsertData</a>
+				<a class="permalink" href="#InsertData">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func InsertData(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, dataToSend []interface{}, objectFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>, idFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>InsertData sends data to the Milvus DB in order to populate the vector database.
+The function sends the data in batches of const &quot;CallsBatchSize&quot; entries. The data is sent via HTTP POST requests.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to send the data to.
+<li>dataToSend: Data to be sent to the Milvus DB.
+<li>objectFieldName: Name of the field in the data go object to be used as the object field.
+<li>idFieldName: Name of the field in the milvus schema to be used as the ID field.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs during sending the data to the Milvus DB.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="QueryDuplicates">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L612">QueryDuplicates</a>
+				<a class="permalink" href="#QueryDuplicates">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func QueryDuplicates(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, data []interface{}, objectFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>, idFieldName <a href="https://pkg.go.dev/builtin/#string">string</a>) (duplicatedEntriesId [][]<a href="https://pkg.go.dev/builtin/#int64">int64</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>QueryDuplicates queries the Milvus database for the provided data and retrieves the duplicates.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection in the Milvus database.
+<li>data: Data to send to the Milvus database.
+<li>objectFieldName: Name of the field in the data go object to be used as the object field.
+<li>idFieldName: Name of the field in the milvus schema to be used as the ID field.
+</ul>
+<p>Returns:
+<ul>
+<li>removedData: Data that was removed from the Milvus database.
+<li>error: Error if any issue occurs during querying the Milvus database.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="RemoveDuplicates">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L699">RemoveDuplicates</a>
+				<a class="permalink" href="#RemoveDuplicates">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func RemoveDuplicates(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, dataIds []<a href="https://pkg.go.dev/builtin/#int64">int64</a>) (deleteCount <a href="https://pkg.go.dev/builtin/#int">int</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>RemoveDuplicates removes duplicates from the Milvus database.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection in the Milvus database.
+<li>dataIds: IDs of the data to remove from the Milvus database.
+</ul>
+<p>Returns:
+<ul>
+<li>deleteCount: Number of entries removed from the Milvus database.
+<li>error: Error if any issue occurs during querying the Milvus database.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="combineFilterExpressions">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L1051">combineFilterExpressions</a>
+				<a class="permalink" href="#combineFilterExpressions">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func combineFilterExpressions(arrayFilters map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="#ArrayFilter">ArrayFilter</a>, stringFilters map[<a href="https://pkg.go.dev/builtin/#string">string</a>][]<a href="https://pkg.go.dev/builtin/#string">string</a>, jsonFilters map[<a href="https://pkg.go.dev/builtin/#string">string</a>][]<a href="#JsonFilter">JsonFilter</a>) (filterExpression <a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>combineFilterExpressions combines the filter expressions for the filtering option in the query and search requests.
+This function combines the filter expressions for the &quot;guid&quot;, &quot;keywords&quot;, &quot;document_id&quot; and &quot;documents&quot; fields.
+<p>Parameters:
+<ul>
+<li>arrayFilters: Array filters to apply.
+<li>stringFilters: String filters to apply.
+<li>jsonFilters: JSON filters to apply.
+</ul>
+<p>Returns:
+<ul>
+<li>filterExpression: Filter expression to use in the query and search requests.
+<li>error: Error if any issue occurs while combining the filter expressions.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createArrayFilterExpression">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L944">createArrayFilterExpression</a>
+				<a class="permalink" href="#createArrayFilterExpression">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createArrayFilterExpression(filterType <a href="https://pkg.go.dev/builtin/#string">string</a>, filter <a href="#ArrayFilter">ArrayFilter</a>) (filterExpression <a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>createArrayFilterExpression creates a filter expression for the array filtering option in the query and search requests.
+<p>Parameters:
+<ul>
+<li>filterType: Type of the filter.
+<li>filter: Filter to apply.
+</ul>
+<p>Returns:
+<ul>
+<li>filterExpression: Filter expression for the provided filter types.
+<li>error: Error if any issue occurs while creating the filter expression.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createJsonFilterExpression">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L894">createJsonFilterExpression</a>
+				<a class="permalink" href="#createJsonFilterExpression">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createJsonFilterExpression(filterType <a href="https://pkg.go.dev/builtin/#string">string</a>, filters []<a href="#JsonFilter">JsonFilter</a>) (filterExpression <a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>createFilterExpression creates a filter expression for the filtering option in the query and search requests.
+<p>Parameters:
+<ul>
+<li>filterType: Type of the filter.
+<li>filters: Filters to apply.
+</ul>
+<p>Returns:
+<ul>
+<li>filterExpression: Filter expression for the provided filterType.
+<li>error: Error if any issue occurs while creating the filter expression.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createNumberFilterExpression">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L1015">createNumberFilterExpression</a>
+				<a class="permalink" href="#createNumberFilterExpression">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createNumberFilterExpression(filterType <a href="https://pkg.go.dev/builtin/#string">string</a>, filter []<a href="https://pkg.go.dev/builtin/#int64">int64</a>) (filterExpression <a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>createNumberFilterExpression creates a filter expression for the number filtering option in the query and search requests.
+<p>Parameters:
+<ul>
+<li>filterType: Type of the filter.
+<li>filter: Filter to apply.
+</ul>
+<p>Returns:
+<ul>
+<li>filterExpression: Filter expression for the provided filter type.
+<li>error: Error if any issue occurs while creating the filter expression.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="createStringFilterExpression">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L977">createStringFilterExpression</a>
+				<a class="permalink" href="#createStringFilterExpression">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func createStringFilterExpression(filterType <a href="https://pkg.go.dev/builtin/#string">string</a>, filter []<a href="https://pkg.go.dev/builtin/#string">string</a>) (filterExpression <a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>createStringFilterExpression creates a filter expression for the string filtering option in the query and search requests.
+<p>Parameters:
+<ul>
+<li>filterType: Type of the filter.
+<li>filter: Filter to apply.
+</ul>
+<p>Returns:
+<ul>
+<li>filterExpression: Filter expression for the provided filter type.
+<li>error: Error if any issue occurs while creating the filter expression.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="listCollections">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L141">listCollections</a>
+				<a class="permalink" href="#listCollections">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func listCollections(milvusClient <a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/">client</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/#Client">Client</a>) (collections []<a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>listCollections lists all collections in the Milvus DB.
+<p>Parameters:
+<ul>
+<li>milvusClient: Milvus client.
+</ul>
+<p>Returns:
+<ul>
+<li>collections: List of collections in the Milvus DB.
+<li>error: Error if any issue occurs during listing the collections.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="loadCollection">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L178">loadCollection</a>
+				<a class="permalink" href="#loadCollection">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func loadCollection(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, milvusClient <a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/">client</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/#Client">Client</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>LoadCollection loads collection from disk to memory.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to be loaded.
+<li>milvusClient: Milvus client.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs during loading the collection.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="newClient">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L83">newClient</a>
+				<a class="permalink" href="#newClient">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func newClient() (milvusClient <a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/">client</a>.<a href="https://pkg.go.dev/github.com/milvus-io/milvus-sdk-go/v2/client/#Client">Client</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>newClient creates a new Milvus client.
+<p>Returns:
+<ul>
+<li>milvusClient: Milvus client.
+<li>error: Error if any issue occurs during creating the Milvus client.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="removeFieldFromData">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L1140">removeFieldFromData</a>
+				<a class="permalink" href="#removeFieldFromData">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func removeFieldFromData(data []interface{}, fieldToRemove <a href="https://pkg.go.dev/builtin/#string">string</a>) []interface{}</pre>
+			
+			
+			
+
+		
+			
+			
+			<h2 id="sendInsertRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L792">sendInsertRequest</a>
+				<a class="permalink" href="#sendInsertRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func sendInsertRequest(request <a href="#MilvusRequest">MilvusRequest</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>sendInsertRequest sends an HTTP POST request to the Milvus DB.
+The function sends the request via HTTP POST request. It&apos;s used only for insert requests.
+<p>Parameters:
+<ul>
+<li>request: Request to be sent to the Milvus DB.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs during sending the request to the Milvus DB.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="sendRemoveRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L746">sendRemoveRequest</a>
+				<a class="permalink" href="#sendRemoveRequest">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func sendRemoveRequest(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, filter <a href="https://pkg.go.dev/builtin/#string">string</a>) (deleteCount <a href="https://pkg.go.dev/builtin/#int">int</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>sendRemoveRequest sends an HTTP POST request to the Milvus database for removing entries.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to remove entries from.
+<li>filter: Filter to apply to the remove request.
+</ul>
+<p>Returns:
+<ul>
+<li>error: Error if any issue occurs while sending the request to the Milvus database.
+</ul>
+
+			
+			
+
+		
+		
+			
+			
+			<h2 id="ArrayFilter">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L57">ArrayFilter</a>
+				<a class="permalink" href="#ArrayFilter">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type ArrayFilter struct {
+<span id="ArrayFilter.NeedAll"></span>    NeedAll    <a href="https://pkg.go.dev/builtin/#bool">bool</a>     `json:&#34;needAll&#34;`
+<span id="ArrayFilter.FilterData"></span>    FilterData []<a href="https://pkg.go.dev/builtin/#string">string</a> `json:&#34;filterData&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="AutoIdFlex">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L33">AutoIdFlex</a>
+				<a class="permalink" href="#AutoIdFlex">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type AutoIdFlex <a href="https://pkg.go.dev/builtin/#int64">int64</a></pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="JsonFilter">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L62">JsonFilter</a>
+				<a class="permalink" href="#JsonFilter">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type JsonFilter struct {
+<span id="JsonFilter.FieldName"></span>    FieldName  <a href="https://pkg.go.dev/builtin/#string">string</a>   `json:&#34;fieldName&#34;`
+<span id="JsonFilter.FieldType"></span>    FieldType  <a href="https://pkg.go.dev/builtin/#string">string</a>   `json:&#34;fieldType&#34; description:&#34;Can be either string or array.&#34;` <span class="comment">// &#34;string&#34; or &#34;array&#34;</span>
+<span id="JsonFilter.FilterData"></span>    FilterData []<a href="https://pkg.go.dev/builtin/#string">string</a> `json:&#34;filterData&#34;`
+<span id="JsonFilter.NeedAll"></span>    NeedAll    <a href="https://pkg.go.dev/builtin/#bool">bool</a>     `json:&#34;needAll&#34; description:&#34;Only needed if the FieldType is array.&#34;` <span class="comment">// only needed for array fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusDeleteData">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L75">MilvusDeleteData</a>
+				<a class="permalink" href="#MilvusDeleteData">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusDeleteData struct {
+<span id="MilvusDeleteData.DeleteCount"></span>    DeleteCount <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;deleteCount&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusDeleteResponse">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L69">MilvusDeleteResponse</a>
+				<a class="permalink" href="#MilvusDeleteResponse">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusDeleteResponse struct {
+<span id="MilvusDeleteResponse.Code"></span>    Code    <a href="https://pkg.go.dev/builtin/#int">int</a>              `json:&#34;code&#34;`
+<span id="MilvusDeleteResponse.Data"></span>    Data    <a href="#MilvusDeleteData">MilvusDeleteData</a> `json:&#34;data&#34;`
+<span id="MilvusDeleteResponse.Message"></span>    Message <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;message&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusInsertData">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L53">MilvusInsertData</a>
+				<a class="permalink" href="#MilvusInsertData">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusInsertData struct {
+<span id="MilvusInsertData.InsertCount"></span>    InsertCount <a href="https://pkg.go.dev/builtin/#int">int</a> `json:&#34;insertCount&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusInsertResponse">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L35">MilvusInsertResponse</a>
+				<a class="permalink" href="#MilvusInsertResponse">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusInsertResponse struct {
+<span id="MilvusInsertResponse.Code"></span>    Code       <a href="https://pkg.go.dev/builtin/#int">int</a>              `json:&#34;code&#34;`
+<span id="MilvusInsertResponse.Message"></span>    Message    <a href="https://pkg.go.dev/builtin/#string">string</a>           `json:&#34;message&#34;`
+<span id="MilvusInsertResponse.InsertData"></span>    InsertData <a href="#MilvusInsertData">MilvusInsertData</a> `json:&#34;data&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusQueryResponse">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L41">MilvusQueryResponse</a>
+				<a class="permalink" href="#MilvusQueryResponse">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusQueryResponse struct {
+<span id="MilvusQueryResponse.Code"></span>    Code    <a href="https://pkg.go.dev/builtin/#int">int</a>           `json:&#34;code&#34;`
+<span id="MilvusQueryResponse.Message"></span>    Message <a href="https://pkg.go.dev/builtin/#string">string</a>        `json:&#34;message&#34;`
+<span id="MilvusQueryResponse.Data"></span>    Data    []interface{} `json:&#34;data&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="Query">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L578">Query</a>
+					<a class="permalink" href="#Query">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func Query(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, responseLimit <a href="https://pkg.go.dev/builtin/#int">int</a>, outputFields []<a href="https://pkg.go.dev/builtin/#string">string</a>, filterExpression <a href="https://pkg.go.dev/builtin/#string">string</a>) (response <a href="#MilvusQueryResponse">MilvusQueryResponse</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>Query queries the Milvus database.
+<p>This function queries the Milvus database with an HTTP POST request.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to query.
+<li>responseLimit: Maximum number of responses.
+<li>outputFields: Fields to return in the response.
+<li>filterExpression: Filters to apply to the query.
+</ul>
+<p>Returns:
+<ul>
+<li>response: Response from the Milvus database.
+<li>error: Error if any issue occurs while querying the Milvus database.
+</ul>
+
+				
+				
+			
+				
+				<h3 id="sendQueryRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L835">sendQueryRequest</a>
+					<a class="permalink" href="#sendQueryRequest">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func sendQueryRequest(request <a href="#MilvusRequest">MilvusRequest</a>) (response <a href="#MilvusQueryResponse">MilvusQueryResponse</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>sendQueryRequest sends an HTTP POST request to the Milvus DB.
+The function sends the request via HTTP POST request. It&apos;s used for query requests.
+<p>Parameters:
+<ul>
+<li>request: Request to be sent to the Milvus DB.
+</ul>
+<p>Returns:
+<ul>
+<li>response: Response from the Milvus DB.
+<li>error: Error if any issue occurs during sending the request to the Milvus DB.
+</ul>
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusRequest">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L12">MilvusRequest</a>
+				<a class="permalink" href="#MilvusRequest">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusRequest struct {
+    <span class="comment">// Common fields</span>
+<span id="MilvusRequest.CollectionName"></span>    CollectionName <a href="https://pkg.go.dev/builtin/#string">string</a> `json:&#34;collectionName&#34;`
+
+    <span class="comment">// Insert request</span>
+<span id="MilvusRequest.Data"></span>    Data []interface{} `json:&#34;data,omitempty&#34;`
+
+    <span class="comment">// Search and Query request</span>
+<span id="MilvusRequest.OutputFields"></span>    OutputFields []<a href="https://pkg.go.dev/builtin/#string">string</a> `json:&#34;outputFields,omitempty&#34;`
+<span id="MilvusRequest.Filter"></span>    Filter       *<a href="https://pkg.go.dev/builtin/#string">string</a>  `json:&#34;filter,omitempty&#34;`
+<span id="MilvusRequest.Limit"></span>    Limit        *<a href="https://pkg.go.dev/builtin/#int">int</a>     `json:&#34;limit,omitempty&#34;`
+<span id="MilvusRequest.Offset"></span>    Offset       *<a href="https://pkg.go.dev/builtin/#int">int</a>     `json:&#34;offset,omitempty&#34;`
+
+    <span class="comment">// Search request</span>
+<span id="MilvusRequest.DenseVector"></span>    DenseVector  []<a href="https://pkg.go.dev/builtin/#float32">float32</a>        `json:&#34;dense_vector,omitempty&#34;`
+<span id="MilvusRequest.SparseVector"></span>    SparseVector map[<a href="https://pkg.go.dev/builtin/#uint">uint</a>]<a href="https://pkg.go.dev/builtin/#float32">float32</a> `json:&#34;sparse_vector,omitempty&#34;`
+
+    <span class="comment">// Delete entry request</span>
+<span id="MilvusRequest.AutoIds"></span>    AutoIds []<a href="#AutoIdFlex">AutoIdFlex</a> `json:&#34;id,omitempty&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="newMilvusQueryRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L875">newMilvusQueryRequest</a>
+					<a class="permalink" href="#newMilvusQueryRequest">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func newMilvusQueryRequest(collectionName <a href="https://pkg.go.dev/builtin/#string">string</a>, outputFields []<a href="https://pkg.go.dev/builtin/#string">string</a>, filter <a href="https://pkg.go.dev/builtin/#string">string</a>, limit <a href="https://pkg.go.dev/builtin/#int">int</a>, ofset <a href="https://pkg.go.dev/builtin/#int">int</a>) <a href="#MilvusRequest">MilvusRequest</a></pre>
+				<p>newMilvusQueryRequest creates a Milvus request object for querying data.
+<p>Parameters:
+<ul>
+<li>collectionName: Name of the collection to query.
+<li>outputFields: Fields to return in the response.
+<li>filter: Filter to apply to the query.
+<li>limit: Maximum number of responses.
+<li>ofset: Offset for the query.
+</ul>
+<p>Returns:
+<ul>
+<li>request: Request sent to the Milvus database.
+</ul>
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="MilvusSearchResponse">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L47">MilvusSearchResponse</a>
+				<a class="permalink" href="#MilvusSearchResponse">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type MilvusSearchResponse struct {
+<span id="MilvusSearchResponse.Code"></span>    Code       <a href="https://pkg.go.dev/builtin/#int">int</a>           `json:&#34;code&#34;`
+<span id="MilvusSearchResponse.Message"></span>    Message    <a href="https://pkg.go.dev/builtin/#string">string</a>        `json:&#34;message&#34;`
+<span id="MilvusSearchResponse.SearchData"></span>    SearchData []interface{} `json:&#34;data&#34;`
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="sendSearchRequest">func <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/milvus.go#L1111">sendSearchRequest</a>
+					<a class="permalink" href="#sendSearchRequest">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func sendSearchRequest(request <a href="#MilvusRequest">MilvusRequest</a>) (response <a href="#MilvusSearchResponse">MilvusSearchResponse</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>sendSearchRequest sends an HTTP POST request to the Milvus DB.
+The function sends the request via HTTP POST request. It&apos;s used for search requests.
+<p>Parameters:
+<ul>
+<li>request: Request to be sent to the Milvus DB.
+</ul>
+<p>Returns:
+<ul>
+<li>response: Response from the Milvus DB.
+<li>error: Error if any issue occurs during sending the request to the Milvus DB.
+</ul>
+
+				
+				
+			
+
+			
+		
+			
+			
+			<h2 id="SchemaField">type <a href="https://github.com/ansys/allie-flowkit/blob/main/pkg/privatefunctions/milvus/types.go#L3">SchemaField</a>
+				<a class="permalink" href="#SchemaField">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type SchemaField struct {
+<span id="SchemaField.Name"></span>    Name        <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="SchemaField.Type"></span>    Type        <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="SchemaField.PrimaryKey"></span>    PrimaryKey  <a href="https://pkg.go.dev/builtin/#bool">bool</a>
+<span id="SchemaField.AutoID"></span>    AutoID      <a href="https://pkg.go.dev/builtin/#bool">bool</a>
+<span id="SchemaField.Dimension"></span>    Dimension   <a href="https://pkg.go.dev/builtin/#int">int</a>
+<span id="SchemaField.Description"></span>    Description <a href="https://pkg.go.dev/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.23.7.<br>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"> 
+<div class="tocsection editthispage">
+  <a href="None">
+    <i class="fa-solid fa-pencil"></i>
+       Edit
+    on GitHub  
+  </a>
+</div>
+
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/api_reference/test/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <!-- Include desired assets -->
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.7/require.min.js"></script>
+
+<script>
+// Passing the search options to the search.js file
+const SEARCH_OPTIONS = JSON.parse('{"keys": ["title", "text"], "limit": 10, "threshold": 0.2}');
+const SEARCH_FILE = "../../_static/search.json";
+</script>
+
+
+<script src="../../_static/js/search.js"></script>
+  
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright (c) 2025 ANSYS, Inc. All rights reserved.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the
+  <a href="https://sphinxdocs.ansys.com/version/stable/index.html"
+    >Ansys Sphinx Theme</a
+  >
+  1.3.2. <br />Last updated on
+  <span id="ast_build_date"></span>
+</p>
+<script>
+  var options = { day: "numeric", month: "long", year: "numeric" };
+  var ast_lastModifiedDate = new Date(document.lastModified);
+  var ast_build_date = ast_lastModifiedDate.toLocaleDateString("en-US", options);
+  document.getElementById("ast_build_date").innerHTML = ast_build_date;
+</script></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
