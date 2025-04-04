@@ -55,6 +55,7 @@ func transferDatafromResponseToStreamChannel(
 	previousInputTokenCount int,
 	previousOutputTokenCount int,
 	tokenCountModelName string,
+	jwtToken string,
 	userEmail string,
 	sendContex bool,
 	contex string) {
@@ -100,7 +101,7 @@ func transferDatafromResponseToStreamChannel(
 				totalOuputTokenCount := previousOutputTokenCount + outputTokenCount
 
 				// send the token count to the token count endpoint
-				err = sendTokenCountToEndpoint(userEmail, tokenCountEndpoint, totalInputTokenCount, totalOuputTokenCount)
+				err = sendTokenCountToEndpoint(jwtToken, tokenCountEndpoint, totalInputTokenCount, totalOuputTokenCount)
 				if err != nil {
 					logging.Log.Errorf(&logging.ContextMap{}, "Error sending token count: %v\n", err)
 					// send the error message to the stream channel and exit function
@@ -164,7 +165,7 @@ func transferDatafromResponseToStreamChannel(
 //
 // Returns:
 // - err: an error if the request fails
-func sendTokenCountToEndpoint(userEmail string, tokenCountEndpoint string, inputTokenCount int, ouputTokenCount int) (err error) {
+func sendTokenCountToEndpoint(jwtToken string, tokenCountEndpoint string, inputTokenCount int, ouputTokenCount int) (err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -179,7 +180,6 @@ func sendTokenCountToEndpoint(userEmail string, tokenCountEndpoint string, input
 
 	// Create the request
 	requestBody := TokenCountUpdateRequest{
-		Email:       userEmail,
 		InputToken:  inputTokenCount,
 		OutputToken: ouputTokenCount,
 		Platform:    "Eng. Copilot",
@@ -199,6 +199,7 @@ func sendTokenCountToEndpoint(userEmail string, tokenCountEndpoint string, input
 
 	// Set headers
 	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Authorization", "Bearer "+jwtToken)
 
 	// Create an HTTP client and make the request
 	client := &http.Client{}
@@ -1705,7 +1706,7 @@ func performGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		streamChannel := make(chan string, 400)
 
 		// Start a goroutine to transfer the data from the response channel to the stream channel.
-		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", false, "")
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", "", false, "")
 
 		// Return the stream channel.
 		return "", &streamChannel, nil
