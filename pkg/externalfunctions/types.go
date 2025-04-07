@@ -211,7 +211,6 @@ type DataExtractionSplitterServiceResponse struct {
 }
 
 type TokenCountUpdateRequest struct {
-	Email       string `json:"email"`
 	InputToken  int    `json:"input_token"`
 	OutputToken int    `json:"output_token"`
 	Platform    string `json:"platform"`

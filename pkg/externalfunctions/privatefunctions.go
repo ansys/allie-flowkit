@@ -175,7 +175,11 @@ func sendTokenCountToEndpoint(jwtToken string, tokenCountEndpoint string, inputT
 
 	// verify that endpoint is filled
 	if tokenCountEndpoint == "" {
-		return fmt.Errorf("no token count endpoint provided")
+		if config.GlobalConfig.ANSYS_AUTHORIZATION_URL == "" {
+			return fmt.Errorf("no token count endpoint provided")
+		} else {
+			tokenCountEndpoint = config.GlobalConfig.ANSYS_AUTHORIZATION_URL + "/token_usage"
+		}
 	}
 
 	// Create the request
