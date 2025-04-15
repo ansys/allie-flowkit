@@ -1,11 +1,13 @@
 package externalfunctions
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
-	"strings"
+	"net/http"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -14,7 +16,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
 	"github.com/ansys/allie-flowkit/pkg/meshpilot/azure"
 )
@@ -260,117 +261,83 @@ func MeshPilotReAct(instruction string,
 //   - descriptions: the list of descriptions
 func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (descriptions []string) {
 	descriptions = []string{}
-
-	db_ctx := context.Background()
 	ctx := &logging.ContextMap{}
 
-	logging.Log.Infof(ctx, "Instruction: %s", instruction)
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
-
-	var api_key string
-	var resource string
-	var deployment string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		api_key = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		resource = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_RESOURCE"]
-		// azure openai endpoint
-		deployment = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_DEPLOYMENT"]
+	collection_name := ""
+	if toolName == "CreateOrInsertOrAdd" {
+		collection_name = "insert"
+	} else if toolName == "SetOrUpdate" {
+		collection_name = "update"
+	} else if toolName == "Delete" {
+		collection_name = "delete"
+	} else if toolName == "Execute" {
+		collection_name = "execute"
+	} else if toolName == "Revert" {
+		collection_name = "revert"
+	} else if toolName == "Connect" {
+		collection_name = "connect"
+	} else if toolName == "GetSolutionsToFixProblem" ||
+		toolName == "ExecuteUserSelectedSolution" ||
+		toolName == "ExplainExecutionOfUserSelectedSolution" {
+		collection_name = "state"
 	} else {
-		logging.Log.Fatal(ctx, "failed to load workflow config variables")
+		logging.Log.Fatalf(ctx, "Invalid Tool Name: %q", toolName)
 		return
 	}
 
-	// get azure openai dimension from the configuration
-	dimension := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_EMBEDDINGS_DIMENSION"]
+	db_url := fmt.Sprintf("%s%s%s", db_endpoint, "/qdrant/similar_descriptions/from/", collection_name)
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
+	body := map[string]string{
+		"query": instruction,
+	}
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to marshal request body: %v", err)
 		return
 	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
-
-	// get similarity search query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load similarity search query from the configuration")
-		return
-	}
-
-	indexName, err := getIndexNameFromToolName(toolName)
-
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Error at SimilaritySearchOnPathDescriptions: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to create request: %v", err)
 		return
 	}
+	req.Header.Set("Content-Type", "application/json")
 
-	params := map[string]interface{}{
-		"token":       api_key,
-		"resource":    resource,
-		"deployment":  deployment,
-		"dimension":   dimension,
-		"instruction": instruction,
-		"index":       indexName,
-		"topK":        5,
-	}
-
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception at Get Solutions From Failure Codes: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to send request: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logging.Log.Fatalf(ctx, "Unexpected status code: %d", resp.StatusCode)
 		return
 	}
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to read response body: %v", err)
+		return
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Descriptions []string `json:"descriptions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to unmarshal response: %v", err)
 		return
 	}
 
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	// Get the query score name from the configuration
-	queryScoreName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_SCORE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query score name from the configuration")
-		return
-	}
-
-	// Get the descriptions
-	for result.Next(db_ctx) {
-		record := result.Record()
-		score, _ := record.Get(queryScoreName)
-		rawNode, _ := record.Get(queryNodeName)
-
-		node := rawNode.(map[string]interface{})
-		description, _ := node[queryNodePropertyName].(string)
-		descriptionScore := score.(float64)
-		if descriptionScore > 0.8 {
-			descriptions = append(descriptions, description)
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception at Get Solutions From Failure Codes: %v\n", err)
-		return
-	}
-
+	descriptions = response.Descriptions
 	logging.Log.Infof(ctx, "Descriptions: %q", descriptions)
 	return
 }
@@ -509,72 +476,59 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 	logging.Log.Infof(ctx, "Fetching Properties From Path Descriptions...")
 
 	// Get environment variables
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	db_ctx := context.Background()
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/properties/from/prompt_node/description")
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
-	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
-	}
-
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
-
-	// Get the query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query from the configuration")
-		return
-	}
-
-	params := map[string]interface{}{
+	body := map[string]string{
 		"description": description,
 	}
-
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception to fetch path node from description: %v\n", err)
+		logging.Log.Fatalf(ctx, "Failed to marshal request body: %v", err)
+		return
+	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to create request: %v", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to send request: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logging.Log.Fatalf(ctx, "Unexpected status code: %d", resp.StatusCode)
 		return
 	}
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to read response body: %v", err)
+		return
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Properties []string `json:"properties"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to unmarshal response: %v", err)
 		return
 	}
 
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	for result.Next(db_ctx) {
-		record := result.Record()
-		node, _ := record.Get(queryNodeName)
-
-		descNode := node.(neo4j.Node)
-		props := descNode.Props[queryNodePropertyName].([]interface{})
-
-		for _, property := range props {
-			properties = append(properties, property.(string))
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "failed to fetch database records: %v", err)
-		return
-	}
-
+	properties = response.Properties
 	logging.Log.Infof(ctx, "Propetries: %q\n", properties)
 
 	return
@@ -596,89 +550,67 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 
 	logging.Log.Infof(ctx, "Fetching Node Descriptions From Path Descriptions...")
 
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	// Get environment variables
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	db_ctx := context.Background()
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/descriptions/from/state_node/description")
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
-	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
-	}
-
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
-
-	// Get the query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query from the configuration")
-		return
-	}
-
-	params := map[string]interface{}{
+	body := map[string]string{
 		"description": description,
 	}
-
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception to fetch path node from description: %v\n", err)
+		logging.Log.Fatalf(ctx, "Failed to marshal request body: %v", err)
 		return
 	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
-	}
-
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	nodeDescriptions := []string{}
-	for result.Next(db_ctx) {
-		record := result.Record()
-		middleNodes, _ := record.Get(queryNodeName)
-
-		nodes := middleNodes.([]interface{})
-
-		for _, node := range nodes {
-			node := node.(neo4j.Node)
-			props := node.Props
-
-			for key, value := range props {
-				if key == queryNodePropertyName {
-					nodeDescriptions = append(nodeDescriptions, value.(string))
-				}
-			}
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "failed to fetch database records: %v", err)
-		return
-	}
-
-	logging.Log.Infof(ctx, "Node Descriptions: %q\n", nodeDescriptions)
-
-	byteStream, err := json.Marshal(nodeDescriptions)
-
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Failed to Marshal: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to create request: %v", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to send request: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logging.Log.Fatalf(ctx, "Unexpected status code: %d", resp.StatusCode)
 		return
 	}
 
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to read response body: %v", err)
+		return
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Descriptions []string `json:"descriptions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to unmarshal response: %v", err)
+		return
+	}
+
+	byteStream, err := json.Marshal(response.Descriptions)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to marshal response: %v", err)
+		return
+	}
 	actionDescriptions = string(byteStream)
+	logging.Log.Infof(ctx, "Propetries: %q\n", actionDescriptions)
+
 	return
 }
 
@@ -694,24 +626,13 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 // Returns:
 //   - actions: the list of actions to execute
 func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions []map[string]string) {
-	db_ctx := context.Background()
-
 	ctx := &logging.ContextMap{}
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
-	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
-	}
+	logging.Log.Infof(ctx, "Fetching Actions From Path Descriptions...")
 
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
+	// Get environment variables
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
 	// Get the node label 1 from the configuration
 	nodeLabel1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_1"]
@@ -727,65 +648,70 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 		return
 	}
 
-	var query string
+	db_url := ""
 	if nodeLabel == nodeLabel2 {
 		// Get the query from the configuration
-		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_2"]
-		if !exists {
-			logging.Log.Fatal(ctx, "failed to load query from the configuration")
-			return
-		}
+		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/prompt_node/description")
+		logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 	} else if nodeLabel == nodeLabel1 {
 		// Get the query from the configuration
-		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY"]
-		if !exists {
-			logging.Log.Fatal(ctx, "failed to load query from the configuration")
-			return
-		}
+		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/state_node/description")
+		logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 	} else {
 		logging.Log.Infof(ctx, "Invalid Node Label: %q", nodeLabel)
 		return
 	}
 
-	params := map[string]interface{}{
+	body := map[string]string{
 		"description": description,
 	}
 
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception to fetch path node from description: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to marshal request body: %v", err)
+		return
+	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to create request: %v", err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to send request: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logging.Log.Fatalf(ctx, "Unexpected status code: %d", resp.StatusCode)
 		return
 	}
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to read response body: %v", err)
+		return
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Actions []map[string]string `json:"actions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to unmarshal response: %v", err)
 		return
 	}
 
-	for result.Next(db_ctx) {
-		record := result.Record()
-		middleNodes, _ := record.Get(queryNodeName)
-		nodes := middleNodes.([]interface{})
-		for _, node := range nodes {
-			node := node.(neo4j.Node)
-			props := node.Props
-			action := make(map[string]string)
+	actions = response.Actions
+	logging.Log.Infof(ctx, "Actions: %q\n", actions)
 
-			for key, value := range props {
-				action[key] = value.(string)
-			}
-			actions = append(actions, action)
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "failed to fetch database records: %v", err)
-		return
-	}
-
-	logging.Log.Info(ctx, "successfully fetched actions from database")
 	return
 }
 
@@ -1161,78 +1087,67 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 	ctx := &logging.ContextMap{}
 
-	logging.Log.Info(ctx, "mesh pilot get solutions to fix problem...")
+	logging.Log.Infof(ctx, "Get Solutions To Fix Problem...")
 
-	solutions = ""
+	// Get environment variables
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/state_node/descriptions/from/failure_codes")
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	solutionsVec := []string{}
+	body := map[string]string{
+		"fm_failure_code":    fmFailureCode,
+		"prime_failure_code": primeMeshFailureCode,
+	}
 
-	db_ctx := context.Background()
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to marshal request body: %v", err)
 		return
 	}
 
-	// Open a new session
-	session := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-	defer session.Close(db_ctx)
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
-	logging.Log.Info(ctx, fmt.Sprintf("GetSolutionsFromFailureCodes: %s, %s\n", fmFailureCode, primeMeshFailureCode))
-
-	// Get the query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query from the configuration")
-		return
-	}
-
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
-	}
-
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	params := map[string]interface{}{
-		"fm_failure_code":         strings.TrimSpace(fmFailureCode),
-		"prime_mesh_failure_code": strings.TrimSpace(primeMeshFailureCode),
-	}
-
-	_, err = session.ExecuteRead(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
-		result, err := transaction.Run(db_ctx, query, params)
-
-		if err != nil {
-			logging.Log.Errorf(ctx, "Error during transaction.Run: %v", err)
-			return nil, err
-		}
-
-		for result.Next(db_ctx) {
-			record := result.Record()
-			state, _ := record.Get(queryNodeName)
-			node := state.(neo4j.Node)
-			description, _ := node.Props[queryNodePropertyName].(string)
-			solutionsVec = append(solutionsVec, description)
-		}
-		return true, nil
-	})
-
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Error during session.ExecuteRead: %v", err)
+		logging.Log.Fatalf(ctx, "Failed to create request: %v", err)
 		return
 	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to send request: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logging.Log.Fatalf(ctx, "Unexpected status code: %d", resp.StatusCode)
+		return
+	}
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to read response body: %v", err)
+		return
+	}
+
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Descriptions []string `json:"descriptions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "Failed to unmarshal response: %v", err)
+		return
+	}
+
+	solutionsVec := response.Descriptions
+	logging.Log.Infof(ctx, "Solutions: %q\n", solutionsVec)
 
 	byteStream, err := json.Marshal(solutionsVec)
 	if err != nil {
