@@ -266,23 +266,119 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
 	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
+	toolName1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 1 from the configuration")
+		return
+	}
+
+	toolName2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 2 from the configuration")
+		return
+	}
+
+	toolName3, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 3 from the configuration")
+		return
+	}
+
+	toolName4, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 4 from the configuration")
+		return
+	}
+
+	toolName5, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 5 from the configuration")
+		return
+	}
+
+	toolName6, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 6 from the configuration")
+		return
+	}
+
+	toolName7, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 7 from the configuration")
+		return
+	}
+
+	toolName8, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 8 from the configuration")
+		return
+	}
+
+	toolName10, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load tool name 10 from the configuration")
+		return
+	}
+
+	collection1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_1_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
+	collection2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_2_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
+	collection3Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_3_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
+	collection4Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_4_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
+	collection5Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_5_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
+	collection6Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_6_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
+	collection7Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_7_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "failed to load collection name from the configuration")
+		return
+	}
+
 	collection_name := ""
-	if toolName == "CreateOrInsertOrAdd" {
-		collection_name = "insert"
-	} else if toolName == "SetOrUpdate" {
-		collection_name = "update"
-	} else if toolName == "Delete" {
-		collection_name = "delete"
-	} else if toolName == "Execute" {
-		collection_name = "execute"
-	} else if toolName == "Revert" {
-		collection_name = "revert"
-	} else if toolName == "Connect" {
-		collection_name = "connect"
-	} else if toolName == "GetSolutionsToFixProblem" ||
-		toolName == "ExecuteUserSelectedSolution" ||
-		toolName == "ExplainExecutionOfUserSelectedSolution" {
-		collection_name = "state"
+	if toolName == toolName5 {
+		collection_name = collection2Name
+	} else if toolName == toolName6 {
+		collection_name = collection3Name
+	} else if toolName == toolName4 {
+		collection_name = collection4Name
+	} else if toolName == toolName7 {
+		collection_name = collection5Name
+	} else if toolName == toolName8 {
+		collection_name = collection6Name
+	} else if toolName == toolName10 {
+		collection_name = collection7Name
+	} else if toolName == toolName1 ||
+		toolName == toolName2 ||
+		toolName == toolName3 {
+		collection_name = collection1Name
 	} else {
 		logging.Log.Fatalf(ctx, "Invalid Tool Name: %q", toolName)
 		return
