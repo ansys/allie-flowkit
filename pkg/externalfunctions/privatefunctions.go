@@ -2498,6 +2498,52 @@ func mongoDbGetCustomerByApiKey(mongoDbContext *MongoDbContext, apiKey string) (
 	return true, customer, nil
 }
 
+// mongoDbGetCreateCustomerByUserId retrieves or creates a customer object by user ID.
+//
+// Parameters:
+//   - mongoDbContext: The MongoDB context.
+//   - userId: The user ID.
+//   - tokenLimitForNewUsers: The token limit for new users.
+//
+// Returns:
+//   - err: An error if any.
+func mongoDbGetCreateCustomerByUserId(mongoDbContext *MongoDbContext, userId string, tokenLimitForNewUsers int) (existingUser bool, customer *MongoDbCustomerObjectDisco, err error) {
+	// Create filter for API key
+	filter := bson.M{"user_id": userId}
+
+	// Find one document
+	existingUser = true
+	err = mongoDbContext.Collection.FindOne(context.Background(), filter).Decode(&customer)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			// No matching document found
+			existingUser = false
+		} else {
+			// other error
+			return false, customer, err
+		}
+	}
+
+	// if customer does not exist, create it
+	if !existingUser {
+		customer = &MongoDbCustomerObjectDisco{
+			UserId:          userId,
+			AccessDenied:    false,
+			TotalTokenCount: 0,
+			TokenLimit:      tokenLimitForNewUsers,
+			WarningSent:     false,
+		}
+
+		// Insert the new customer document
+		_, err = mongoDbContext.Collection.InsertOne(context.Background(), customer)
+		if err != nil {
+			return false, customer, fmt.Errorf("failed to insert new customer: %v", err)
+		}
+	}
+
+	return existingUser, customer, nil
+}
+
 // mongoDbAddToTotalTokenCount increments the total token count for a customer
 //
 // Parameters:
@@ -2507,9 +2553,9 @@ func mongoDbGetCustomerByApiKey(mongoDbContext *MongoDbContext, apiKey string) (
 //
 // Returns:
 //   - err: An error if any.
-func mongoDbAddToTotalTokenCount(mongoDbContext *MongoDbContext, apiKey string, additionalTokenCount int) (err error) {
+func mongoDbAddToTotalTokenCount(mongoDbContext *MongoDbContext, indetificationKey string, indetificationValue string, additionalTokenCount int) (err error) {
 	// Create filter for API key & update for total token count
-	filter := bson.M{"api_key": apiKey}
+	filter := bson.M{indetificationKey: indetificationValue}
 	update := bson.M{
 		"$inc": bson.M{
 			"total_token_usage": additionalTokenCount,
@@ -2524,7 +2570,7 @@ func mongoDbAddToTotalTokenCount(mongoDbContext *MongoDbContext, apiKey string, 
 
 	// Check if the document was updated
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("no customer found with api_key: %s", apiKey)
+		return fmt.Errorf("no customer found with id: %s", indetificationValue)
 	}
 
 	return nil
@@ -2538,9 +2584,9 @@ func mongoDbAddToTotalTokenCount(mongoDbContext *MongoDbContext, apiKey string, 
 //
 // Returns:
 //   - err: An error if any.
-func mongoDbUpdateAccessAndWarning(mongoDbContext *MongoDbContext, apiKey string) (err error) {
+func mongoDbUpdateAccessAndWarning(mongoDbContext *MongoDbContext, indetificationKey string, indetificationValue string) (err error) {
 	// Create filter for API key & update access_denied and warning_sent
-	filter := bson.M{"api_key": apiKey}
+	filter := bson.M{indetificationKey: indetificationValue}
 	update := bson.M{
 		"$set": bson.M{
 			"access_denied": true,
@@ -2556,7 +2602,7 @@ func mongoDbUpdateAccessAndWarning(mongoDbContext *MongoDbContext, apiKey string
 
 	// Check if the document was updated
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("no customer found with api_key: %s", apiKey)
+		return fmt.Errorf("no customer found with id: %s", indetificationValue)
 	}
 
 	return nil
