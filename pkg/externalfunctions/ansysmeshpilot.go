@@ -698,7 +698,6 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 		logging.Log.Fatalf(ctx, "Failed to read response body: %v", err)
 		return
 	}
-	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
 
 	var response struct {
 		Actions []map[string]string `json:"actions"`
@@ -1270,6 +1269,37 @@ func AppendMeshPilotHistory(history []map[string]string, role, content string) (
 	})
 
 	logging.Log.Infof(ctx, "Updated history: %q", updatedHistory)
+	return
+}
+
+// ParseHistory this function parses history from json to map
+//
+// Tags:
+//   - @displayName: ParseHistory
+//
+// Parameters:
+//   - historyJson: history in json format
+//
+// Returns:
+//   - history: the parsed history
+func ParseHistory(historyJson string) (history []map[string]string) {
+	ctx := &logging.ContextMap{}
+
+	history = []map[string]string{}
+
+	// convert json to map
+	var historyMap []map[string]string
+	err := json.Unmarshal([]byte(historyJson), &historyMap)
+	if err != nil {
+		logging.Log.Fatalf(ctx, "failed to unmarshal history json: %v", err)
+		return
+	}
+
+	// populate history
+	for _, item := range historyMap {
+		history = append(history, item)
+	}
+	logging.Log.Infof(ctx, "Parsed history: %q", history)
 	return
 }
 
