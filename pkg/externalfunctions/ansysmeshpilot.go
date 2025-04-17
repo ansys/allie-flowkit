@@ -1,11 +1,12 @@
 package externalfunctions
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"strings"
+	"io"
+	"net/http"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -14,7 +15,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 
 	"github.com/ansys/allie-flowkit/pkg/meshpilot/azure"
 )
@@ -63,13 +63,15 @@ func MeshPilotReAct(instruction string,
 		// azure openai endpoint
 		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
 	} else {
-		logging.Log.Fatal(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Fatal(ctx, "environment variables missing")
-		return
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
@@ -77,8 +79,9 @@ func MeshPilotReAct(instruction string,
 	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create client: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create client: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Info(ctx, "MeshPilot ReAct...")
@@ -89,8 +92,9 @@ func MeshPilotReAct(instruction string,
 	// get system prompt from the configuration
 	system_prompt, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_SYSTEM_PROMPT"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load system prompt from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load system prompt from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	messages = append(messages, &azopenai.ChatRequestSystemMessage{Content: azopenai.NewChatRequestSystemMessageContent(system_prompt)})
@@ -181,13 +185,15 @@ func MeshPilotReAct(instruction string,
 	}, nil)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create chat completion: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create chat completion: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if len(resp.Choices) == 0 {
-		logging.Log.Fatalf(ctx, "No Response: %v", resp)
-		return
+		errorMessage := fmt.Sprintf("No Response: %v", resp)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	choice := resp.Choices[0]
@@ -197,8 +203,9 @@ func MeshPilotReAct(instruction string,
 
 	if finishReason == "stop" {
 		if choice.Message == nil {
-			logging.Log.Fatal(ctx, "Finish Reason is stop but no Message")
-			return
+			errorMessage := fmt.Sprintf("Finish Reason is stop but no Message")
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
 		}
 
 		content := *choice.Message.Content
@@ -211,7 +218,9 @@ func MeshPilotReAct(instruction string,
 
 		bytesStream, err := json.Marshal(finalResult)
 		if err != nil {
-			logging.Log.Fatalf(ctx, "Failed to marshal: %v", err)
+			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
 		}
 
 		result = string(bytesStream)
@@ -220,8 +229,9 @@ func MeshPilotReAct(instruction string,
 	}
 
 	if len(choice.Message.ToolCalls) == 0 {
-		logging.Log.Fatal(ctx, "No Tools")
-		return
+		errorMessage := fmt.Sprintf("No Tools")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	tool := choice.Message.ToolCalls[0]
@@ -230,8 +240,9 @@ func MeshPilotReAct(instruction string,
 	funcTool, ok := tool.(*azopenai.ChatCompletionsFunctionToolCall)
 
 	if !ok {
-		logging.Log.Fatal(ctx, "failed to convert to ChatCompletionsFunctionToolCall")
-		return
+		errorMessage := fmt.Sprintf("failed to convert to ChatCompletionsFunctionToolCall")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolId = *funcTool.ID
@@ -260,117 +271,202 @@ func MeshPilotReAct(instruction string,
 //   - descriptions: the list of descriptions
 func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (descriptions []string) {
 	descriptions = []string{}
-
-	db_ctx := context.Background()
 	ctx := &logging.ContextMap{}
 
-	logging.Log.Infof(ctx, "Instruction: %s", instruction)
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	toolName1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
 
-	var api_key string
-	var resource string
-	var deployment string
+	toolName2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
 
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		api_key = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		resource = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_RESOURCE"]
-		// azure openai endpoint
-		deployment = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_DEPLOYMENT"]
+	toolName3, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 3 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	toolName4, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 4 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	toolName5, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 5 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	toolName6, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 6 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	toolName7, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 7 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	toolName8, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 8 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	toolName10, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool name 10 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_1_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_2_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection3Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_3_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 3 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection4Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_4_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 4 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection5Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_5_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 5 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection6Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_6_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 6 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection7Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_7_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load collection name 7 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	collection_name := ""
+	if toolName == toolName5 {
+		collection_name = collection2Name
+	} else if toolName == toolName6 {
+		collection_name = collection3Name
+	} else if toolName == toolName4 {
+		collection_name = collection4Name
+	} else if toolName == toolName7 {
+		collection_name = collection5Name
+	} else if toolName == toolName8 {
+		collection_name = collection6Name
+	} else if toolName == toolName10 {
+		collection_name = collection7Name
+	} else if toolName == toolName1 ||
+		toolName == toolName2 ||
+		toolName == toolName3 {
+		collection_name = collection1Name
 	} else {
-		logging.Log.Fatal(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("Invalid Tool Name: %q", toolName)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// get azure openai dimension from the configuration
-	dimension := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_EMBEDDINGS_DIMENSION"]
+	db_url := fmt.Sprintf("%s%s%s", db_endpoint, "/qdrant/similar_descriptions/from/", collection_name)
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
+	body := map[string]string{
+		"query": instruction,
+	}
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
-
-	// get similarity search query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load similarity search query from the configuration")
-		return
-	}
-
-	indexName, err := getIndexNameFromToolName(toolName)
-
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Error at SimilaritySearchOnPathDescriptions: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
+	req.Header.Set("Content-Type", "application/json")
 
-	params := map[string]interface{}{
-		"token":       api_key,
-		"resource":    resource,
-		"deployment":  deployment,
-		"dimension":   dimension,
-		"instruction": instruction,
-		"index":       indexName,
-		"topK":        5,
-	}
-
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception at Get Solutions From Failure Codes: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Descriptions []string `json:"descriptions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	// Get the query score name from the configuration
-	queryScoreName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_SIMILARITY_SEARCH_QUERY_SCORE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query score name from the configuration")
-		return
-	}
-
-	// Get the descriptions
-	for result.Next(db_ctx) {
-		record := result.Record()
-		score, _ := record.Get(queryScoreName)
-		rawNode, _ := record.Get(queryNodeName)
-
-		node := rawNode.(map[string]interface{})
-		description, _ := node[queryNodePropertyName].(string)
-		descriptionScore := score.(float64)
-		if descriptionScore > 0.8 {
-			descriptions = append(descriptions, description)
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception at Get Solutions From Failure Codes: %v\n", err)
-		return
-	}
-
+	descriptions = response.Descriptions
 	logging.Log.Infof(ctx, "Descriptions: %q", descriptions)
 	return
 }
@@ -392,7 +488,7 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	ctx := &logging.ContextMap{}
 
 	if len(descriptions) == 0 {
-		logging.Log.Fatalf(ctx, "no descriptions provided to this function")
+		logging.Log.Error(ctx, "no descriptions provided to this function")
 		return
 	}
 
@@ -413,13 +509,15 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		// azure openai endpoint
 		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
 	} else {
-		logging.Log.Fatal(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Fatalf(ctx, "environment variables missing")
-		return
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
@@ -427,15 +525,17 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
 
 	if err != nil {
-		log.Fatalf("failed to create client: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create client: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// get the prompt template from the configuration
 	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_1"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load prompt template from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	prompt := fmt.Sprintf(prompt_template, descriptions, instruction)
@@ -451,20 +551,23 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	}, nil)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "error occur during chat completion %v", err)
-		return
+		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if len(resp.Choices) == 0 {
-		logging.Log.Fatalf(ctx, "the response from azure is empty")
-		return
+		errorMessage := fmt.Sprintf("the response from azure is empty")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	message := resp.Choices[0].Message
 
 	if message == nil {
-		logging.Log.Fatalf(ctx, "no message found from the choice")
-		return
+		errorMessage := fmt.Sprintf("no message found from the choice")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	var output *struct {
@@ -474,8 +577,9 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	err = json.Unmarshal([]byte(*message.Content), &output)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to un marshal index output")
-		return
+		errorMessage := fmt.Sprintf("failed to un marshal index output")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "The Index: %d", output.Index)
@@ -483,8 +587,9 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	if output.Index < len(descriptions) && output.Index >= 0 {
 		relevantDescription = descriptions[output.Index]
 	} else {
-		logging.Log.Errorf(ctx, "Output Index: %d, out of range( 0, %d )", output.Index, len(descriptions))
-		return
+		errorMessage := fmt.Sprintf("Output Index: %d, out of range( 0, %d )", output.Index, len(descriptions))
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "The relevant description: %s", relevantDescription)
@@ -509,74 +614,66 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 	logging.Log.Infof(ctx, "Fetching Properties From Path Descriptions...")
 
 	// Get environment variables
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	db_ctx := context.Background()
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/properties/from/prompt_node/description")
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
-	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
-	}
-
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
-
-	// Get the query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query from the configuration")
-		return
-	}
-
-	params := map[string]interface{}{
+	body := map[string]string{
 		"description": description,
 	}
-
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception to fetch path node from description: %v\n", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Properties []string `json:"properties"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FIND_NODE_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	for result.Next(db_ctx) {
-		record := result.Record()
-		node, _ := record.Get(queryNodeName)
-
-		descNode := node.(neo4j.Node)
-		props := descNode.Props[queryNodePropertyName].([]interface{})
-
-		for _, property := range props {
-			properties = append(properties, property.(string))
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "failed to fetch database records: %v", err)
-		return
-	}
-
+	properties = response.Properties
 	logging.Log.Infof(ctx, "Propetries: %q\n", properties)
-
 	return
 }
 
@@ -596,89 +693,74 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 
 	logging.Log.Infof(ctx, "Fetching Node Descriptions From Path Descriptions...")
 
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	// Get environment variables
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	db_ctx := context.Background()
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/descriptions/from/state_node/description")
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
-	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
-	}
-
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
-
-	// Get the query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query from the configuration")
-		return
-	}
-
-	params := map[string]interface{}{
+	body := map[string]string{
 		"description": description,
 	}
-
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception to fetch path node from description: %v\n", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
-	}
-
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	nodeDescriptions := []string{}
-	for result.Next(db_ctx) {
-		record := result.Record()
-		middleNodes, _ := record.Get(queryNodeName)
-
-		nodes := middleNodes.([]interface{})
-
-		for _, node := range nodes {
-			node := node.(neo4j.Node)
-			props := node.Props
-
-			for key, value := range props {
-				if key == queryNodePropertyName {
-					nodeDescriptions = append(nodeDescriptions, value.(string))
-				}
-			}
-		}
-	}
-
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "failed to fetch database records: %v", err)
-		return
-	}
-
-	logging.Log.Infof(ctx, "Node Descriptions: %q\n", nodeDescriptions)
-
-	byteStream, err := json.Marshal(nodeDescriptions)
-
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Failed to Marshal: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Descriptions []string `json:"descriptions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	byteStream, err := json.Marshal(response.Descriptions)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to marshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
 	actionDescriptions = string(byteStream)
+	logging.Log.Infof(ctx, "Propetries: %q\n", actionDescriptions)
+
 	return
 }
 
@@ -694,98 +776,99 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 // Returns:
 //   - actions: the list of actions to execute
 func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions []map[string]string) {
-	db_ctx := context.Background()
-
 	ctx := &logging.ContextMap{}
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
 
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
-	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
-	}
+	logging.Log.Infof(ctx, "Fetching Actions From Path Descriptions...")
 
-	// Open a new session
-	neo4jSession := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-
-	defer neo4jSession.Close(db_ctx)
+	// Get environment variables
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
 	// Get the node label 1 from the configuration
 	nodeLabel1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_1"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load node label 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load node label 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get the node label 2 from the configuration
 	nodeLabel2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_2"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load node label 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load node label 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	var query string
+	db_url := ""
 	if nodeLabel == nodeLabel2 {
 		// Get the query from the configuration
-		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_2"]
-		if !exists {
-			logging.Log.Fatal(ctx, "failed to load query from the configuration")
-			return
-		}
+		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/prompt_node/description")
+		logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 	} else if nodeLabel == nodeLabel1 {
 		// Get the query from the configuration
-		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY"]
-		if !exists {
-			logging.Log.Fatal(ctx, "failed to load query from the configuration")
-			return
-		}
+		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/state_node/description")
+		logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 	} else {
 		logging.Log.Infof(ctx, "Invalid Node Label: %q", nodeLabel)
 		return
 	}
 
-	params := map[string]interface{}{
+	body := map[string]string{
 		"description": description,
 	}
 
-	result, err := neo4jSession.Run(db_ctx, query, params)
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Raised Exception to fetch path node from description: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	for result.Next(db_ctx) {
-		record := result.Record()
-		middleNodes, _ := record.Get(queryNodeName)
-		nodes := middleNodes.([]interface{})
-		for _, node := range nodes {
-			node := node.(neo4j.Node)
-			props := node.Props
-			action := make(map[string]string)
-
-			for key, value := range props {
-				action[key] = value.(string)
-			}
-			actions = append(actions, action)
-		}
+	var response struct {
+		Actions []map[string]string `json:"actions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	if err = result.Err(); err != nil {
-		logging.Log.Fatalf(ctx, "failed to fetch database records: %v", err)
-		return
-	}
+	actions = response.Actions
+	logging.Log.Infof(ctx, "Actions: %q\n", actions)
 
-	logging.Log.Info(ctx, "successfully fetched actions from database")
 	return
 }
 
@@ -824,13 +907,15 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		// azure openai endpoint
 		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
 	} else {
-		logging.Log.Fatal(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Fatalf(ctx, "environment variables missing")
-		return
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
@@ -838,15 +923,17 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create client: %v\n", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// get prompt template from the configuration
 	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load prompt template from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	prompt := fmt.Sprintf(prompt_template, properties, instruction)
@@ -862,20 +949,23 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 	}, nil)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "error occur during chat completion %v", err)
-		return
+		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if len(resp.Choices) == 0 {
-		logging.Log.Fatalf(ctx, "the response from azure is empty")
-		return
+		errorMessage := fmt.Sprintf("response from azure is empty")
+		logging.Log.Error(ctx, "the response from azure is empty")
+		panic(errorMessage)
 	}
 
 	message := resp.Choices[0].Message
 
 	if message == nil {
-		logging.Log.Fatalf(ctx, "no message found from the choice")
-		return
+		errorMessage := fmt.Sprintf("no message found from the choice")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "The Message: %s\n", *message.Content)
@@ -885,43 +975,49 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 	err = json.Unmarshal([]byte(*message.Content), &output)
 
 	if err != nil {
-		logging.Log.Fatal(ctx, "failed to un marshal synthesizing actions")
-		return
+		errorMessage := fmt.Sprintf("failed to un marshal synthesizing actions")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize actions find key from configuration
 	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load synthesize actions find key from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize actions replace key 1 from configuration
 	synthesizeActionsReplaceKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load synthesize actions replace key 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize actions replace key 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize actions replace key 2 from configuration
 	synthesizeActionsReplaceKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_2"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load synthesize actions replace key 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize actions replace key 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize output key 1 from configuration
 	synthesizeOutputKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_OUTPUT_KEY_1"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load synthesize output key 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize output key 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize output key 2 from configuration
 	synthesizeOutputKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_OUTPUT_KEY_2"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load synthesize output key 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize output key 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Update the actions
@@ -983,113 +1079,129 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 	// Get tool 2 name from the configuration
 	tool2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 2 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 2 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 4 name from the configuration
 	tool4Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 4 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 4 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 5 name from the configuration
 	tool5Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 5 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 5 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 6 name from the configuration
 	tool6Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 6 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 6 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 7 name from the configuration
 	tool7Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 7 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 7 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 8 name from the configuration
 	tool8Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 8 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 8 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 10 name from the configuration
 	tool10Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 10 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 10 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 2 action message from configuration
 	tool2ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 2 action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 2 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 2 no action message from configuration
 	tool2NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 2 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 2 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 4 no action message from configuration
 	tool4NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 4 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 4 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 5 no action message from configuration
 	tool5NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 5 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 5 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 6 no action message from configuration
 	tool6NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 6 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 6 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 7 no action message from configuration
 	tool7NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 7 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 7 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 8 no action message from configuration
 	tool8NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 8 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 8 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 10 no action message from configuration
 	tool10NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool 10 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 10 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	message = toolActionSuccessMessage
@@ -1124,8 +1236,9 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 			message = tool10NoActionMessage
 		}
 	} else {
-		logging.Log.Errorf(ctx, "Invalid toolName %s", toolName)
-		return
+		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	finalMessage := make(map[string]interface{})
@@ -1136,8 +1249,9 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 	bytesStream, err := json.Marshal(finalMessage)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to convert actions to json: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	result = string(bytesStream)
@@ -1161,83 +1275,79 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 	ctx := &logging.ContextMap{}
 
-	logging.Log.Info(ctx, "mesh pilot get solutions to fix problem...")
+	logging.Log.Infof(ctx, "Get Solutions To Fix Problem...")
 
-	solutions = ""
+	// Get environment variables
+	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
+	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	url := config.GlobalConfig.NEO4J_URI
-	username := config.GlobalConfig.NEO4J_USERNAME
-	password := config.GlobalConfig.NEO4J_PASSWORD
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/state_node/descriptions/from/failure_codes")
+	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
-	solutionsVec := []string{}
+	body := map[string]string{
+		"fm_failure_code":    fmFailureCode,
+		"prime_failure_code": primeMeshFailureCode,
+	}
 
-	db_ctx := context.Background()
-	// Create a driver instance
-	driver, err := neo4j.NewDriverWithContext(url, neo4j.BasicAuth(username, password, ""))
+	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to create driver: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	// Open a new session
-	session := driver.NewSession(db_ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})
-	defer session.Close(db_ctx)
+	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
-	logging.Log.Info(ctx, fmt.Sprintf("GetSolutionsFromFailureCodes: %s, %s\n", fmFailureCode, primeMeshFailureCode))
-
-	// Get the query from the configuration
-	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query from the configuration")
-		return
-	}
-
-	// Get the query node name from the configuration
-	queryNodeName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY_NODE_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node name from the configuration")
-		return
-	}
-
-	// Get the query node property name from the configuration
-	queryNodePropertyName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY_NODE_PROPERTY_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "failed to load query node property name from the configuration")
-		return
-	}
-
-	params := map[string]interface{}{
-		"fm_failure_code":         strings.TrimSpace(fmFailureCode),
-		"prime_mesh_failure_code": strings.TrimSpace(primeMeshFailureCode),
-	}
-
-	_, err = session.ExecuteRead(db_ctx, func(transaction neo4j.ManagedTransaction) (any, error) {
-		result, err := transaction.Run(db_ctx, query, params)
-
-		if err != nil {
-			logging.Log.Errorf(ctx, "Error during transaction.Run: %v", err)
-			return nil, err
-		}
-
-		for result.Next(db_ctx) {
-			record := result.Record()
-			state, _ := record.Get(queryNodeName)
-			node := state.(neo4j.Node)
-			description, _ := node.Props[queryNodePropertyName].(string)
-			solutionsVec = append(solutionsVec, description)
-		}
-		return true, nil
-	})
-
+	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Error during session.ExecuteRead: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	responseBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+
+	var response struct {
+		Descriptions []string `json:"descriptions"`
+	}
+	err = json.Unmarshal(responseBody, &response)
+	if err != nil {
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	solutionsVec := response.Descriptions
+	logging.Log.Infof(ctx, "Solutions: %q\n", solutionsVec)
 
 	byteStream, err := json.Marshal(solutionsVec)
 	if err != nil {
-		logging.Log.Fatalf(ctx, "Error marshalling solutions: %v\n", err)
-		return
+		errorMessage := fmt.Sprintf("Error marshalling solutions: %v\n", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	solutions = string(byteStream)
@@ -1266,8 +1376,9 @@ func GetSelectedSolution(arguments string) (solution string) {
 	err := json.Unmarshal([]byte(arguments), &output)
 
 	if err != nil {
-		logging.Log.Fatalf(ctx, "failed to un marshal index output")
-		return
+		errorMessage := fmt.Sprintf("failed to un marshal index output")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	solution = output.Solution
@@ -1358,6 +1469,38 @@ func AppendMeshPilotHistory(history []map[string]string, role, content string) (
 	return
 }
 
+// ParseHistory this function parses history from json to map
+//
+// Tags:
+//   - @displayName: ParseHistory
+//
+// Parameters:
+//   - historyJson: history in json format
+//
+// Returns:
+//   - history: the parsed history
+func ParseHistory(historyJson string) (history []map[string]string) {
+	ctx := &logging.ContextMap{}
+
+	history = []map[string]string{}
+
+	// convert json to map
+	var historyMap []map[string]string
+	err := json.Unmarshal([]byte(historyJson), &historyMap)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to unmarshal history json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// populate history
+	for _, item := range historyMap {
+		history = append(history, item)
+	}
+	logging.Log.Infof(ctx, "Parsed history: %q", history)
+	return
+}
+
 // FinalizeResult converts actions to json string to send back data
 //
 // Tags:
@@ -1373,46 +1516,53 @@ func GetActionsFromConfig(toolName string) (result string) {
 
 	toolResultName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_NAME"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool result name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool result name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolResultMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool result message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool result message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool action success message from configuration
 	actionKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_1"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_1"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_2"]
 	if !exists {
-		logging.Log.Fatal(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	message := toolActionSuccessMessage
@@ -1424,8 +1574,9 @@ func GetActionsFromConfig(toolName string) (result string) {
 			actionKey2: actionValue2,
 		})
 	} else {
-		logging.Log.Errorf(ctx, "Invalid toolName %s", toolName)
-		return
+		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	finalMessage := make(map[string]interface{})
@@ -1436,8 +1587,9 @@ func GetActionsFromConfig(toolName string) (result string) {
 	bytesStream, err := json.Marshal(finalMessage)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to convert actions to json: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	result = string(bytesStream)
