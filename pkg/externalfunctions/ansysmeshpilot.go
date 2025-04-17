@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
@@ -64,13 +63,15 @@ func MeshPilotReAct(instruction string,
 		// azure openai endpoint
 		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
 	} else {
-		logging.Log.Error(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Error(ctx, "environment variables missing")
-		return
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
@@ -78,8 +79,9 @@ func MeshPilotReAct(instruction string,
 	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to create client: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create client: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Info(ctx, "MeshPilot ReAct...")
@@ -90,8 +92,9 @@ func MeshPilotReAct(instruction string,
 	// get system prompt from the configuration
 	system_prompt, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_SYSTEM_PROMPT"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load system prompt from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load system prompt from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	messages = append(messages, &azopenai.ChatRequestSystemMessage{Content: azopenai.NewChatRequestSystemMessageContent(system_prompt)})
@@ -182,13 +185,15 @@ func MeshPilotReAct(instruction string,
 	}, nil)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to create chat completion: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create chat completion: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if len(resp.Choices) == 0 {
-		logging.Log.Errorf(ctx, "No Response: %v", resp)
-		return
+		errorMessage := fmt.Sprintf("No Response: %v", resp)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	choice := resp.Choices[0]
@@ -198,8 +203,9 @@ func MeshPilotReAct(instruction string,
 
 	if finishReason == "stop" {
 		if choice.Message == nil {
-			logging.Log.Error(ctx, "Finish Reason is stop but no Message")
-			return
+			errorMessage := fmt.Sprintf("Finish Reason is stop but no Message")
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
 		}
 
 		content := *choice.Message.Content
@@ -212,7 +218,9 @@ func MeshPilotReAct(instruction string,
 
 		bytesStream, err := json.Marshal(finalResult)
 		if err != nil {
-			logging.Log.Errorf(ctx, "Failed to marshal: %v", err)
+			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
 		}
 
 		result = string(bytesStream)
@@ -221,8 +229,9 @@ func MeshPilotReAct(instruction string,
 	}
 
 	if len(choice.Message.ToolCalls) == 0 {
-		logging.Log.Error(ctx, "No Tools")
-		return
+		errorMessage := fmt.Sprintf("No Tools")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	tool := choice.Message.ToolCalls[0]
@@ -231,8 +240,9 @@ func MeshPilotReAct(instruction string,
 	funcTool, ok := tool.(*azopenai.ChatCompletionsFunctionToolCall)
 
 	if !ok {
-		logging.Log.Error(ctx, "failed to convert to ChatCompletionsFunctionToolCall")
-		return
+		errorMessage := fmt.Sprintf("failed to convert to ChatCompletionsFunctionToolCall")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolId = *funcTool.ID
@@ -268,98 +278,114 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 
 	toolName1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName3, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 3 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 3 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName4, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 4 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 4 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName5, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 5 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 5 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName6, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 6 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 6 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName7, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 7 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 7 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName8, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 8 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 8 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolName10, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool name 10 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool name 10 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_1_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_2_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection3Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_3_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 3 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection4Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_4_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 4 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection5Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_5_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 5 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection6Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_6_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 6 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection7Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["COLLECTION_7_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load collection name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load collection name 7 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	collection_name := ""
@@ -380,8 +406,9 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 		toolName == toolName3 {
 		collection_name = collection1Name
 	} else {
-		logging.Log.Errorf(ctx, "Invalid Tool Name: %q", toolName)
-		return
+		errorMessage := fmt.Sprintf("Invalid Tool Name: %q", toolName)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	db_url := fmt.Sprintf("%s%s%s", db_endpoint, "/qdrant/similar_descriptions/from/", collection_name)
@@ -392,35 +419,40 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to marshal request body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to create request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to send request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.Log.Errorf(ctx, "Unexpected status code: %d", resp.StatusCode)
-		return
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to read response body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
 
@@ -429,8 +461,9 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	}
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to unmarshal response: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	descriptions = response.Descriptions
@@ -455,7 +488,7 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	ctx := &logging.ContextMap{}
 
 	if len(descriptions) == 0 {
-		logging.Log.Errorf(ctx, "no descriptions provided to this function")
+		logging.Log.Error(ctx, "no descriptions provided to this function")
 		return
 	}
 
@@ -476,13 +509,15 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		// azure openai endpoint
 		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
 	} else {
-		logging.Log.Error(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Errorf(ctx, "environment variables missing")
-		return
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
@@ -490,15 +525,17 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
 
 	if err != nil {
-		log.Errorf("failed to create client: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create client: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// get the prompt template from the configuration
 	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_1"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load prompt template from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	prompt := fmt.Sprintf(prompt_template, descriptions, instruction)
@@ -514,20 +551,23 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	}, nil)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "error occur during chat completion %v", err)
-		return
+		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if len(resp.Choices) == 0 {
-		logging.Log.Errorf(ctx, "the response from azure is empty")
-		return
+		errorMessage := fmt.Sprintf("the response from azure is empty")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	message := resp.Choices[0].Message
 
 	if message == nil {
-		logging.Log.Errorf(ctx, "no message found from the choice")
-		return
+		errorMessage := fmt.Sprintf("no message found from the choice")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	var output *struct {
@@ -537,8 +577,9 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	err = json.Unmarshal([]byte(*message.Content), &output)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to un marshal index output")
-		return
+		errorMessage := fmt.Sprintf("failed to un marshal index output")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "The Index: %d", output.Index)
@@ -546,8 +587,9 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	if output.Index < len(descriptions) && output.Index >= 0 {
 		relevantDescription = descriptions[output.Index]
 	} else {
-		logging.Log.Errorf(ctx, "Output Index: %d, out of range( 0, %d )", output.Index, len(descriptions))
-		return
+		errorMessage := fmt.Sprintf("Output Index: %d, out of range( 0, %d )", output.Index, len(descriptions))
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "The relevant description: %s", relevantDescription)
@@ -583,35 +625,40 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to marshal request body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to create request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to send request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.Log.Errorf(ctx, "Unexpected status code: %d", resp.StatusCode)
-		return
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to read response body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
 
@@ -620,13 +667,13 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 	}
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to unmarshal response: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	properties = response.Properties
 	logging.Log.Infof(ctx, "Propetries: %q\n", properties)
-
 	return
 }
 
@@ -658,35 +705,40 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to marshal request body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to create request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to send request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.Log.Errorf(ctx, "Unexpected status code: %d", resp.StatusCode)
-		return
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to read response body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
 
@@ -695,14 +747,16 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 	}
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to unmarshal response: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	byteStream, err := json.Marshal(response.Descriptions)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to marshal response: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	actionDescriptions = string(byteStream)
 	logging.Log.Infof(ctx, "Propetries: %q\n", actionDescriptions)
@@ -733,15 +787,17 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 	// Get the node label 1 from the configuration
 	nodeLabel1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_1"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load node label 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load node label 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get the node label 2 from the configuration
 	nodeLabel2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_2"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load node label 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load node label 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	db_url := ""
@@ -764,35 +820,40 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to marshal request body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to create request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to send request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.Log.Errorf(ctx, "Unexpected status code: %d", resp.StatusCode)
-		return
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to read response body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	var response struct {
@@ -800,8 +861,9 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 	}
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to unmarshal response: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actions = response.Actions
@@ -845,13 +907,15 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		// azure openai endpoint
 		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
 	} else {
-		logging.Log.Error(ctx, "failed to load workflow config variables")
-		return
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Errorf(ctx, "environment variables missing")
-		return
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
@@ -859,15 +923,17 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to create client: %v\n", err)
-		return
+		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// get prompt template from the configuration
 	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load prompt template from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	prompt := fmt.Sprintf(prompt_template, properties, instruction)
@@ -883,20 +949,23 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 	}, nil)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "error occur during chat completion %v", err)
-		return
+		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	if len(resp.Choices) == 0 {
-		logging.Log.Errorf(ctx, "the response from azure is empty")
-		return
+		errorMessage := fmt.Sprintf("response from azure is empty")
+		logging.Log.Error(ctx, "the response from azure is empty")
+		panic(errorMessage)
 	}
 
 	message := resp.Choices[0].Message
 
 	if message == nil {
-		logging.Log.Errorf(ctx, "no message found from the choice")
-		return
+		errorMessage := fmt.Sprintf("no message found from the choice")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "The Message: %s\n", *message.Content)
@@ -906,43 +975,49 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 	err = json.Unmarshal([]byte(*message.Content), &output)
 
 	if err != nil {
-		logging.Log.Error(ctx, "failed to un marshal synthesizing actions")
-		return
+		errorMessage := fmt.Sprintf("failed to un marshal synthesizing actions")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize actions find key from configuration
 	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load synthesize actions find key from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize actions replace key 1 from configuration
 	synthesizeActionsReplaceKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load synthesize actions replace key 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize actions replace key 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize actions replace key 2 from configuration
 	synthesizeActionsReplaceKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_2"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load synthesize actions replace key 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize actions replace key 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize output key 1 from configuration
 	synthesizeOutputKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_OUTPUT_KEY_1"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load synthesize output key 1 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize output key 1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get synthesize output key 2 from configuration
 	synthesizeOutputKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_OUTPUT_KEY_2"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load synthesize output key 2 from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load synthesize output key 2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Update the actions
@@ -1004,113 +1079,129 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 	// Get tool 2 name from the configuration
 	tool2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 2 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 2 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 4 name from the configuration
 	tool4Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 4 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 4 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 5 name from the configuration
 	tool5Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 5 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 5 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 6 name from the configuration
 	tool6Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 6 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 6 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 7 name from the configuration
 	tool7Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 7 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 7 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 8 name from the configuration
 	tool8Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 8 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 8 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 10 name from the configuration
 	tool10Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 10 name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 10 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 2 action message from configuration
 	tool2ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 2 action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 2 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 2 no action message from configuration
 	tool2NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 2 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 2 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 4 no action message from configuration
 	tool4NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 4 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 4 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 5 no action message from configuration
 	tool5NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 5 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 5 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 6 no action message from configuration
 	tool6NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 6 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 6 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 7 no action message from configuration
 	tool7NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 7 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 7 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 8 no action message from configuration
 	tool8NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 8 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 8 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool 10 no action message from configuration
 	tool10NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NO_ACTION_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool 10 no action message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool 10 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	message = toolActionSuccessMessage
@@ -1145,8 +1236,9 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 			message = tool10NoActionMessage
 		}
 	} else {
-		logging.Log.Errorf(ctx, "Invalid toolName %s", toolName)
-		return
+		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	finalMessage := make(map[string]interface{})
@@ -1157,8 +1249,9 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 	bytesStream, err := json.Marshal(finalMessage)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to convert actions to json: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	result = string(bytesStream)
@@ -1198,36 +1291,41 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to marshal request body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to create request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to send request: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.Log.Errorf(ctx, "Unexpected status code: %d", resp.StatusCode)
-		return
+		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	responseBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to read response body: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
@@ -1237,8 +1335,9 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 	}
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Failed to unmarshal response: %v", err)
-		return
+		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	solutionsVec := response.Descriptions
@@ -1246,8 +1345,9 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 	byteStream, err := json.Marshal(solutionsVec)
 	if err != nil {
-		logging.Log.Errorf(ctx, "Error marshalling solutions: %v\n", err)
-		return
+		errorMessage := fmt.Sprintf("Error marshalling solutions: %v\n", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	solutions = string(byteStream)
@@ -1276,8 +1376,9 @@ func GetSelectedSolution(arguments string) (solution string) {
 	err := json.Unmarshal([]byte(arguments), &output)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to un marshal index output")
-		return
+		errorMessage := fmt.Sprintf("failed to un marshal index output")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	solution = output.Solution
@@ -1387,8 +1488,9 @@ func ParseHistory(historyJson string) (history []map[string]string) {
 	var historyMap []map[string]string
 	err := json.Unmarshal([]byte(historyJson), &historyMap)
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to unmarshal history json: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to unmarshal history json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// populate history
@@ -1414,46 +1516,53 @@ func GetActionsFromConfig(toolName string) (result string) {
 
 	toolResultName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_NAME"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool result name from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool result name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	toolResultMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool result message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool result message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	// Get tool action success message from configuration
 	actionKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_1"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_1"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_2"]
 	if !exists {
-		logging.Log.Error(ctx, "failed to load tool action success message from the configuration")
-		return
+		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	message := toolActionSuccessMessage
@@ -1465,8 +1574,9 @@ func GetActionsFromConfig(toolName string) (result string) {
 			actionKey2: actionValue2,
 		})
 	} else {
-		logging.Log.Errorf(ctx, "Invalid toolName %s", toolName)
-		return
+		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	finalMessage := make(map[string]interface{})
@@ -1477,8 +1587,9 @@ func GetActionsFromConfig(toolName string) (result string) {
 	bytesStream, err := json.Marshal(finalMessage)
 
 	if err != nil {
-		logging.Log.Errorf(ctx, "failed to convert actions to json: %v", err)
-		return
+		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	result = string(bytesStream)
