@@ -242,6 +242,14 @@ type MongoDbCustomerObject struct {
 	WarningSent     bool   `bson:"warning_sent"`
 }
 
+type MongoDbCustomerObjectDisco struct {
+	UserId          string `bson:"user_id"`
+	AccessDenied    bool   `bson:"access_denied"`
+	TotalTokenCount int    `bson:"total_token_usage"`
+	TokenLimit      int    `bson:"token_limit"`
+	WarningSent     bool   `bson:"warning_sent"`
+}
+
 // EmailRequest represents the structure of the POST request body
 type EmailRequest struct {
 	Email   string `json:"email"`
