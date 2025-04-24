@@ -697,7 +697,7 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
 	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
 
-	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/descriptions/from/state_node/description")
+	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/summaries/from/state_node/description")
 	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
 
 	body := map[string]string{
@@ -743,7 +743,7 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
 
 	var response struct {
-		Descriptions []string `json:"descriptions"`
+		Descriptions []string `json:"summaries"`
 	}
 	err = json.Unmarshal(responseBody, &response)
 	if err != nil {
