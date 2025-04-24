@@ -582,13 +582,23 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 // Returns:
 //   - indexList: the index list
 func AisReturnIndexList(accessPoint string, physics []string, version []string) (indexList []string) {
-	indexList = []string{}
 
+	// get version
+	is25 := false
+	for _, v := range version {
+		if strings.Contains(strings.ToLower(v), "25r1") || strings.Contains(strings.ToLower(v), "25r2") {
+			is25 = true
+			break
+		}
+	}
+
+	// create index list
+	indexList = []string{}
 	switch accessPoint {
 	case "ansysgpt-general", "ais-embedded":
 		switch {
-		case len(physics) == 1 && physics[0] == "scade" && (len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1")):
-			// special case for Scade One & 25r1
+		case len(physics) == 1 && physics[0] == "scade" && is25:
+			// special case for Scade One & 25r1/25r2
 			indexList = append(indexList,
 				"external-product-documentation-public-25r1",
 			)
@@ -598,8 +608,8 @@ func AisReturnIndexList(accessPoint string, physics []string, version []string) 
 				"external-product-documentation-public",
 				"external-product-documentation-public-25r1",
 			)
-		case (len(version) == 1 && strings.Contains(strings.ToLower(version[0]), "25r1")):
-			// special case 25r1
+		case is25:
+			// special case 25r1/25r2
 			indexList = append(indexList,
 				"granular-ansysgpt",
 				"external-marketing",
