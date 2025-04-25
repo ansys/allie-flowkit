@@ -215,7 +215,7 @@ func sendTokenCountToEndpoint(jwtToken string, tokenCountEndpoint string, inputT
 
 	// Check the response status
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("response status unequal 200: %v", resp.Status)
+		return fmt.Errorf("response status unequal 200 (%v) for request '%v' with jwt token '%v'", resp.Status, string(jsonData), jwtToken)
 	}
 
 	return nil
