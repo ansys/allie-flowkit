@@ -59,6 +59,12 @@ func transferDatafromResponseToStreamChannel(
 	userEmail string,
 	sendContex bool,
 	contex string) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			logging.Log.Errorf(&logging.ContextMap{}, "Panic in transferDatafromResponseToStreamChannel: %v\n", r)
+		}
+	}()
 
 	// Defer the closing of the channels
 	defer close(*responseChannel)
@@ -474,6 +480,7 @@ func listener(c *websocket.Conn, responseChannel chan sharedtypes.HandlerRespons
 //   - c: the websocket connection
 //   - RequestChannel: the request channel
 func writer(c *websocket.Conn, RequestChannel chan []byte, responseChannel chan sharedtypes.HandlerResponse) {
+	defer close(RequestChannel)
 	for {
 		requestJSON := <-RequestChannel
 
