@@ -68,6 +68,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	// generic
 	"AssignStringToString": AssignStringToString,
 	"SendRestAPICall":      SendRestAPICall,
+	"PrintFeedback":        PrintFeedback,
 
 	// code generation
 	"LoadCodeGenerationElements":      LoadCodeGenerationElements,
