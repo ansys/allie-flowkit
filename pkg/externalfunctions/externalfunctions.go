@@ -97,6 +97,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AppendMeshPilotHistory":                   AppendMeshPilotHistory,
 	"GetActionsFromConfig":                     GetActionsFromConfig,
 	"ParseHistory":                             ParseHistory,
+	"SynthesizeActionsTool4":                   SynthesizeActionsTool4,
 
 	// milvus
 	"MilvusCreateCollection": MilvusCreateCollection,
