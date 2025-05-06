@@ -263,9 +263,9 @@ func MeshPilotReAct(instruction string,
 	}
 
 	if len(choice.Message.ToolCalls) == 0 {
-		noToolInfo := fmt.Sprintf("No Tools")
-		logging.Log.Info(ctx, noToolInfo)
-		return
+		errorMessage := fmt.Sprintf("No Tools")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
 	tool := choice.Message.ToolCalls[0]
