@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/ansys/allie-sharedtypes/pkg/config"
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
@@ -144,7 +145,7 @@ func MeshPilotReAct(instruction string,
 		}
 	}
 
-	logging.Log.Infof(ctx, "messages: %q", messages)
+	logging.Log.Debugf(ctx, "messages: %q", messages)
 
 	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
 		DeploymentName: &modelDeploymentID,
@@ -186,14 +187,47 @@ func MeshPilotReAct(instruction string,
 
 	if err != nil {
 		errorMessage := fmt.Sprintf("failed to create chat completion: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+		logging.Log.Info(ctx, errorMessage)
+
+		actions := []map[string]string{}
+		finalResult := make(map[string]interface{})
+		finalResult["Actions"] = actions
+
+		if strings.Contains(errorMessage, "content_filter") {
+			finalResult["Message"] = "The response was filtered due to Azure OpenAI's content management policy. Please modify your prompt and retry. For more details, visit: https://go.microsoft.com/fwlink/?linkid=2198766"
+		} else {
+			finalResult["Message"] = "Does not support functionality, please report to the support team"
+		}
+
+		bytesStream, err := json.Marshal(finalResult)
+		if err != nil {
+			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
+		}
+
+		result = string(bytesStream)
+		return
 	}
 
 	if len(resp.Choices) == 0 {
 		errorMessage := fmt.Sprintf("No Response: %v", resp)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+		logging.Log.Info(ctx, errorMessage)
+
+		actions := []map[string]string{}
+		finalResult := make(map[string]interface{})
+		finalResult["Actions"] = actions
+		finalResult["Message"] = "Does not support functionality, please report to the support team"
+
+		bytesStream, err := json.Marshal(finalResult)
+		if err != nil {
+			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
+		}
+
+		result = string(bytesStream)
+		return
 	}
 
 	choice := resp.Choices[0]
@@ -274,7 +308,7 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	ctx := &logging.ContextMap{}
 
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
+	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
 
 	toolName1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_NAME"]
 	if !exists {
@@ -412,7 +446,7 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	}
 
 	db_url := fmt.Sprintf("%s%s%s", db_endpoint, "/qdrant/similar_descriptions/from/", collection_name)
-	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
+	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
 
 	body := map[string]string{
 		"query": instruction,
@@ -423,7 +457,7 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
@@ -454,7 +488,7 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
 
 	var response struct {
 		Descriptions []string `json:"descriptions"`
@@ -467,7 +501,7 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 	}
 
 	descriptions = response.Descriptions
-	logging.Log.Infof(ctx, "Descriptions: %q", descriptions)
+	logging.Log.Debugf(ctx, "Descriptions: %q", descriptions)
 	return
 }
 
@@ -582,7 +616,7 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		panic(errorMessage)
 	}
 
-	logging.Log.Infof(ctx, "The Index: %d", output.Index)
+	logging.Log.Debugf(ctx, "The Index: %d", output.Index)
 
 	if output.Index < len(descriptions) && output.Index >= 0 {
 		relevantDescription = descriptions[output.Index]
@@ -615,10 +649,10 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 
 	// Get environment variables
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
+	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
 
 	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/properties/from/prompt_node/description")
-	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
+	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
 
 	body := map[string]string{
 		"description": description,
@@ -629,7 +663,7 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
@@ -660,7 +694,7 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
 
 	var response struct {
 		Properties []string `json:"properties"`
@@ -673,7 +707,7 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 	}
 
 	properties = response.Properties
-	logging.Log.Infof(ctx, "Propetries: %q\n", properties)
+	logging.Log.Debugf(ctx, "Propetries: %q\n", properties)
 	return
 }
 
@@ -695,10 +729,10 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 
 	// Get environment variables
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
+	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
 
 	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/summaries/from/state_node/description")
-	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
+	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
 
 	body := map[string]string{
 		"description": description,
@@ -709,7 +743,7 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
@@ -740,7 +774,7 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
 
 	var response struct {
 		Descriptions []string `json:"summaries"`
@@ -759,7 +793,7 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 		panic(errorMessage)
 	}
 	actionDescriptions = string(byteStream)
-	logging.Log.Infof(ctx, "Propetries: %q\n", actionDescriptions)
+	logging.Log.Debugf(ctx, "Propetries: %q\n", actionDescriptions)
 
 	return
 }
@@ -782,7 +816,7 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 
 	// Get environment variables
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
+	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
 
 	// Get the node label 1 from the configuration
 	nodeLabel1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_1"]
@@ -804,11 +838,11 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 	if nodeLabel == nodeLabel2 {
 		// Get the query from the configuration
 		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/prompt_node/description")
-		logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
+		logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
 	} else if nodeLabel == nodeLabel1 {
 		// Get the query from the configuration
 		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/state_node/description")
-		logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
+		logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
 	} else {
 		logging.Log.Infof(ctx, "Invalid Node Label: %q", nodeLabel)
 		return
@@ -824,7 +858,7 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
@@ -867,7 +901,153 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 	}
 
 	actions = response.Actions
-	logging.Log.Infof(ctx, "Actions: %q\n", actions)
+	logging.Log.Debugf(ctx, "Actions: %q\n", actions)
+
+	return
+}
+
+// SynthesizeActionsTool4 update action as per user instruction
+//
+// Tags:
+//   - @displayName: SynthesizeActionsTool4
+//
+// Parameters:
+//   - instruction: the user instruction
+//   - actions: the list of actions
+//
+// Returns:
+//   - updatedActions: the list of synthesized actions
+func SynthesizeActionsTool4(instruction string, actions []map[string]string) (updatedActions []map[string]string) {
+
+	ctx := &logging.ContextMap{}
+
+	updatedActions = actions
+
+	var azureOpenAIKey string
+	var modelDeploymentID string
+	var azureOpenAIEndpoint string
+
+	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
+		// azure openai api key
+		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
+		// azure openai model name
+		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
+		// azure openai endpoint
+		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
+	} else {
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
+
+	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// get prompt template from the configuration
+	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_4"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	prompt := fmt.Sprintf(prompt_template, instruction)
+
+	logging.Log.Debugf(ctx, "Prompt: %q\n", prompt)
+
+	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
+		DeploymentName: &modelDeploymentID,
+		Messages: []azopenai.ChatRequestMessageClassification{
+			&azopenai.ChatRequestUserMessage{
+				Content: azopenai.NewChatRequestUserMessageContent(prompt),
+			},
+		},
+		Temperature: to.Ptr[float32](0.0),
+	}, nil)
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	if len(resp.Choices) == 0 {
+		errorMessage := fmt.Sprintf("response from azure is empty")
+		logging.Log.Error(ctx, "the response from azure is empty")
+		panic(errorMessage)
+	}
+
+	message := resp.Choices[0].Message
+
+	if message == nil {
+		errorMessage := fmt.Sprintf("no message found from the choice")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+
+	var output struct {
+		ScopePattern string `json:"ScopePattern"`
+	}
+
+	err = json.Unmarshal([]byte(*message.Content), &output)
+	if err != nil {
+		errorMessage := fmt.Sprintf("SynthesizeActionsTool4: Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	scopePattern := output.ScopePattern
+
+	logging.Log.Debugf(ctx, "scopePattern: %q\n", scopePattern)
+
+	// Get synthesize actions find key from configuration
+	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	synthesizeActionsValue, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_VALUE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	synthesizeActionsReplaceKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// Updated actions from output
+	for i := 0; i < len(updatedActions); i++ {
+		updateAction := updatedActions[i]
+		for key, value := range updateAction {
+			if key == synthesizeActionsFindKey && value == synthesizeActionsValue {
+				updateAction[synthesizeActionsReplaceKey] = scopePattern
+			}
+		}
+	}
+
+	logging.Log.Debugf(ctx, "The Updated Actions: %q\n", updatedActions)
 
 	return
 }
@@ -968,7 +1148,7 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		panic(errorMessage)
 	}
 
-	logging.Log.Infof(ctx, "The Message: %s\n", *message.Content)
+	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
 
 	var output map[string]interface{}
 
@@ -979,6 +1159,8 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
+	logging.Log.Debugf(ctx, "The LLM Output of properties processing: %q\n", output)
 
 	// Get synthesize actions find key from configuration
 	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
@@ -1279,10 +1461,10 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 
 	// Get environment variables
 	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Infof(ctx, "DB Endpoint: %q", db_endpoint)
+	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
 
 	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/state_node/descriptions/from/failure_codes")
-	logging.Log.Infof(ctx, "Constructed URL: %s", db_url)
+	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
 
 	body := map[string]string{
 		"fm_failure_code":    fmFailureCode,
@@ -1296,7 +1478,7 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 		panic(errorMessage)
 	}
 
-	logging.Log.Infof(ctx, "Request Body: %s", string(bodyBytes))
+	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
 
 	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
@@ -1328,7 +1510,7 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 		panic(errorMessage)
 	}
 
-	logging.Log.Infof(ctx, "Response: %s", string(responseBody))
+	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
 
 	var response struct {
 		Descriptions []string `json:"descriptions"`
@@ -1341,7 +1523,7 @@ func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solut
 	}
 
 	solutionsVec := response.Descriptions
-	logging.Log.Infof(ctx, "Solutions: %q\n", solutionsVec)
+	logging.Log.Debugf(ctx, "Solutions: %q\n", solutionsVec)
 
 	byteStream, err := json.Marshal(solutionsVec)
 	if err != nil {
@@ -1465,7 +1647,7 @@ func AppendMeshPilotHistory(history []map[string]string, role, content string) (
 		"content": content,
 	})
 
-	logging.Log.Infof(ctx, "Updated history: %q", updatedHistory)
+	logging.Log.Debugf(ctx, "Updated history: %q", updatedHistory)
 	return
 }
 
@@ -1497,7 +1679,7 @@ func ParseHistory(historyJson string) (history []map[string]string) {
 	for _, item := range historyMap {
 		history = append(history, item)
 	}
-	logging.Log.Infof(ctx, "Parsed history: %q", history)
+	logging.Log.Debugf(ctx, "Parsed history: %q", history)
 	return
 }
 
