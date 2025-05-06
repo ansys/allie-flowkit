@@ -27,6 +27,7 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 
 	// Set up WebSocket connection with LLM and send embeddings request
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, false, nil)
+	defer close(responseChannel)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -63,9 +64,6 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 		}
 	}
 
-	// Close the response channel
-	close(responseChannel)
-
 	return embedding32
 }
 
@@ -86,6 +84,7 @@ func PerformVectorEmbeddingRequestWithTokenLimitCatch(input string, tokenLimitMe
 
 	// Set up WebSocket connection with LLM and send embeddings request
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, false, nil)
+	defer close(responseChannel)
 
 	// Process the first response and close the channel
 	var embedding32 []float32
@@ -126,9 +125,6 @@ func PerformVectorEmbeddingRequestWithTokenLimitCatch(input string, tokenLimitMe
 		}
 	}
 
-	// Close the response channel
-	close(responseChannel)
-
 	return embedding32, false, ""
 }
 
@@ -148,6 +144,7 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 
 	// Set up WebSocket connection with LLM and send embeddings request
 	responseChannel := sendEmbeddingsRequest(input, llmHandlerEndpoint, false, nil)
+	defer close(responseChannel)
 
 	// Process the first response and close the channel
 	embedding32Array := make([][]float32, len(input))
@@ -192,9 +189,6 @@ func PerformBatchEmbeddingRequest(input []string) (embeddedVectors [][]float32) 
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	return embedding32Array
 }
@@ -260,6 +254,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequestNoHistory(input, "keywords", maxKeywordsSearch, llmHandlerEndpoint, nil, nil)
+	defer close(responseChannel)
 
 	// Process all responses
 	var responseAsStr string
@@ -279,9 +274,6 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	}
 
 	logging.Log.Debugf(&logging.ContextMap{}, "Received keywords response.")
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Unmarshal JSON data into the result variable
 	err := json.Unmarshal([]byte(responseAsStr), &keywords)
@@ -311,6 +303,7 @@ func PerformSummaryRequest(input string) (summary string) {
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequestNoHistory(input, "summary", 1, llmHandlerEndpoint, nil, nil)
+	defer close(responseChannel)
 
 	// Process all responses
 	var responseAsStr string
@@ -330,9 +323,6 @@ func PerformSummaryRequest(input string) (summary string) {
 	}
 
 	logging.Log.Debugf(&logging.ContextMap{}, "Received summary response.")
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Return the response
 	return responseAsStr
@@ -370,6 +360,9 @@ func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 		return "", &streamChannel
 	}
 
+	// Close the response channel
+	defer close(responseChannel)
+
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
@@ -386,9 +379,6 @@ func PerformGeneralRequest(input string, history []sharedtypes.HistoricMessage, 
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Return the response
 	return responseAsStr, nil
@@ -427,6 +417,9 @@ func PerformGeneralRequestWithImages(input string, history []sharedtypes.Histori
 		return "", &streamChannel
 	}
 
+	// Close the response channel
+	defer close(responseChannel)
+
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
@@ -443,9 +436,6 @@ func PerformGeneralRequestWithImages(input string, history []sharedtypes.Histori
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Return the response
 	return responseAsStr, nil
@@ -487,6 +477,9 @@ func PerformGeneralModelSpecificationRequest(input string, history []sharedtypes
 		return "", &streamChannel
 	}
 
+	// Close the response channel
+	defer close(responseChannel)
+
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
@@ -503,9 +496,6 @@ func PerformGeneralModelSpecificationRequest(input string, history []sharedtypes
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Return the response
 	return responseAsStr, nil
@@ -545,6 +535,9 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 		return "", &streamChannel
 	}
 
+	// Close the response channel
+	defer close(responseChannel)
+
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
@@ -561,9 +554,6 @@ func PerformGeneralRequestSpecificModel(input string, history []sharedtypes.Hist
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Return the response
 	return responseAsStr, nil
@@ -604,6 +594,9 @@ func PerformGeneralRequestSpecificModelAndModelOptions(input string, history []s
 		return "", &streamChannel
 	}
 
+	// Close the response channel
+	defer close(responseChannel)
+
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
@@ -620,9 +613,6 @@ func PerformGeneralRequestSpecificModelAndModelOptions(input string, history []s
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Return the response
 	return responseAsStr, nil
@@ -650,6 +640,7 @@ func PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput(input strin
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, nil, nil)
+	defer close(responseChannel)
 
 	// else Process all responses
 	var responseAsStr string
@@ -667,9 +658,6 @@ func PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput(input strin
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// get input token count
 	totalTokenCount, err := openAiTokenCount(tokenCountModelName, input+systemPrompt)
@@ -729,6 +717,7 @@ func PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOut
 
 	// Set up WebSocket connection with LLM and send chat request
 	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, &modelOptions, nil)
+	defer close(responseChannel)
 
 	// else Process all responses
 	var responseAsStr string
@@ -746,9 +735,6 @@ func PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOut
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// get input token count
 	totalTokenCount, err := openAiTokenCount(tokenCountModelName, input+systemPrompt)
@@ -817,6 +803,9 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 		return "", &streamChannel
 	}
 
+	// Close the response channel
+	defer close(responseChannel)
+
 	// else Process all responses
 	var responseAsStr string
 	for response := range responseChannel {
@@ -833,9 +822,6 @@ func PerformCodeLLMRequest(input string, history []sharedtypes.HistoricMessage, 
 			break
 		}
 	}
-
-	// Close the response channel
-	close(responseChannel)
 
 	// Code validation
 	if validateCode {

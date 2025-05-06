@@ -2,10 +2,13 @@ package externalfunctions
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+
+	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 )
 
 // SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
@@ -89,4 +92,21 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 //   - outputString: the output string
 func AssignStringToString(inputString string) (outputString string) {
 	return inputString
+}
+
+// PrintFeedback prints the feedback to the console in JSON format
+//
+// Tags:
+//   - @displayName: Print Feedback
+//
+// Parameters:
+//   - feedback: the feedback to print
+func PrintFeedback(feedback sharedtypes.Feedback) {
+	// create json string from feedback struct
+	jsonString, err := json.Marshal(feedback)
+	if err != nil {
+		panic(fmt.Sprintf("Error marshalling feedback to JSON: %v", err))
+	}
+	// print json string to console
+	fmt.Println(string(jsonString))
 }
