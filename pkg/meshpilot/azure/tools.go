@@ -542,3 +542,38 @@ func Tool10() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 
 	return funcDef
 }
+
+func Tool11() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
+
+	// Get the tool name from the configuration
+	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_11_NAME"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_11_NAME not found in configuration")
+	}
+
+	// Get the tool description from the configuration
+	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_11_DESCRIPTION"]
+	if !exists {
+		logging.Log.Fatal(ctx, "APP_TOOL_11_DESCRIPTION not found in configuration")
+	}
+
+	// Define the parameters for the function
+	jsonBytes, err := json.Marshal(map[string]any{
+		"type":       "object",
+		"properties": map[string]any{},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
+		Parameters:  jsonBytes,
+	}
+
+	return funcDef
+}
