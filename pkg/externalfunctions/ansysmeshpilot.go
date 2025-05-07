@@ -1702,16 +1702,16 @@ func GetActionsFromConfig(toolName string) (result string) {
 	// Configuration keys for different tools, for now only tool 9 and tool 11
 	configKeys := map[string]map[string]string{
 		"tool9": {
-			"resultName":	"APP_TOOL9_RESULT_NAME",
-			"resultMessage":	"APP_TOOL9_RESULT_MESSAGE",
-			"actionValue1":	"APP_ACTIONS_VALUE_1_TOOL9",
-			"actionValue2":	"APP_TOOL_ACTIONS_VALUE_2_TOOL9",
+			"resultName":    "APP_TOOL9_RESULT_NAME",
+			"resultMessage": "APP_TOOL9_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL9",
+			"actionValue2":  "APP_TOOL_ACTIONS_VALUE_2_TOOL9",
 		},
 		"tool11": {
-			"resultName":	"APP_TOOL11_RESULT_NAME",
-			"resultMessage":	"APP_TOOL11_RESULT_MESSAGE",
-			"actionValue1":	"APP_ACTIONS_VALUE_1_TOOL11",
-			"actionValue2":	"APP_TOOL_ACTIONS_VALUE_2_TOOL11",
+			"resultName":    "APP_TOOL11_RESULT_NAME",
+			"resultMessage": "APP_TOOL11_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL11",
+			"actionValue2":  "APP_TOOL_ACTIONS_VALUE_2_TOOL11",
 		},
 	}
 
