@@ -1702,16 +1702,16 @@ func GetActionsFromConfig(toolName string) (result string) {
 	// Configuration keys for different tools, for now only tool 9 and tool 11
 	configKeys := map[string]map[string]string{
 		"tool9": {
-		"resultName": "APP_TOOL9_RESULT_NAME",
-		"resultMessage": "APP_TOOL9_RESULT_MESSAGE",
-		"actionValue1": "APP_ACTIONS_VALUE_1_TOOL9",
-		"actionValue2": "APP_TOOL_ACTIONS_VALUE_2_TOOL9",
+			"resultName": "APP_TOOL9_RESULT_NAME",
+			"resultMessage": "APP_TOOL9_RESULT_MESSAGE",
+			"actionValue1": "APP_ACTIONS_VALUE_1_TOOL9",
+			"actionValue2": "APP_TOOL_ACTIONS_VALUE_2_TOOL9",
 		},
 		"tool11": {
-		"resultName": "APP_TOOL11_RESULT_NAME",
-		"resultMessage": "APP_TOOL11_RESULT_MESSAGE",
-		"actionValue1": "APP_ACTIONS_VALUE_1_TOOL11",
-		"actionValue2": "APP_TOOL_ACTIONS_VALUE_2_TOOL11",
+			"resultName": "APP_TOOL11_RESULT_NAME",
+			"resultMessage": "APP_TOOL11_RESULT_MESSAGE",
+			"actionValue1": "APP_ACTIONS_VALUE_1_TOOL11",
+			"actionValue2": "APP_TOOL_ACTIONS_VALUE_2_TOOL11",
 		},
 	}
 
@@ -1719,29 +1719,29 @@ func GetActionsFromConfig(toolName string) (result string) {
 	getConfigValue := func(key string, errorMsg string) string {
 		value, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES[key]
 		if !exists {
-		errorMessage := fmt.Sprintf("%s: %s", errorMsg, key)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+			errorMessage := fmt.Sprintf("%s: %s", errorMsg, key)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
 		}
 		return value
 	}  
-	
+
 	// Get tool result name from the configuration
 	tool9ResultName := getConfigValue(configKeys["tool9"]["resultName"], "failed to load tool 9 result name from the configuration")
 	tool11ResultName := getConfigValue(configKeys["tool11"]["resultName"], "failed to load tool 11 result name from the configuration")
-	
+
 	// Get tool result message from the configuration
 	tool9ResultMessage := getConfigValue(configKeys["tool9"]["resultMessage"], "failed to load tool 9 result message from the configuration")
 	tool11ResultMessage := getConfigValue(configKeys["tool11"]["resultMessage"], "failed to load tool 11 result message from the configuration")
-	
+
 	// Get tool action success message from configuration
 	toolActionSuccessMessage := getConfigValue("APP_TOOL_ACTION_SUCCESS_MESSAGE", "failed to load tool action success message from the configuration")
 	actionKey1 := getConfigValue("APP_TOOL_ACTIONS_KEY_1", "failed to load tool action key 1 from the configuration")
 	actionKey2 := getConfigValue("APP_TOOL_ACTIONS_KEY_2", "failed to load tool action key 2 from the configuration")
-	
+
 	// Initialize action values and message
 	var actionValue1, actionValue2, selectedMessage string
-	
+
 	// Based on the tool name, set the action values and message
 	if toolName == tool9ResultName {  
 		actionValue1 = getConfigValue(configKeys["tool9"]["actionValue1"], "failed to load tool 9 action value 1 from the configuration")
