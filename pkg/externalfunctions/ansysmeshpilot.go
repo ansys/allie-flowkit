@@ -1702,16 +1702,16 @@ func GetActionsFromConfig(toolName string) (result string) {
 	// Configuration keys for different tools, for now only tool 9 and tool 11
 	configKeys := map[string]map[string]string{
 		"tool9": {
-			"resultName": "APP_TOOL9_RESULT_NAME",
-			"resultMessage": "APP_TOOL9_RESULT_MESSAGE",
-			"actionValue1": "APP_ACTIONS_VALUE_1_TOOL9",
-			"actionValue2": "APP_TOOL_ACTIONS_VALUE_2_TOOL9",
+			"resultName":	"APP_TOOL9_RESULT_NAME",
+			"resultMessage":	"APP_TOOL9_RESULT_MESSAGE",
+			"actionValue1":	"APP_ACTIONS_VALUE_1_TOOL9",
+			"actionValue2":	"APP_TOOL_ACTIONS_VALUE_2_TOOL9",
 		},
 		"tool11": {
-			"resultName": "APP_TOOL11_RESULT_NAME",
-			"resultMessage": "APP_TOOL11_RESULT_MESSAGE",
-			"actionValue1": "APP_ACTIONS_VALUE_1_TOOL11",
-			"actionValue2": "APP_TOOL_ACTIONS_VALUE_2_TOOL11",
+			"resultName":	"APP_TOOL11_RESULT_NAME",
+			"resultMessage":	"APP_TOOL11_RESULT_MESSAGE",
+			"actionValue1":	"APP_ACTIONS_VALUE_1_TOOL11",
+			"actionValue2":	"APP_TOOL_ACTIONS_VALUE_2_TOOL11",
 		},
 	}
 
@@ -1724,7 +1724,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 			panic(errorMessage)
 		}
 		return value
-	}  
+	}
 
 	// Get tool result name from the configuration
 	tool9ResultName := getConfigValue(configKeys["tool9"]["resultName"], "failed to load tool 9 result name from the configuration")
@@ -1743,11 +1743,11 @@ func GetActionsFromConfig(toolName string) (result string) {
 	var actionValue1, actionValue2, selectedMessage string
 
 	// Based on the tool name, set the action values and message
-	if toolName == tool9ResultName {  
+	if toolName == tool9ResultName {
 		actionValue1 = getConfigValue(configKeys["tool9"]["actionValue1"], "failed to load tool 9 action value 1 from the configuration")
 		actionValue2 = getConfigValue(configKeys["tool9"]["actionValue2"], "failed to load tool 9 action value 2 from the configuration")
-		selectedMessage = tool9ResultMessage  
-	} else if toolName == tool11ResultName {  
+		selectedMessage = tool9ResultMessage
+	} else if toolName == tool11ResultName {
 		actionValue1 = getConfigValue(configKeys["tool11"]["actionValue1"], "failed to load tool 11 action value 1 from the configuration")
 		actionValue2 = getConfigValue(configKeys["tool11"]["actionValue2"], "failed to load tool 11 action value 2 from the configuration")
 		selectedMessage = tool11ResultMessage
