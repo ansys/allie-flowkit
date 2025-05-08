@@ -2,6 +2,7 @@ package azure
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -9,20 +10,24 @@ import (
 	"github.com/ansys/allie-sharedtypes/pkg/logging"
 )
 
+func mustCfg(ctx *logging.ContextMap, key string) string {
+	toolVal, ok := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES[key]
+
+	if !ok {
+		err := fmt.Sprintf("%s not found in configuration", key)
+		logging.Log.Error(ctx, err)
+		panic(err)
+	}
+
+	return toolVal
+}
+
 func Tool1() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_1_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_1_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_1_DESCRIPTION not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_1_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_1_DESCRIPTION")
 
 	jsonBytes, err := json.Marshal(map[string]any{
 		"type":       "object",
@@ -46,32 +51,11 @@ func Tool2() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_2_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_2_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool properties from the configuration
-	toolProperty1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_NAME not found in configuration")
-	}
-
-	toolProperty1Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_TYPE not found in configuration")
-	}
-
-	toolProperty1Description, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_DESCRIPTION not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_2_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_2_DESCRIPTION")
+	toolProperty1Name := mustCfg(ctx, "APP_TOOL_PROPERTY_1_NAME")
+	toolProperty1Type := mustCfg(ctx, "APP_TOOL_PROPERTY_1_TYPE")
+	toolProperty1Description := mustCfg(ctx, "APP_TOOL_PROPERTY_1_DESCRIPTION")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -101,34 +85,11 @@ func Tool2() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 func Tool3() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_3_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_3_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_3_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool 1 property name from the configuration
-	toolProperty1Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_NAME not found in configuration")
-	}
-
-	// Get the tool 1 property type from the configuration
-	toolProperty1Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_TYPE not found in configuration")
-	}
-
-	// Get the tool 1 property description from the configuration
-	toolProperty1Description, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_1_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_1_DESCRIPTION not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_3_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_3_DESCRIPTION")
+	toolProperty1Name := mustCfg(ctx, "APP_TOOL_PROPERTY_1_NAME")
+	toolProperty1Type := mustCfg(ctx, "APP_TOOL_PROPERTY_1_TYPE")
+	toolProperty1Description := mustCfg(ctx, "APP_TOOL_PROPERTY_1_DESCRIPTION")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -160,34 +121,11 @@ func Tool4() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_4_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_4_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool property 2 name from the configuration
-	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
-	}
-
-	// Get the tool property 2 type from the configuration
-	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
-	}
-
-	// Get the tool property 2 description 1 from the configuration
-	toolProperty2Description1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_1"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_1 not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_4_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_4_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description1 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_1")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -219,34 +157,11 @@ func Tool5() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_5_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_5_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool property 2 name from the configuration
-	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
-	}
-
-	// Get the tool property 2 type from the configuration
-	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
-	}
-
-	// Get the tool property 2 description 2 from the configuration
-	toolProperty2Description2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_2"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_2 not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_5_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_5_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description2 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_2")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -278,34 +193,11 @@ func Tool6() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_6_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_6_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool property 2 name from the configuration
-	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
-	}
-
-	// Get the tool property 2 type from the configuration
-	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
-	}
-
-	// Get the tool property 2 description 3 from the configuration
-	toolProperty2Description3, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_3"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_3 not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_6_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_6_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description3 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_3")
 
 	jsonBytes, err := json.Marshal(map[string]any{
 		"required": []string{toolProperty2Name},
@@ -336,34 +228,11 @@ func Tool7() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_7_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_7_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool property 2 name from the configuration
-	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
-	}
-
-	// Get the tool property 2 type from the configuration
-	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
-	}
-
-	// Get the tool property 2 description 4 from the configuration
-	toolProperty2Description4, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_4"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_4 not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_7_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_7_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description4 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_4")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -395,34 +264,11 @@ func Tool8() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_8_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_8_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool property 2 name from the configuration
-	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
-	}
-
-	// Get the tool property 2 type from the configuration
-	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
-	}
-
-	// Get the tool property 2 description 5 from the configuration
-	toolProperty2Description5, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_5"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_5 not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_8_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_8_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description5 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_5")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -454,16 +300,8 @@ func Tool9() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_9_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_9_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_9_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_9_DESCRIPTION not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_9_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_9_DESCRIPTION")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -489,34 +327,11 @@ func Tool10() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	ctx := &logging.ContextMap{}
 
 	// Get the tool name from the configuration
-	toolName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_10_NAME not found in configuration")
-	}
-
-	// Get the tool description from the configuration
-	toolDescription, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_DESCRIPTION"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_10_DESCRIPTION not found in configuration")
-	}
-
-	// Get the tool property 2 name from the configuration
-	toolProperty2Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_NAME"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_NAME not found in configuration")
-	}
-
-	// Get the tool property 2 type from the configuration
-	toolProperty2Type, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_TYPE"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_TYPE not found in configuration")
-	}
-
-	// Get the tool property 2 description 6 from the configuration
-	toolProperty2Description6, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_PROPERTY_2_DESCRIPTION_6"]
-	if !exists {
-		logging.Log.Fatal(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_6 not found in configuration")
-	}
+	toolName := mustCfg(ctx, "APP_TOOL_10_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_10_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description6 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_6")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
@@ -528,6 +343,33 @@ func Tool10() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 				"description": toolProperty2Description6,
 			},
 		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
+		Parameters:  jsonBytes,
+	}
+
+	return funcDef
+}
+
+func Tool11() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
+
+	// Get the tool name and description from the configuration
+	toolName := mustCfg(ctx, "APP_TOOL_11_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_11_DESCRIPTION")
+
+	// Define the parameters for the function
+	jsonBytes, err := json.Marshal(map[string]any{
+		"type":       "object",
+		"properties": map[string]any{},
 	})
 
 	if err != nil {

@@ -181,6 +181,9 @@ func MeshPilotReAct(instruction string,
 			&azopenai.ChatCompletionsFunctionToolDefinition{
 				Function: azure.Tool10(),
 			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool11(),
+			},
 		},
 		Temperature: to.Ptr[float32](0.0),
 	}, nil)
@@ -1696,61 +1699,68 @@ func ParseHistory(historyJson string) (history []map[string]string) {
 func GetActionsFromConfig(toolName string) (result string) {
 	ctx := &logging.ContextMap{}
 
-	toolResultName, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_NAME"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool result name from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+	// Configuration keys for different tools, for now only tool 9 and tool 11
+	configKeys := map[string]map[string]string{
+		"tool9": {
+			"resultName":    "APP_TOOL9_RESULT_NAME",
+			"resultMessage": "APP_TOOL9_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL9",
+			"actionValue2":  "APP_TOOL_ACTIONS_VALUE_2_TOOL9",
+		},
+		"tool11": {
+			"resultName":    "APP_TOOL11_RESULT_NAME",
+			"resultMessage": "APP_TOOL11_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL11",
+			"actionValue2":  "APP_TOOL_ACTIONS_VALUE_2_TOOL11",
+		},
 	}
 
-	toolResultMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_RESULT_MESSAGE"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool result message from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+	// Help function to get the config value
+	getConfigValue := func(key string, errorMsg string) string {
+		value, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES[key]
+		if !exists {
+			errorMessage := fmt.Sprintf("%s: %s", errorMsg, key)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
+		}
+		return value
 	}
+
+	// Get tool result name from the configuration
+	tool9ResultName := getConfigValue(configKeys["tool9"]["resultName"], "failed to load tool 9 result name from the configuration")
+	tool11ResultName := getConfigValue(configKeys["tool11"]["resultName"], "failed to load tool 11 result name from the configuration")
+
+	// Get tool result message from the configuration
+	tool9ResultMessage := getConfigValue(configKeys["tool9"]["resultMessage"], "failed to load tool 9 result message from the configuration")
+	tool11ResultMessage := getConfigValue(configKeys["tool11"]["resultMessage"], "failed to load tool 11 result message from the configuration")
 
 	// Get tool action success message from configuration
-	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
+	toolActionSuccessMessage := getConfigValue("APP_TOOL_ACTION_SUCCESS_MESSAGE", "failed to load tool action success message from the configuration")
+	actionKey1 := getConfigValue("APP_TOOL_ACTIONS_KEY_1", "failed to load tool action key 1 from the configuration")
+	actionKey2 := getConfigValue("APP_TOOL_ACTIONS_KEY_2", "failed to load tool action key 2 from the configuration")
 
-	// Get tool action success message from configuration
-	actionKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_1"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
+	// Initialize action values and message
+	var actionValue1, actionValue2, selectedMessage string
 
-	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_1"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_VALUE_2"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+	// Based on the tool name, set the action values and message
+	if toolName == tool9ResultName {
+		actionValue1 = getConfigValue(configKeys["tool9"]["actionValue1"], "failed to load tool 9 action value 1 from the configuration")
+		actionValue2 = getConfigValue(configKeys["tool9"]["actionValue2"], "failed to load tool 9 action value 2 from the configuration")
+		selectedMessage = tool9ResultMessage
+	} else if toolName == tool11ResultName {
+		actionValue1 = getConfigValue(configKeys["tool11"]["actionValue1"], "failed to load tool 11 action value 1 from the configuration")
+		actionValue2 = getConfigValue(configKeys["tool11"]["actionValue2"], "failed to load tool 11 action value 2 from the configuration")
+		selectedMessage = tool11ResultMessage
+	} else {
+		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
 	message := toolActionSuccessMessage
 	actions := []map[string]string{}
-	if toolName == toolResultName {
-		message = toolResultMessage
+	if toolName == tool9ResultName || toolName == tool11ResultName {
+		message = selectedMessage
 		actions = append(actions, map[string]string{
 			actionKey1: actionValue1,
 			actionKey2: actionValue2,
