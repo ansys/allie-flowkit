@@ -1719,7 +1719,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL11",
 			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_1",
 		},
-		"tool12":{
+		"tool12": {
 			"resultName":    "APP_TOOL12_RESULT_NAME",
 			"resultMessage": "APP_TOOL12_RESULT_MESSAGE",
 			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL12",
