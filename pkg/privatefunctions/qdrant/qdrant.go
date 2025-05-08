@@ -223,7 +223,7 @@ func RetrieveParentNodes(ctx *logging.ContextMap, client *qdrant.Client, collect
 			CollectionName: collectionName,
 			Filter: &qdrant.Filter{
 				Must: []*qdrant.Condition{
-					qdrant.NewHasID(qdrant.NewIDUUID(dbresp.ParentId)),
+					qdrant.NewHasID(qdrant.NewIDUUID(dbresp.ParentId.String())),
 				},
 			},
 			Limit:       &limit,
@@ -286,7 +286,7 @@ func RetrieveChildNodes(ctx *logging.ContextMap, client *qdrant.Client, collecti
 	for i, dbresp := range *data {
 		childIds := make([]*qdrant.PointId, len(dbresp.ChildIds))
 		for j, childid := range dbresp.ChildIds {
-			childIds[j] = qdrant.NewIDUUID(childid)
+			childIds[j] = qdrant.NewIDUUID(childid.String())
 		}
 		queries[i] = &qdrant.QueryPoints{
 			CollectionName: collectionName,
@@ -350,11 +350,11 @@ func RetrieveDirectSiblingNodes(ctx *logging.ContextMap, client *qdrant.Client, 
 	queries := make([]*qdrant.QueryPoints, len(*data))
 	for i, dbresp := range *data {
 		siblingIds := []*qdrant.PointId{}
-		if dbresp.PreviousSiblingId != "" {
-			siblingIds = append(siblingIds, qdrant.NewIDUUID(dbresp.PreviousSiblingId))
+		if dbresp.PreviousSiblingId != nil {
+			siblingIds = append(siblingIds, qdrant.NewIDUUID(dbresp.PreviousSiblingId.String()))
 		}
-		if dbresp.NextSiblingId != "" {
-			siblingIds = append(siblingIds, qdrant.NewIDUUID(dbresp.NextSiblingId))
+		if dbresp.NextSiblingId != nil {
+			siblingIds = append(siblingIds, qdrant.NewIDUUID(dbresp.NextSiblingId.String()))
 		}
 
 		queries[i] = &qdrant.QueryPoints{

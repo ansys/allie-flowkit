@@ -469,7 +469,7 @@ func CreateDbFilter(
 func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 	points := make([]*qdrant.PointStruct, len(documentData))
 	for i, doc := range documentData {
-		id := qdrant.NewIDUUID(doc.Guid)
+		id := qdrant.NewIDUUID(doc.Guid.String())
 		vector := qdrant.NewVectorsDense(doc.Embedding)
 		payloadMap, err := qdrant_utils.TryIntoWithJson[sharedtypes.DbData, map[string]any](doc)
 		if err != nil {

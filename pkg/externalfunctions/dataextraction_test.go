@@ -310,7 +310,7 @@ func TestStoreElementsInVectorDatabase(t *testing.T) {
 	// insert the data in
 	elements := []sharedtypes.CodeGenerationElement{
 		{
-			Guid:              uuid.New().String(),
+			Guid:              uuid.New(),
 			Type:              "Method",
 			NamePseudocode:    "",
 			NameFormatted:     "",
@@ -450,14 +450,14 @@ func TestStoreExamplesInVectorDatabase(t *testing.T) {
 	// insert the data in
 	examples := []sharedtypes.CodeGenerationExample{
 		{
-			Guid:                   uuid.NewString(),
+			Guid:                   uuid.New(),
 			Name:                   "examples/my_example.py",
 			Dependencies:           []string{"examples/my_other_example.py"},
 			DependencyEquivalences: map[string]string{},
 			Chunks:                 []string{"import random\n", "def main():\n    print('hi')\n\n", "if __name__ == '__main__':\n    main()"},
 		},
 		{
-			Guid:                   uuid.NewString(),
+			Guid:                   uuid.New(),
 			Name:                   "examples/my_other_example.py",
 			Dependencies:           []string{},
 			DependencyEquivalences: map[string]string{},

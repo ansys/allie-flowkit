@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -181,7 +182,7 @@ type ACSSearchResponseCrtech struct {
 type DataExtractionBranch struct {
 	Text             string
 	ChildDataObjects []*sharedtypes.DbData
-	ChildDataIds     []string
+	ChildDataIds     []uuid.UUID
 }
 
 // DataExtractionLLMInputChannelItem represents the input channel item for the data extraction llm handler workers.

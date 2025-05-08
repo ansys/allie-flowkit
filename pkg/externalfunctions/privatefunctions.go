@@ -1363,7 +1363,7 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 	for idx, chunk := range chunks {
 		// Create data child object.
 		childData := &sharedtypes.DbData{
-			Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Guid:         uuid.New(),
 			DocumentId:   documentId,
 			DocumentName: documentPath,
 			Text:         chunk,
@@ -1371,8 +1371,8 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 
 		// Assing previous and next sibling ids if necessary.
 		if idx > 0 {
-			orderedChildData[idx-1].NextSiblingId = childData.Guid
-			childData.PreviousSiblingId = orderedChildData[idx-1].Guid
+			orderedChildData[idx-1].NextSiblingId = &childData.Guid
+			childData.PreviousSiblingId = &orderedChildData[idx-1].Guid
 		}
 
 		orderedChildData = append(orderedChildData, childData)

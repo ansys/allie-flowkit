@@ -34,8 +34,8 @@ github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsVi
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
 github.com/ansys/aali-graphdb-goclient v0.3.0 h1:LO1Ji2biITExGptF9B9MK5JdJEjfVTB4OftT0tp3nWE=
 github.com/ansys/aali-graphdb-goclient v0.3.0/go.mod h1:Ngo8IRxgWmDY60cLFJiZ5fTjTrDWAi9OMCG5kEm2DA4=
-github.com/ansys/aali-sharedtypes v1.0.1-0.20250508152924-0b8023ac398e h1:jz1BZJpKxMUOZvITCtKuQ5WiZGIdgPhdeRF17/6i5N4=
-github.com/ansys/aali-sharedtypes v1.0.1-0.20250508152924-0b8023ac398e/go.mod h1:xvsUT/jd7LQc4T3Hkg8+B+WkQ7rqIIeqvxLDQUHg8gY=
+github.com/ansys/aali-sharedtypes v1.0.1-0.20250508201128-59153413e1a8 h1:FM4hy3r9ayyISE1dQEmIhPTElHvH4AXw6nQH+vXQNaI=
+github.com/ansys/aali-sharedtypes v1.0.1-0.20250508201128-59153413e1a8/go.mod h1:Xuepk07Xc7QN378h8IKN5NLkeFFr61PPdps/Rv+DX4c=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=

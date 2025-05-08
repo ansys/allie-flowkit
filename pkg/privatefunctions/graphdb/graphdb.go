@@ -148,7 +148,7 @@ func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []sha
 
 		// update all fields except for: type, name
 		queryParams := aali_graphdb.ParameterMap{
-			"guid":                aali_graphdb.StringValue(node.Guid),
+			"guid":                aali_graphdb.UUIDValue(node.Guid),
 			"name_pseudocode":     aali_graphdb.StringValue(node.NamePseudocode),
 			"name_formatted":      aali_graphdb.StringValue(node.NameFormatted),
 			"description":         aali_graphdb.StringValue(node.Description),

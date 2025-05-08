@@ -35,7 +35,7 @@ type CodeGenerationPseudocodeResponse struct {
 }
 
 type VectorDatabaseElement struct {
-	Guid           string           `json:"guid"`
+	Guid           uuid.UUID        `json:"guid"`
 	DenseVector    []float32        `json:"dense_vector"`
 	SparseVector   map[uint]float32 `json:"sparse_vector"`
 	Type           string           `json:"type"`

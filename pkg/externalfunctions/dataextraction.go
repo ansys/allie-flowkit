@@ -407,13 +407,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 
 	// Create root data object.
 	rootData := &sharedtypes.DbData{
-		Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+		Guid:         uuid.New(),
 		DocumentId:   documentId,
 		DocumentName: documentName,
 		Text:         "",
 		Summary:      "",
 		Embedding:    make([]float32, embeddingsDimensions),
-		ChildIds:     make([]string, 0, len(documentChunks)),
+		ChildIds:     make([]uuid.UUID, 0, len(documentChunks)),
 		Level:        "root",
 	}
 
@@ -435,15 +435,15 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	if !getSummary {
 		for _, childData := range orderedChildDataObjects {
 			rootData.ChildIds = append(rootData.ChildIds, childData.Guid)
-			childData.ParentId = rootData.Guid
+			childData.ParentId = &rootData.Guid
 			childData.Level = "leaf"
 			documentData = append(documentData, childData)
 		}
 
 		// Assign first and last child ids to root data object.
 		if len(orderedChildDataObjects) > 0 {
-			rootData.FirstChildId = orderedChildDataObjects[0].Guid
-			rootData.LastChildId = orderedChildDataObjects[len(orderedChildDataObjects)-1].Guid
+			rootData.FirstChildId = &orderedChildDataObjects[0].Guid
+			rootData.LastChildId = &orderedChildDataObjects[len(orderedChildDataObjects)-1].Guid
 		}
 	}
 
@@ -474,7 +474,7 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 					branch = &DataExtractionBranch{
 						Text:             "",
 						ChildDataObjects: []*sharedtypes.DbData{},
-						ChildDataIds:     []string{},
+						ChildDataIds:     []uuid.UUID{},
 					}
 					branches = append(branches, branch)
 				}
@@ -511,13 +511,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 
 				// Assign parent id to child data objects.
 				for _, childData := range branches[0].ChildDataObjects {
-					childData.ParentId = rootData.Guid
+					childData.ParentId = &rootData.Guid
 				}
 
 				// Assign first and last child ids to root data object.
 				if len(branches[0].ChildDataIds) > 0 {
-					rootData.FirstChildId = branches[0].ChildDataIds[0]
-					rootData.LastChildId = branches[0].ChildDataIds[len(branches[0].ChildDataIds)-1]
+					rootData.FirstChildId = &branches[0].ChildDataIds[0]
+					rootData.LastChildId = &branches[0].ChildDataIds[len(branches[0].ChildDataIds)-1]
 				}
 
 				// Exit loop because top of the tree has been reached.
@@ -532,13 +532,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 
 				// Assign first and last child ids to parent data object.
 				if len(branch.ChildDataIds) > 0 {
-					parentData.FirstChildId = branch.ChildDataIds[0]
-					parentData.LastChildId = branch.ChildDataIds[len(branch.ChildDataIds)-1]
+					parentData.FirstChildId = &branch.ChildDataIds[0]
+					parentData.LastChildId = &branch.ChildDataIds[len(branch.ChildDataIds)-1]
 				}
 
 				// Assign parent id to child data objects.
 				for _, childData := range branch.ChildDataObjects {
-					childData.ParentId = parentData.Guid
+					childData.ParentId = &parentData.Guid
 				}
 
 				// Add parent data object to document data.
@@ -631,7 +631,7 @@ func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elemen
 
 		// Create the code generation element.
 		element := sharedtypes.CodeGenerationElement{
-			Guid:              "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Guid:              uuid.New(),
 			Name:              name,
 			Summary:           objectDefinition.Summary,
 			ReturnType:        objectDefinition.ReturnType,
@@ -776,7 +776,7 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 	points := make([]*qdrant.PointStruct, len(elements))
 	for i, element := range elements {
 		points[i] = &qdrant.PointStruct{
-			Id: qdrant.NewIDUUID(element.Guid),
+			Id: qdrant.NewIDUUID(element.Guid.String()),
 			Vectors: qdrant.NewVectorsMap(map[string]*qdrant.Vector{
 				"":              qdrant.NewVectorDense(denseEmbeddings[i]),
 				"sparse_vector": mapToSparseVec(sparseEmbeddings[i]),
