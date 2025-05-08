@@ -21,10 +21,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
@@ -2613,4 +2613,16 @@ func mongoDbUpdateAccessAndWarning(mongoDbContext *MongoDbContext, indetificatio
 	}
 
 	return nil
+}
+
+func logPanic(ctx *logging.ContextMap, msg string, args ...any) {
+	errMsg := fmt.Sprintf(msg, args...)
+	var logCtx *logging.ContextMap
+	if ctx == nil {
+		logCtx = &logging.ContextMap{}
+	} else {
+		logCtx = ctx
+	}
+	logging.Log.Error(logCtx, errMsg)
+	panic(errMsg)
 }

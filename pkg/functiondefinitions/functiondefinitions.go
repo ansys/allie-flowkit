@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ansys/aali-sharedtypes/pkg/aaliflowkitgrpc"
 	"github.com/ansys/allie-flowkit/pkg/internalstates"
-	"github.com/ansys/allie-sharedtypes/pkg/allieflowkitgrpc"
 )
 
 // ExtractFunctionDefinitionsFromPackage parses the given file for public functions and populates internalstates.AvailableFunctions.
@@ -98,20 +98,20 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 				description := fn.Doc.Text()
 				displayName := extractTagValue(description, "@displayName")
 
-				funcDef := &allieflowkitgrpc.FunctionDefinition{
+				funcDef := &aaliflowkitgrpc.FunctionDefinition{
 					Name:        fn.Name.Name,
 					DisplayName: displayNameOrDefault(displayName, fn.Name.Name),
 					Description: description,
 					Category:    category,
-					Input:       []*allieflowkitgrpc.FunctionInputDefinition{},
-					Output:      []*allieflowkitgrpc.FunctionOutputDefinition{},
+					Input:       []*aaliflowkitgrpc.FunctionInputDefinition{},
+					Output:      []*aaliflowkitgrpc.FunctionOutputDefinition{},
 				}
 
 				// Handle inputs (parameters)
 				if fn.Type.Params != nil {
 					for _, param := range fn.Type.Params.List {
 						if len(param.Names) == 0 {
-							funcDef.Input = append(funcDef.Input, &allieflowkitgrpc.FunctionInputDefinition{
+							funcDef.Input = append(funcDef.Input, &aaliflowkitgrpc.FunctionInputDefinition{
 								Name:   typeExprToString(param.Type),
 								Type:   typeExprToSimpleType(param.Type),
 								GoType: typeExprToString(param.Type),
@@ -132,7 +132,7 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 									goType = "string"
 								}
 
-								funcDef.Input = append(funcDef.Input, &allieflowkitgrpc.FunctionInputDefinition{
+								funcDef.Input = append(funcDef.Input, &aaliflowkitgrpc.FunctionInputDefinition{
 									Name:    paramName.Name,
 									Type:    typeExprToSimpleType(param.Type),
 									GoType:  goType,
@@ -148,7 +148,7 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 					for _, result := range fn.Type.Results.List {
 						if len(result.Names) == 0 {
 							goType := typeExprToString(result.Type)
-							funcDef.Output = append(funcDef.Output, &allieflowkitgrpc.FunctionOutputDefinition{
+							funcDef.Output = append(funcDef.Output, &aaliflowkitgrpc.FunctionOutputDefinition{
 								Name:   goType,
 								Type:   typeExprToSimpleType(result.Type),
 								GoType: goType,
@@ -156,7 +156,7 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 						} else {
 							for _, resultName := range result.Names {
 								goType := typeExprToString(result.Type)
-								funcDef.Output = append(funcDef.Output, &allieflowkitgrpc.FunctionOutputDefinition{
+								funcDef.Output = append(funcDef.Output, &aaliflowkitgrpc.FunctionOutputDefinition{
 									Name:   resultName.Name,
 									Type:   typeExprToSimpleType(result.Type),
 									GoType: goType,

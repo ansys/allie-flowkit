@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
 )
 
 // CheckApiKeyAuthMongoDb checks if the given API key is valid and has access to the service.

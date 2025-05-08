@@ -3,7 +3,7 @@ package externalfunctions
 import (
 	"sync"
 
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
