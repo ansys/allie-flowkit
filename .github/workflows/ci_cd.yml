@@ -57,6 +57,10 @@ jobs:
         go-version-file: 'go.mod'
         cache-dependency-path: 'go.sum'
 
+    - name: setup go for private modules
+      run: |  # https://go.dev/doc/faq#git_https
+        echo "machine github.com login ${{ secrets.PYANSYS_CI_BOT_USERNAME }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > $HOME/.netrc
+
     - name: Verify library builds
       run: |
         go build ./pkg/externalfunctions

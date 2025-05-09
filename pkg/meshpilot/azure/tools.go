@@ -6,8 +6,8 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
 )
 
 func mustCfg(ctx *logging.ContextMap, key string) string {

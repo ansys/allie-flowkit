@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/russross/blackfriday/v2"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"

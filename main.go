@@ -3,8 +3,8 @@ package main
 import (
 	_ "embed"
 
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
 
 	"github.com/ansys/allie-flowkit/pkg/functiondefinitions"
 	"github.com/ansys/allie-flowkit/pkg/grpcserver"
@@ -14,8 +14,8 @@ import (
 //go:embed pkg/externalfunctions/dataextraction.go
 var dataExtractionFile string
 
-//go:embed pkg/externalfunctions/milvus.go
-var milvusFile string
+//go:embed pkg/externalfunctions/qdrant.go
+var qdrantFile string
 
 //go:embed pkg/externalfunctions/generic.go
 var genericFile string
@@ -62,7 +62,7 @@ func main() {
 		"knowledge_db":     knowledgeDBFile,
 		"llm_handler":      llmHandlerFile,
 		"ansys_gpt":        ansysGPTFile,
-		"milvus":           milvusFile,
+		"qdrant":           qdrantFile,
 		"ansys_mesh_pilot": ansysMeshPilotFile,
 		"auth":             authFile,
 	}

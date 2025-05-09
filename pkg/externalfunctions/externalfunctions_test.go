@@ -3,7 +3,7 @@ package externalfunctions
 import (
 	"testing"
 
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
 
 func TestExtractFieldsFromQuery(t *testing.T) {

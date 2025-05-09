@@ -26,7 +26,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SendVectorsToKnowledgeDB": SendVectorsToKnowledgeDB,
 	"GetListCollections":       GetListCollections,
 	"RetrieveDependencies":     RetrieveDependencies,
-	"GeneralNeo4jQuery":        GeneralNeo4jQuery,
+	"GeneralGraphDbQuery":      GeneralGraphDbQuery,
 	"GeneralQuery":             GeneralQuery,
 	"SimilaritySearch":         SimilaritySearch,
 	"CreateKeywordsDbFilter":   CreateKeywordsDbFilter,
@@ -100,9 +100,9 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"ParseHistory":                             ParseHistory,
 	"SynthesizeActionsTool4":                   SynthesizeActionsTool4,
 
-	// milvus
-	"MilvusCreateCollection": MilvusCreateCollection,
-	"MilvusInsertData":       MilvusInsertData,
+	// qdrant
+	"QdrantCreateCollection": QdrantCreateCollection,
+	"QdrantInsertData":       QdrantInsertData,
 
 	// auth
 	"CheckApiKeyAuthMongoDb":                        CheckApiKeyAuthMongoDb,

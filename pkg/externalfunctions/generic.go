@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
 
 // SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
