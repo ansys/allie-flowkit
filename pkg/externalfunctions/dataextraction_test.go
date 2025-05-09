@@ -5,12 +5,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"flag"
 	"fmt"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/ansys/aali-graphdb-goclient/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
@@ -111,18 +112,11 @@ func TestAppendStringSlices(t *testing.T) {
 	}
 }
 
-// data extraction funcs to test:
-//   - StoreElementsInVectorDatabase
-//   - StoreElementsInGraphDatabase
-//   - StoreExamplesInVectorDatabase
-//   - StoreExamplesInGraphDatabase
-//   - StoreUserGuideSectionsInVectorDatabase
-//   - StoreUserGuideSectionsInGraphDatabase
-
 type flowkitTestContainersConfig struct {
 	qdrant        bool
 	allieEmbedder bool
 	allieLlm      bool
+	aaliGraphDb   bool
 }
 
 type hostPort struct {
@@ -135,17 +129,29 @@ type flowkitTestContainersResult struct {
 	qdrant        *hostPort
 	allieEmbedder *hostPort
 	allieLlm      *hostPort
+	aaliGraphdDb  *hostPort
+}
+
+// StdoutLogConsumer is a LogConsumer that prints the log to stdout
+type StdoutLogConsumer struct{}
+
+// Accept prints the log to stdout
+func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
+	fmt.Print(string(l.Content))
 }
 
 func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainerConfig flowkitTestContainersConfig) flowkitTestContainersResult {
-	var chatApiKey string
-	flag.StringVar(&chatApiKey, "allie-chat-api-key", "", "your api key for the 'gpt-4-32k-france-central' model")
 
 	result := flowkitTestContainersResult{config: config.Config{}}
 
 	allieNetwork, err := network.New(ctx)
 	require.NoError(t, err)
 	testcontainers.CleanupNetwork(t, allieNetwork)
+
+	logConsumer := testcontainers.LogConsumerConfig{
+		Opts:      []testcontainers.LogProductionOption{testcontainers.WithLogProductionTimeout(10 * time.Second)},
+		Consumers: []testcontainers.LogConsumer{&StdoutLogConsumer{}},
+	}
 
 	if testContainerConfig.qdrant {
 		// setup qdrant container
@@ -158,6 +164,7 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 			),
 			Networks:       []string{allieNetwork.Name},
 			NetworkAliases: map[string][]string{allieNetwork.Name: {"qdrant"}},
+			LogConsumerCfg: &logConsumer,
 		}
 		qdrantCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: qdrantReq, Started: true,
@@ -185,6 +192,7 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 			),
 			Networks:       []string{allieNetwork.Name},
 			NetworkAliases: map[string][]string{allieNetwork.Name: {"allie-codegen-embedder"}},
+			LogConsumerCfg: &logConsumer,
 		}
 		allieEmbedderCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: allieEmbedderReq, Started: true,
@@ -214,29 +222,23 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 		require.NoError(t, err)
 		defer require.NoError(t, os.Remove(allieLlmModelsFile.Name()))
 
-		modelsYml := []string{}
-		if testContainerConfig.allieEmbedder {
-			// assume you want it in the models.yaml file
-			modelsYml = append(modelsYml,
-				"EMBEDDING_MODELS:",
-				"  - MODEL_TYPE: bge-m3",
-				"    MODEL_NAME: BAAI/bge-m3",
-				"    URL: http://allie-codegen-embedder:8000/",
-				"    NUMBER_OF_WORKERS: 2",
-			)
-		} else {
-			panic("what is default embedder?")
-		}
-
-		modelsYml = append(modelsYml,
+		// embedder will only actually work if `testContainerConfig.allieEmbedder=true`, but set it up
+		// here since you need something
+		modelsYml := []string{
+			"EMBEDDING_MODELS:",
+			"  - MODEL_TYPE: bge-m3",
+			"    MODEL_NAME: BAAI/bge-m3",
+			"    URL: http://allie-codegen-embedder:8000/",
+			"    NUMBER_OF_WORKERS: 2",
+			"",
 			"CHAT_MODELS:",
 			"  - ID: gpt-4-32k-france-central",
 			"    MODEL_TYPE: azure-gpt",
 			"    MODEL_NAME: gpt-4-32k-france-central",
 			"    URL: https://csebu-chatgpt-francecentral.openai.azure.com/",
-			fmt.Sprintf("    API_KEY: %v", chatApiKey),
+			"    API_KEY: ", // don't actually need it for any of these tests
 			"    NUMBER_OF_WORKERS: 2",
-		)
+		}
 		require.NoError(t, os.WriteFile(allieLlmModelsFile.Name(), []byte(strings.Join(modelsYml, "\n")), 0644))
 
 		// now start the container with the 2 files mounted
@@ -264,6 +266,7 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 			},
 			Networks:       []string{allieNetwork.Name},
 			NetworkAliases: map[string][]string{allieNetwork.Name: {"allie-llm"}},
+			LogConsumerCfg: &logConsumer,
 		}
 		allieLlmCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: allieLlmReq, Started: true,
@@ -277,6 +280,33 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 
 		result.allieLlm = &hostPort{allieLlmHost, allieLlmPort.Int()}
 		result.config.LLM_HANDLER_ENDPOINT = fmt.Sprintf("ws://%s:%d", allieLlmHost, allieLlmPort.Int())
+	}
+
+	if testContainerConfig.aaliGraphDb {
+		// setup aali-graphdb
+		aaliGraphDbReq := testcontainers.ContainerRequest{
+			Image:        "ghcr.io/ansys/aali-graphdb:v0.1.0",
+			ExposedPorts: []string{"8080/tcp"},
+			WaitingFor: wait.ForAll(
+				wait.ForLog("listening on 0.0.0.0:8080"),
+				wait.ForListeningPort("8080/tcp"),
+			),
+			Networks:       []string{allieNetwork.Name},
+			NetworkAliases: map[string][]string{allieNetwork.Name: {"aali-graphdb"}},
+			LogConsumerCfg: &logConsumer,
+		}
+		aaliGraphDbCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: aaliGraphDbReq, Started: true,
+		})
+		defer testcontainers.CleanupContainer(t, aaliGraphDbCont)
+		require.NoError(t, err)
+		aaliGraphDbHost, err := aaliGraphDbCont.Host(ctx)
+		require.NoError(t, err)
+		aaliGraphDbPort, err := aaliGraphDbCont.MappedPort(ctx, "8080/tcp")
+		require.NoError(t, err)
+
+		result.aaliGraphdDb = &hostPort{aaliGraphDbHost, aaliGraphDbPort.Int()}
+		result.config.GRAPHDB_ADDRESS = fmt.Sprintf("http://%v:%d", aaliGraphDbHost, aaliGraphDbPort.Int())
 	}
 
 	return result
@@ -686,4 +716,326 @@ func TestStoreUserGuideSectionsInVectorDatabase(t *testing.T) {
 		payloadMap := qdrantPayloadToMap(point.Payload)
 		assert.Contains(expectedPayloads, payloadMap)
 	}
+}
+
+func TestStoreElementsInGraphDatabase(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping long container test in short mode")
+	}
+
+	ctx := context.Background()
+	assert := assert.New(t)
+	require := require.New(t)
+
+	// start containers & set config
+	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
+		qdrant:        false,
+		allieEmbedder: false,
+		allieLlm:      false,
+		aaliGraphDb:   true,
+	})
+	config.GlobalConfig = &setup.config
+	logging.InitLogger(&setup.config)
+
+	// do some initial checks
+	const DBNAME = "aali" // this is hardcoded in the graphdb driver for now
+	client, err := aali_graphdb.DefaultClient(setup.config.GRAPHDB_ADDRESS)
+	require.NoError(err)
+
+	dbs, err := client.GetDatabases()
+	require.NoError(err)
+	assert.Len(dbs, 0)
+
+	// insert the data in
+	element := sharedtypes.CodeGenerationElement{
+		Guid:              uuid.New(),
+		Type:              "Method",
+		NamePseudocode:    "",
+		NameFormatted:     "",
+		Description:       "",
+		Name:              "myFunction",
+		Dependencies:      []string{"Parent"},
+		Summary:           "",
+		ReturnType:        "",
+		ReturnElementList: []string{"Child"},
+		ReturnDescription: "",
+		Remarks:           "",
+		Parameters: []sharedtypes.XMLMemberParam{
+			{Name: "p1", Type: "Child"},
+			{Name: "p2", Type: "Parent"},
+		},
+		Example: sharedtypes.XMLMemberExample{
+			Description: "",
+			Code: sharedtypes.XMLMemberExampleCode{
+				Type: "",
+				Text: "",
+			},
+		},
+		EnumValues: nil,
+	}
+
+	StoreElementsInGraphDatabase([]sharedtypes.CodeGenerationElement{element})
+
+	// query graphdb to make sure things are as they should be
+
+	// check element nodes
+	type dbElement struct {
+		Name string
+		Type string
+		Guid uuid.UUID
+	}
+	expectedDbElements := []dbElement{
+		{element.Name, string(element.Type), element.Guid},
+		{"Parent", "", uuid.Nil},
+		{"Child", "", uuid.Nil},
+	}
+	dbElements, err := aali_graphdb.CypherQueryReadGeneric[dbElement](client, DBNAME, "MATCH (n:Element) RETURN n.name AS name, n.guid as guid, n.type as type", nil)
+	require.NoError(err)
+	assert.Len(dbElements, len(expectedDbElements))
+	for _, dbElem := range dbElements {
+		assert.Contains(expectedDbElements, dbElem)
+	}
+
+	// check belongs to relationships
+	type count struct {
+		Count int
+	}
+	belongsTos, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (a)-[e:BelongsTo]->(b) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(belongsTos, 1)
+	assert.Equal(1, belongsTos[0].Count)
+
+	// check returns relationships
+	returns, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (a)-[e:Returns]->(b) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(returns, 1)
+	assert.Equal(1, returns[0].Count)
+
+	// check uses parameters relationshps
+	usesParameters, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (a)-[e:UsesParameter]->(b) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(usesParameters, 1)
+	assert.Equal(2, usesParameters[0].Count)
+
+}
+
+func TestStoreExamplesInGraphDatabase(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping long container test in short mode")
+	}
+
+	ctx := context.Background()
+	assert := assert.New(t)
+	require := require.New(t)
+
+	// start containers & set config
+	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
+		qdrant:        false,
+		allieEmbedder: false,
+		allieLlm:      false,
+		aaliGraphDb:   true,
+	})
+	config.GlobalConfig = &setup.config
+	logging.InitLogger(&setup.config)
+
+	// do some initial checks
+	const DBNAME = "aali" // this is hardcoded in the graphdb driver for now
+	client, err := aali_graphdb.DefaultClient(setup.config.GRAPHDB_ADDRESS)
+	require.NoError(err)
+
+	dbs, err := client.GetDatabases()
+	require.NoError(err)
+	assert.Len(dbs, 0)
+
+	// insert the data in
+	examples := []sharedtypes.CodeGenerationExample{
+		{
+			Guid:                   uuid.New(),
+			Name:                   "MyExampleName",
+			Dependencies:           []string{"depA", "depB"},
+			DependencyEquivalences: map[string]string{"depA": "A"},
+			Chunks:                 []string{"chunk1", "chunk2"},
+		},
+	}
+
+	StoreExamplesInGraphDatabase(examples)
+
+	// query graphdb to make sure things are as they should be
+
+	// check example nodes
+	examplesDb, err := aali_graphdb.CypherQueryReadGeneric[struct {
+		Name                   string            `json:"n.name"`
+		Dependencies           []string          `json:"n.dependencies"`
+		DependencyEquivalences map[string]string `json:"n.dependency_equivalences"`
+		Guid                   uuid.UUID         `json:"n.guid"`
+	}](client, DBNAME, "MATCH (n:Example) RETURN n.*", nil)
+	require.NoError(err)
+	assert.Len(examplesDb, 1)
+	assert.Equal(examples[0].Name, examplesDb[0].Name)
+	assert.Equal(examples[0].Guid, examplesDb[0].Guid)
+	assert.Equal(examples[0].Dependencies, examplesDb[0].Dependencies)
+	assert.Equal(examples[0].DependencyEquivalences, examplesDb[0].DependencyEquivalences)
+
+	// check element nodes (created for the dependencies)
+	elements, err := aali_graphdb.CypherQueryReadGeneric[struct {
+		Name    string `json:"n.name"`
+		Example string `json:"n.example"`
+	}](client, DBNAME, "MATCH (n:Element) RETURN n.*", nil)
+	require.NoError(err)
+	assert.Len(elements, 2)
+
+	// check uses relationships
+	belongsTo, err := aali_graphdb.CypherQueryReadGeneric[struct{}](client, DBNAME, "MATCH (a)-[e:Uses]->(b) RETURN a, b;", nil)
+	require.NoError(err)
+	assert.Len(belongsTo, 2)
+}
+
+func TestStoreUserGuideSectionsInGraphDatabase(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping long container test in short mode")
+	}
+
+	ctx := context.Background()
+	assert := assert.New(t)
+	require := require.New(t)
+
+	// start containers & set config
+	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
+		qdrant:        false,
+		allieEmbedder: false,
+		allieLlm:      false,
+		aaliGraphDb:   true,
+	})
+	config.GlobalConfig = &setup.config
+	logging.InitLogger(&setup.config)
+
+	// do some initial checks
+	const DBNAME = "aali" // this is hardcoded in the graphdb driver for now
+	client, err := aali_graphdb.DefaultClient(setup.config.GRAPHDB_ADDRESS)
+	require.NoError(err)
+
+	dbs, err := client.GetDatabases()
+	require.NoError(err)
+	assert.Len(dbs, 0)
+
+	// insert the data in
+	sections := []sharedtypes.CodeGenerationUserGuideSection{
+		{
+			Name:            "section1",
+			Title:           "Section 1",
+			DocumentName:    "My Guide",
+			Parent:          "root",
+			Level:           0,
+			Link:            "",
+			ReferencedLinks: []string{},
+			NextSibling:     "section2",
+			NextParent:      "",
+			IsFirstChild:    false,
+		},
+		{
+			Name:            "section1a",
+			Title:           "Section 1a",
+			DocumentName:    "My Guide",
+			Parent:          "section1",
+			Level:           1,
+			Link:            "",
+			ReferencedLinks: []string{},
+			NextSibling:     "section1b",
+			NextParent:      "section2",
+			IsFirstChild:    true,
+		},
+		{
+			Name:            "section1b",
+			Title:           "Section 1b",
+			DocumentName:    "My Guide",
+			Parent:          "section1",
+			Level:           1,
+			Link:            "",
+			ReferencedLinks: []string{},
+			NextSibling:     "",
+			NextParent:      "section2",
+			IsFirstChild:    false,
+		},
+		{
+			Name:            "section2",
+			Title:           "Section 2",
+			DocumentName:    "My Guide",
+			Parent:          "root",
+			Level:           0,
+			Link:            "",
+			ReferencedLinks: []string{"section1"},
+			NextSibling:     "",
+			NextParent:      "",
+			IsFirstChild:    false,
+		},
+	}
+
+	StoreUserGuideSectionsInGraphDatabase(sections)
+
+	// query graphdb to make sure things are as they should be
+	type dbUserGuideSection struct {
+		Name            string   `json:"a.name"`
+		Title           string   `json:"a.title"`
+		DocumentName    string   `json:"a.document_name"`
+		Parent          string   `json:"a.parent"`
+		Level           int      `json:"a.level"`
+		Link            string   `json:"a.link"`
+		ReferencedLinks []string `json:"a.referenced_links"`
+	}
+	expectedSections := make([]dbUserGuideSection, len(sections)+1)
+	for i, sec := range sections {
+		expectedSections[i] = dbUserGuideSection{
+			Name:            sec.Name,
+			Title:           sec.Title,
+			DocumentName:    sec.DocumentName,
+			Parent:          sec.Parent,
+			Level:           sec.Level,
+			Link:            sec.Link,
+			ReferencedLinks: sec.ReferencedLinks,
+		}
+	}
+	expectedSections[len(sections)] = dbUserGuideSection{
+		Name: "root",
+	}
+
+	// check nodes
+	sectionsDb, err := aali_graphdb.CypherQueryReadGeneric[dbUserGuideSection](client, DBNAME, "MATCH (a:UserGuide) RETURN a.*", nil)
+	require.NoError(err)
+	assert.Len(sectionsDb, len(expectedSections))
+	for _, dbsection := range sectionsDb {
+		assert.Contains(expectedSections, dbsection)
+	}
+
+	// check references
+	type count struct {
+		Count int
+	}
+	refs, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (:UserGuide)-[e:References]->(:UserGuide) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(refs, 1)
+	assert.Equal(refs[0].Count, 1)
+
+	// check next siblings
+	nextSibs, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (:UserGuide)-[e:NextSibling]->(:UserGuide) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(nextSibs, 1)
+	assert.Equal(nextSibs[0].Count, 2)
+
+	// check next parents
+	nextPars, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (:UserGuide)-[e:NextParent]->(:UserGuide) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(nextPars, 1)
+	assert.Equal(nextPars[0].Count, 2)
+
+	// check is 1st child
+	hasFirstChilds, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (:UserGuide)-[e:HasFirstChild]->(:UserGuide) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(hasFirstChilds, 1)
+	assert.Equal(hasFirstChilds[0].Count, 1)
+
+	// check has child
+	hasChilds, err := aali_graphdb.CypherQueryReadGeneric[count](client, DBNAME, "MATCH (:UserGuide)-[e:HasChild]->(:UserGuide) RETURN COUNT(e) AS count", nil)
+	require.NoError(err)
+	assert.Len(hasChilds, 1)
+	assert.Equal(hasChilds[0].Count, 4)
 }

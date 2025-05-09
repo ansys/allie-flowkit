@@ -2,7 +2,6 @@ package graphdb
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -92,9 +91,75 @@ func Initialize(uri string) (funcError error) {
 		}
 	}
 
+	// initialize the schema
+	err = GraphDbDriver.CreateSchema()
+	if err != nil {
+		logging.Log.Errorf(logCtx, "unable to create graph DB schema: %q", err)
+		return err
+	}
+
 	// Log successfull connection
 	logging.Log.Debugf(logCtx, "Initialized graphdb database connection to %v", addr)
 
+	return nil
+}
+
+func (graphdb_context *graphDbContext) CreateSchema() error {
+	stmts := []string{
+		`CREATE NODE TABLE IF NOT EXISTS Element(
+			type STRING,
+			guid UUID,
+			name_pseudocode STRING,
+			name_formatted STRING,
+			description STRING,
+			name STRING,
+			dependencies STRING[],
+			summary STRING,
+			return_type STRING,
+			return_element_list STRING[],
+			return_description STRING,
+			remarks STRING,
+			enum_values STRING[],
+			parameters STRING[],
+			example STRING,
+
+			PRIMARY KEY (name)
+		)`,
+		`CREATE NODE TABLE IF NOT EXISTS Example(
+			name STRING,
+			dependencies STRING[],
+			dependency_equivalences MAP(STRING, STRING),
+			guid UUID,
+
+			PRIMARY KEY (guid)
+		)`,
+		`CREATE NODE TABLE IF NOT EXISTS UserGuide(
+			name STRING,
+			title STRING,
+			document_name STRING,
+			parent STRING,
+			level INT64,
+			link STRING,
+			referenced_links STRING[],
+
+			PRIMARY KEY (name)
+		)`,
+		"CREATE REL TABLE IF NOT EXISTS Uses(FROM Example TO Element)",
+		"CREATE REL TABLE IF NOT EXISTS BelongsTo(FROM Element TO Element)",
+		"CREATE REL TABLE IF NOT EXISTS Returns(FROM Element TO Element)",
+		"CREATE REL TABLE IF NOT EXISTS UsesParameter(FROM Element TO Element)",
+		"CREATE REL TABLE IF NOT EXISTS References(FROM UserGuide TO UserGuide)",
+		"CREATE REL TABLE IF NOT EXISTS NextSibling(FROM UserGuide TO UserGuide)",
+		"CREATE REL TABLE IF NOT EXISTS NextParent(FROM UserGuide TO UserGuide)",
+		"CREATE REL TABLE IF NOT EXISTS HasFirstChild(FROM UserGuide TO UserGuide)",
+		"CREATE REL TABLE IF NOT EXISTS HasChild(FROM UserGuide TO UserGuide)"}
+
+	for _, stmt := range stmts {
+		_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, stmt, nil)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -111,7 +176,7 @@ func graphdbStringList(l []string) aali_graphdb.ListValue {
 
 ////////////// Write functions //////////////
 
-// AddCodeGenerationElementNodes adds nodes to neo4j database.
+// AddCodeGenerationElementNodes adds nodes to graphdb database.
 //
 // Parameters:
 //   - nodes: List of nodes to be added.
@@ -130,9 +195,6 @@ func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []sha
 
 	// Add nodes
 	for _, node := range nodes {
-		// Convert the node object to a map
-		nodeType := string(node.Type) // Label for the node
-
 		// Add parameters in list of strings format
 		parameters := make([]string, 0)
 		for _, parameter := range node.Parameters {
@@ -148,6 +210,7 @@ func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []sha
 
 		// update all fields except for: type, name
 		queryParams := aali_graphdb.ParameterMap{
+			"type":                aali_graphdb.StringValue(node.Type),
 			"guid":                aali_graphdb.UUIDValue(node.Guid),
 			"name_pseudocode":     aali_graphdb.StringValue(node.NamePseudocode),
 			"name_formatted":      aali_graphdb.StringValue(node.NameFormatted),
@@ -165,9 +228,8 @@ func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []sha
 		}
 
 		// build up the query
-		query := fmt.Sprintf(
-			`
-			MERGE (n:%v {Name: $name}
+		query := `
+			MERGE (n:Element {type: $type, name: $name})
 			SET
 				n.guid = $guid,
 				n.name_pseudocode = $name_pseudocode,
@@ -182,9 +244,7 @@ func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []sha
 				n.enum_values = $enum_values,
 				n.parameters = $parameters,
 				n.example = $example
-			`,
-			nodeType,
-		)
+			`
 
 		// Create node dynamically using the map
 		_, err := graphdb_context.client.CypherQueryWrite(
@@ -221,21 +281,24 @@ func (graphdb_context *graphDbContext) AddCodeGenerationExampleNodes(nodes []sha
 
 	// Add nodes
 	for _, node := range nodes {
-		// Add dependency equivalences map as a json string
-		dependencyEquivalencesJSON, err := json.Marshal(node.DependencyEquivalences)
-		if err != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Error serializing dependency equivalences to JSON: %v", err)
-			return err
+		dependencyEquivalencesKuzu := map[aali_graphdb.Value]aali_graphdb.Value{}
+		for k, v := range node.DependencyEquivalences {
+			dependencyEquivalencesKuzu[aali_graphdb.StringValue(k)] = aali_graphdb.StringValue(v)
 		}
 
-		query := "MERGE (n:Example {Name: $name}) SET n.dependencies = $dependencies, n.dependency_equivalences = $dependency_equivalences"
+		query := "MERGE (n:Example {guid: $guid}) SET n.name = $name, n.dependencies = $dependencies, n.dependency_equivalences = $dependency_equivalences"
 		parameters := aali_graphdb.ParameterMap{
-			"name":                    aali_graphdb.StringValue(node.Name),
-			"dependencies":            graphdbStringList(node.Dependencies),
-			"dependency_equivalences": aali_graphdb.StringValue(string(dependencyEquivalencesJSON)),
+			"name":         aali_graphdb.StringValue(node.Name),
+			"dependencies": graphdbStringList(node.Dependencies),
+			"dependency_equivalences": aali_graphdb.MapValue{
+				KeyType:   aali_graphdb.StringLogicalType{},
+				ValueType: aali_graphdb.StringLogicalType{},
+				Pairs:     dependencyEquivalencesKuzu,
+			},
+			"guid": aali_graphdb.UUIDValue(node.Guid),
 		}
 
-		_, err = graphdb_context.client.CypherQueryWrite(
+		_, err := graphdb_context.client.CypherQueryWrite(
 			graphdb_context.dbname,
 			query,
 			parameters,
@@ -245,9 +308,24 @@ func (graphdb_context *graphDbContext) AddCodeGenerationExampleNodes(nodes []sha
 			return err
 		}
 
+		for _, dep := range node.Dependencies {
+			query := `
+				MERGE (n:Element {name: $name})
+				SET n.example = $example
+			`
+			params := aali_graphdb.ParameterMap{
+				"name":    aali_graphdb.StringValue(dep),
+				"example": aali_graphdb.StringValue(node.Name),
+			}
+			_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, query, params)
+			if err != nil {
+				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
+				return err
+			}
+		}
 	}
 
-	log.Printf("Added %v documents to neo4j", len(nodes))
+	log.Printf("Added %v documents to graphdb", len(nodes))
 	return nil
 }
 
@@ -259,7 +337,7 @@ func (graphdb_context *graphDbContext) AddCodeGenerationExampleNodes(nodes []sha
 //
 // Returns:
 //   - funcError: Error object.
-func (graphdb_context *graphDbContext) AddUserGuideSectionNodes(nodes []sharedtypes.CodeGenerationUserGuideSection, label string) (funcError error) {
+func (graphdb_context *graphDbContext) AddUserGuideSectionNodes(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -268,40 +346,10 @@ func (graphdb_context *graphDbContext) AddUserGuideSectionNodes(nodes []sharedty
 			return
 		}
 	}()
-	nodeType := "UserGuide"
-	if label != "" {
-		nodeType = label
-	}
-
-	// create the schema if not exists
-	createTableQuery := fmt.Sprintf(
-		`
-			CREATE NODE TABLE IF NOT EXISTS %v(
-				name STRING,
-				title STRING,
-				document_name STRING,
-				parent STRING,
-				level INT64,
-				link STRING,
-				referenced_links STRING[],
-
-				PRIMARY KEY (name)
-			)
-		`,
-		nodeType,
-	)
-	_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, createTableQuery, nil)
-	if err != nil {
-		errMsg := fmt.Sprintf("error creating table %q: %q", nodeType, err)
-		logging.Log.Errorf(&logging.ContextMap{}, errMsg)
-		return errors.New(errMsg)
-	}
-	logging.Log.Debugf(&logging.ContextMap{}, "successfully created (if not exist) table %q", nodeType)
 
 	// Add nodes
-	query := fmt.Sprintf(
-		`
-		MERGE (n:%v {Name: $name})
+	query := `
+		MERGE (n:UserGuide {name: $name})
 		SET
 			n.title = $title,
 			n.document_name = $document_name,
@@ -309,9 +357,7 @@ func (graphdb_context *graphDbContext) AddUserGuideSectionNodes(nodes []sharedty
 			n.level = $level,
 			n.link = $link,
 			n.referenced_links = $referenced_links
-		`,
-		nodeType,
-	)
+		`
 	for _, node := range nodes {
 		// Convert the node object to parameters
 		parameters := aali_graphdb.ParameterMap{
@@ -360,11 +406,15 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationExampleRelationships(
 	// Create relationships
 	for _, node := range nodes {
 		for _, dependency := range node.Dependencies {
-			query := "MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:USES]->(b)"
+			query := `
+				MATCH (example:Example), (element:Element)
+				WHERE example.name = $example AND element.name = $element
+				MERGE (example)-[:Uses]->(element)
+			`
+			// query := "MERGE (:Example {name: $example})-[:Uses]->(:Element {name: $element})"
 			parameters := aali_graphdb.ParameterMap{
-
-				"a": aali_graphdb.StringValue(node.Name),
-				"b": aali_graphdb.StringValue(dependency),
+				"example": aali_graphdb.StringValue(node.Name),
+				"element": aali_graphdb.StringValue(dependency),
 			}
 			_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, query, parameters)
 			if err != nil {
@@ -419,6 +469,7 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 
 		// Create relationships between each of the dependencies and the adjacent dependency
 		for i, dependency := range dependencyList[:len(dependencyList)-1] {
+
 			// Check if the relationship has already been added
 			if alreadyAddedRelationships[dependency+"-"+dependencyList[i+1]] {
 				continue
@@ -427,15 +478,16 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 
 			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
-				"MERGE (a {Name: $a}) MERGE (b {Name: $b}) MERGE (a)-[:BELONGS_TO]->(b)",
+				"MERGE (a:Element {name: $a}) MERGE (b:Element {name: $b}) MERGE (a)-[:BelongsTo]->(b)",
 				aali_graphdb.ParameterMap{
 					"a": aali_graphdb.StringValue(dependency),
 					"b": aali_graphdb.StringValue(dependencyList[i+1]),
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding BelongsTo relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 
@@ -443,15 +495,16 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 		for _, returnElement := range node.ReturnElementList {
 			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
-				"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:RETURNS]->(b)",
+				"MERGE (a:Element {name: $a}) MERGE (b:Element {name: $b}) MERGE (a)-[:Returns]->(b)",
 				aali_graphdb.ParameterMap{
 					"a": aali_graphdb.StringValue(node.Name),
 					"b": aali_graphdb.StringValue(returnElement),
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding Returns relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 
@@ -469,15 +522,16 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 		for _, parameter := range parameterList {
 			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
-				"MATCH (a {Name: $a}) MATCH (b {Name: $b}) MERGE (a)-[:USES_PARAMETER]->(b)",
+				"MERGE (a:Element {name: $a}) MERGE (b:Element {name: $b}) MERGE (a)-[:UsesParameter]->(b)",
 				aali_graphdb.ParameterMap{
 					"a": aali_graphdb.StringValue(node.Name),
 					"b": aali_graphdb.StringValue(parameter),
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding UsesParameter relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 	}
@@ -494,7 +548,7 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 //
 // Returns:
 //   - funcError: Error object.
-func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes []sharedtypes.CodeGenerationUserGuideSection, label string) (funcError error) {
+func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -503,20 +557,6 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			return
 		}
 	}()
-
-	// Set label (node type)
-	nodeType := "UserGuide"
-	if label != "" {
-		nodeType = label
-	}
-
-	// create references table
-	createReferences := fmt.Sprintf("CREATE REL TABLE IF NOT EXISTS REFERENCES(FROM %s TO %s)", nodeType, nodeType)
-	_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, createReferences, nil)
-	if err != nil {
-		logging.Log.Errorf(&logging.ContextMap{}, "error during cypher query creating REFERENCES table: %v", err)
-		return err
-	}
 
 	// Create relationships between sections and their references
 	for _, node := range nodes {
@@ -527,60 +567,26 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			}
 
 			// Check if reference link references the link of another section and create relationship
-			query := fmt.Sprintf(
-				"MATCH (a:%s {Name: $a}) MATCH (b:%s {link: $b}) MERGE (a)-[:REFERENCES]->(b)",
-				nodeType,
-				nodeType,
-			)
+			query := "MERGE (a:UserGuide {name: $section}) MERGE (b:UserGuide {name: $link}) MERGE (a)-[:References]->(b)"
 			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
 				query,
 				aali_graphdb.ParameterMap{
-					"a": aali_graphdb.StringValue(node.Name),
-					"b": aali_graphdb.StringValue(referenceLink),
+					"section": aali_graphdb.StringValue(node.Name),
+					"link":    aali_graphdb.StringValue(referenceLink),
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
-			}
-
-			// Check if reference link references a document and create relationship
-			query = fmt.Sprintf(
-				"MATCH (a:%s {Name: $a}) MATCH (b:%s {document_name: $b}) WITH a, b ORDER BY b.level ASC LIMIT 1 MERGE (a)-[:REFERENCES]->(b)",
-				nodeType,
-				nodeType,
-			)
-			_, err = graphdb_context.client.CypherQueryWrite(
-				graphdb_context.dbname,
-				query,
-				aali_graphdb.ParameterMap{
-					"a": aali_graphdb.StringValue(node.Name),
-					"b": aali_graphdb.StringValue(referenceLink),
-				},
-			)
-			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding References relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 
 		// Create relationship between each section and the next section
 		if node.NextSibling != "" {
-			// create next sibling table
-			createNextSibling := fmt.Sprintf("CREATE REL TABLE IF NOT EXISTS NEXT_SIBLING(FROM %s TO %s)", nodeType, nodeType)
-			_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, createNextSibling, nil)
-			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "error during cypher query creating NEXT_SIBLING table: %v", err)
-				return err
-			}
-
-			query := fmt.Sprintf(
-				"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (a)-[:NEXT_SIBLING]->(b)",
-				nodeType,
-				nodeType,
-			)
-			_, err = graphdb_context.client.CypherQueryWrite(
+			query := "MERGE (a:UserGuide {name: $a}) MERGE (b:UserGuide {name: $b}) MERGE (a)-[:NextSibling]->(b)"
+			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
 				query,
 				aali_graphdb.ParameterMap{
@@ -589,28 +595,17 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding NextSibling relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 
 		// Create relationship between last child and following section parent
 		if node.NextParent != "" {
-			// create next parent table
-			createNextParent := fmt.Sprintf("CREATE REL TABLE IF NOT EXISTS NEXT_PARENT(FROM %s TO %s)", nodeType, nodeType)
-			_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, createNextParent, nil)
-			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "error during cypher query creating NEXT_PARENT table: %v", err)
-				return err
-			}
+			query := "MERGE (a:UserGuide {name: $a}) MERGE (b:UserGuide {name: $b}) MERGE (a)-[:NextParent]->(b)"
 
-			query := fmt.Sprintf(
-				"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (a)-[:NEXT_PARENT]->(b)",
-				nodeType,
-				nodeType,
-			)
-
-			_, err = graphdb_context.client.CypherQueryWrite(
+			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
 				query,
 				aali_graphdb.ParameterMap{
@@ -619,28 +614,18 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding NextParent relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 
 		// Create relationship between each first child and its parent
 		if node.IsFirstChild {
 			// create has first child table
-			createHasFirstChild := fmt.Sprintf("CREATE REL TABLE IF NOT EXISTS HAS_FIRST_CHILD(FROM %s TO %s)", nodeType, nodeType)
-			_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, createHasFirstChild, nil)
-			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "error during cypher query creating HAS_FIRST_CHILD table: %v", err)
-				return err
-			}
+			query := "MERGE (a:UserGuide {name: $a}) MERGE (b:UserGuide {name: $b}) MERGE (b)-[:HasFirstChild]->(a)"
 
-			query := fmt.Sprintf(
-				"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (b)-[:HAS_FIRST_CHILD]->(a)",
-				nodeType,
-				nodeType,
-			)
-
-			_, err = graphdb_context.client.CypherQueryWrite(
+			_, err := graphdb_context.client.CypherQueryWrite(
 				graphdb_context.dbname,
 				query,
 				aali_graphdb.ParameterMap{
@@ -649,27 +634,16 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 				},
 			)
 			if err != nil {
-				logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-				return err
+				errMsg := fmt.Sprintf("Error during cypher query adding HasFirstChild relationships: %v", err)
+				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				return errors.New(errMsg)
 			}
 		}
 
-		// create has_child table if it doesn't exist
-		createHasChild := fmt.Sprintf("CREATE REL TABLE IF NOT EXISTS HAS_CHILD(FROM %s TO %s)", nodeType, nodeType)
-		_, err := graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, createHasChild, nil)
-		if err != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "error during cypher query creating HAS_CHILD table: %v", err)
-			return err
-		}
-
 		// Create relationships between each of the dependencies and the adjacent dependency
-		query := fmt.Sprintf(
-			"MATCH (a:%s {Name: $a}) MATCH (b:%s {Name: $b}) MERGE (a)<-[:HAS_CHILD]-(b)",
-			nodeType,
-			nodeType,
-		)
+		query := "MERGE (a:UserGuide {name: $a}) MERGE (b:UserGuide {name: $b}) MERGE (a)<-[:HasChild]-(b)"
 
-		_, err = graphdb_context.client.CypherQueryWrite(
+		_, err := graphdb_context.client.CypherQueryWrite(
 			graphdb_context.dbname,
 			query,
 			aali_graphdb.ParameterMap{
@@ -678,8 +652,9 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			},
 		)
 		if err != nil {
-			logging.Log.Errorf(&logging.ContextMap{}, "Error during cypher query: %v", err)
-			return err
+			errMsg := fmt.Sprintf("Error during cypher query adding HasChild relationships: %v", err)
+			logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+			return errors.New(errMsg)
 		}
 	}
 
@@ -725,7 +700,7 @@ func (graphdb_context *graphDbContext) GetExamplesFromCodeGenerationElement(elem
 	}
 
 	// Get examples
-	query := fmt.Sprintf("MATCH (a:%v {Name: $name})<-[:USES]-(b:Example) RETURN b.Name", elementType)
+	query := fmt.Sprintf("MATCH (a:%v {Name: $name})<-[:Uses]-(b:Example) RETURN b.Name", elementType)
 	examples, err := aali_graphdb.CypherQueryReadGeneric[exampleName](
 		graphdb_context.client,
 		graphdb_context.dbname,
@@ -769,9 +744,9 @@ func (graphdb_context *graphDbContext) GetCodeGenerationElementAndDependencies(e
 	// Execute query
 	query := fmt.Sprintf(`
 			MATCH (start {Name: $element_name})
-			OPTIONAL MATCH paths = (start)-[:BELONGS_TO*0..%d]->(node)
+			OPTIONAL MATCH paths = (start)-[:BelongsTo*0..%d]->(node)
 			WITH DISTINCT node
-			OPTIONAL MATCH (node)-[:BELONGS_TO]->(dep)
+			OPTIONAL MATCH (node)-[:BelongsTo]->(dep)
 			RETURN
 				node.Name                  AS name,
 				node.namePseudocode        AS name_pseudocode,
@@ -812,7 +787,7 @@ func (graphdb_context *graphDbContext) GetUserGuideMainChapters() (sections []sh
 	query := `
 			MATCH (firstChild {level: 1.0})
 			WITH firstChild
-			OPTIONAL MATCH path=(firstChild)-[:NEXT_SIBLING*]->(child {level: 1.0})
+			OPTIONAL MATCH path=(firstChild)-[:NextSibling*]->(child {level: 1.0})
 			ORDER BY length(path) DESC
 			WITH firstChild, [n IN nodes(path)] AS chapters
 			RETURN chapters
@@ -860,7 +835,7 @@ func (graphdb_context *graphDbContext) GetUserGuideSectionChildren(sectionName s
 
 	// Execute query
 	query := `
-			MATCH (n:UserGuide {Name: $sectionName})-[:HAS_CHILD]->(section_child)
+			MATCH (n:UserGuide {Name: $sectionName})-[:HasChild]->(section_child)
 			RETURN
 				section_child.Name          AS name,
 				section_child.title         AS title,
@@ -950,8 +925,8 @@ func (graphdb_context *graphDbContext) getUserGuideNodeRecursive(nodeName string
 
 	query := `
 		MATCH (node {Name: $node_name})
-		OPTIONAL MATCH (node)-[:HAS_FIRST_CHILD]->(firstChild)
-		OPTIONAL MATCH path=(firstChild)-[:NEXT_SIBLING*]->(child)
+		OPTIONAL MATCH (node)-[:HasFirstChild]->(firstChild)
+		OPTIONAL MATCH path=(firstChild)-[:NextSibling*]->(child)
 		WITH node, firstChild, path
 		ORDER BY length(path) DESC
 		LIMIT 1
@@ -1021,7 +996,7 @@ func (graphdb_context *graphDbContext) GetUserGuideSectionReferences(sectionName
 		Reference string `json:"reference.Name"`
 	}
 	query := `
-		MATCH (n:UserGuide {Name: $sectionName})-[:REFERENCES]->(reference)
+		MATCH (n:UserGuide {Name: $sectionName})-[:References]->(reference)
 		RETURN reference.Name
 		`
 	params := aali_graphdb.ParameterMap{

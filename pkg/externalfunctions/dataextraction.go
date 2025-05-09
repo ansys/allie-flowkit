@@ -1561,7 +1561,7 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 // Parameters:
 //   - elements: user guide sections.
 //   - label: label for the sections (UserGuide by default).
-func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, label string) {
+func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection) {
 	ctx := &logging.ContextMap{}
 
 	// Initialize the graph database.
@@ -1573,7 +1573,7 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 	}
 
 	// Add the elements to the graph database.
-	err = graphdb.GraphDbDriver.AddUserGuideSectionNodes(sections, label)
+	err = graphdb.GraphDbDriver.AddUserGuideSectionNodes(sections)
 	if err != nil {
 		errMsg := fmt.Sprintf("error adding user guide section nodes to graphdb: %v", err)
 		logging.Log.Error(ctx, errMsg)
@@ -1581,7 +1581,7 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 	}
 
 	// Add the dependencies to the graph database.
-	err = graphdb.GraphDbDriver.CreateUserGuideSectionRelationships(sections, label)
+	err = graphdb.GraphDbDriver.CreateUserGuideSectionRelationships(sections)
 	if err != nil {
 		errMsg := fmt.Sprintf("error adding user guide section relationships to graphdb: %v", err)
 		logging.Log.Error(ctx, errMsg)
