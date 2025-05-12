@@ -90,7 +90,8 @@ func QdrantInsertData(collectionName string, data []map[string]any, idFieldName 
 //   - collectionName (string): The name of the collection
 //   - fieldName (string): The name of the payload field to create an index on
 //   - fieldType (string): The qdrant type that the payload field is expected to be
-func QdrantCreateIndex(collectionName string, fieldName string, fieldType string) {
+//   - wait (bool): Whether to wait for the index to be created or return immediately & continue indexing in background
+func QdrantCreateIndex(collectionName string, fieldName string, fieldType string, wait bool) {
 	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
 		logPanic(nil, "unable to create qdrant client: %q", err)
@@ -105,6 +106,7 @@ func QdrantCreateIndex(collectionName string, fieldName string, fieldType string
 		CollectionName: collectionName,
 		FieldName:      fieldName,
 		FieldType:      qdrantType,
+		Wait:           qdrant.PtrOf(wait),
 		// TODO: there is more customization here you can do, but specific to the field type
 	}
 	res, err := client.CreateFieldIndex(context.TODO(), &request)

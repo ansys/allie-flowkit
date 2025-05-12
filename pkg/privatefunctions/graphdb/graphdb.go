@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"log"
 	"slices"
 	"strings"
+	"text/template"
 
 	"github.com/ansys/aali-graphdb-goclient/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
@@ -1017,11 +1017,10 @@ func (graphdb_context *graphDbContext) GetUserGuideSectionReferences(sectionName
 	return referencedSections, nil
 }
 
-// RetrieveDependencies retrieves the dependencies for the specified document from neo4j database.
+// RetrieveDependencies retrieves the dependencies for the specified document from graph database.
 //
 // Parameters:
 //   - ctx: ContextMap object.
-//   - collectionName: Name of the collection.
 //   - relationshipName: Name of the relationship.
 //   - relationshipDirection: Direction of the relationship.
 //   - sourceDocumentId: Id of the document.
@@ -1031,7 +1030,7 @@ func (graphdb_context *graphDbContext) GetUserGuideSectionReferences(sectionName
 // Returns:
 //   - dependenciesIds: List of dependencies ids.
 //   - funcError: Error object.
-func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.ContextMap, collectionName string, relationshipName string, relationshipDirection string, sourceDocumentId string, nodeTypesFilter sharedtypes.DbArrayFilter, tagsFilter []string, maxHops int) (dependenciesIds []string, funcError error) {
+func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.ContextMap, relationshipName string, relationshipDirection string, sourceDocumentName string, nodeTypesFilter sharedtypes.DbArrayFilter, tagsFilter []string, maxHops int) (dependencyNames []string, funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -1052,13 +1051,13 @@ func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.Context
 	}
 
 	// Create tags filter
-	neo4jWhereClause := " "
+	whereClause := " "
 	if len(tagsFilter) > 0 {
 		quotedSlice := make([]string, len(tagsFilter))
 		for i, s := range tagsFilter {
 			quotedSlice[i] = fmt.Sprintf("'%s'", s)
 		}
-		neo4jWhereClause = fmt.Sprintf(" WHERE n.documentType IN [%v] ", strings.Join(quotedSlice, ", "))
+		whereClause = fmt.Sprintf(" WHERE n.documentType IN [%v] ", strings.Join(quotedSlice, ", "))
 	}
 
 	// Set the relationship direction
@@ -1082,8 +1081,8 @@ func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.Context
 	// Retrieve dependencies
 	queryTemplate, err := template.New("query").Parse(
 		`
-			MATCH (r {documentId: $sourceDocumentId, collectionName: $collectionName}){{.firstArrow}}[:{{.relationshipName}}]{{.secondArrow}}(n{{.nodeTypeExpression}}{collectionName: $collectionName}){{.firstArrow}}[:{{.relationshipName}}*0..{{.maxHops}}]{{.secondArrow}}(m{{.nodeTypeExpression}} {collectionName: $collectionName}){{.neo4jWhereClause}}
-			RETURN m.documentId AS documentId
+			MATCH (r {name: $sourceDocumentId}){{.firstArrow}}[:{{.relationshipName}}*1..{{.maxHops}}]{{.secondArrow}}(m{{.nodeTypeExpression}} ){{.whereClause}}
+			RETURN m.name AS name
 		`,
 	)
 	if err != nil {
@@ -1095,7 +1094,7 @@ func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.Context
 		"firstArrow":         firstArrow,
 		"secondArrow":        secondArrow,
 		"nodeTypeExpression": nodeTypeExpression,
-		"neo4jWhereClause":   neo4jWhereClause,
+		"whereClause":        whereClause,
 		"relationshipName":   relationshipName,
 		"maxHops":            maxHops,
 	}
@@ -1106,22 +1105,20 @@ func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.Context
 	}
 	query := queryBuf.String()
 	params := aali_graphdb.ParameterMap{
-		"sourceDocumentId": aali_graphdb.StringValue(sourceDocumentId),
-		"collectionName":   aali_graphdb.StringValue(collectionName),
+		"sourceDocumentId": aali_graphdb.StringValue(sourceDocumentName),
 	}
-	// result, err := graphdb_context.client.CypherQueryRead(graphdb_context.dbname, query, params)
 	result, err := aali_graphdb.CypherQueryReadGeneric[struct {
-		DocumentId string `json:"documentId"`
+		Name string `json:"name"`
 	}](graphdb_context.client, graphdb_context.dbname, query, params)
 	if err != nil {
 		logging.Log.Errorf(ctx, "error during cypher query: %v", err)
 		return nil, err
 	}
 
-	dependenciesIds = make([]string, len(result))
+	dependencyNames = make([]string, len(result))
 	for i, dep := range result {
-		dependenciesIds[i] = dep.DocumentId
+		dependencyNames[i] = dep.Name
 	}
 
-	return dependenciesIds, nil
+	return dependencyNames, nil
 }

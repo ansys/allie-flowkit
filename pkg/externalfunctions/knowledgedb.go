@@ -8,6 +8,7 @@ import (
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/graphdb"
 	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
+	"github.com/google/uuid"
 	"github.com/qdrant/go-client/qdrant"
 )
 
@@ -71,7 +72,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	for i, scoredPoint := range scoredPoints {
 		logging.Log.Debugf(&logging.ContextMap{}, "Result #%d:", i)
 		logging.Log.Debugf(&logging.ContextMap{}, "Similarity score: %v", scoredPoint.Score)
-		dbResponse, err := qdrant_utils.TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbResponse](scoredPoint.Payload)
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[sharedtypes.DbResponse](scoredPoint.GetPayload())
 		if err != nil {
 			errMsg := fmt.Sprintf("error converting qdrant payload to dbResponse: %q", err)
 			logging.Log.Errorf(logCtx, "%s", errMsg)
@@ -122,7 +123,6 @@ func GetListCollections() (collectionsList []string) {
 //   - @displayName: Retrieve Dependencies
 //
 // Parameters:
-//   - collectionName: the name of the collection to which the data objects will be added.
 //   - relationshipName: the name of the relationship to retrieve dependencies for.
 //   - relationshipDirection: the direction of the relationship to retrieve dependencies for.
 //   - sourceDocumentId: the document ID of the source node.
@@ -132,7 +132,6 @@ func GetListCollections() (collectionsList []string) {
 // Returns:
 //   - dependenciesIds: the list of dependencies
 func RetrieveDependencies(
-	collectionName string,
 	relationshipName string,
 	relationshipDirection string,
 	sourceDocumentId string,
@@ -141,7 +140,6 @@ func RetrieveDependencies(
 	ctx := &logging.ContextMap{}
 	dependenciesIds, err := graphdb.GraphDbDriver.RetrieveDependencies(
 		ctx,
-		collectionName,
 		relationshipName,
 		relationshipDirection,
 		sourceDocumentId,
@@ -217,7 +215,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	databaseResponse = make([]sharedtypes.DbResponse, len(scoredPoints))
 	for i, scoredPoint := range scoredPoints {
 
-		dbResponse, err := qdrant_utils.TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbResponse](scoredPoint.Payload)
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[sharedtypes.DbResponse](scoredPoint.Payload)
 		if err != nil {
 			logPanic(logCtx, "error converting qdrant payload to dbResponse: %q", err)
 		}
@@ -251,7 +249,6 @@ func SimilaritySearch(
 	collectionName string,
 	embeddedVector []float32,
 	maxRetrievalCount int,
-	outputFields []string,
 	filters sharedtypes.DbFilters,
 	minScore float64,
 	getLeafNodes bool,
@@ -274,7 +271,7 @@ func SimilaritySearch(
 		ScoreThreshold: &scoreThreshold,
 		Filter:         qdrant_utils.DbFiltersAsQdrant(filters),
 		WithVectors:    qdrant.NewWithVectorsEnable(false),
-		WithPayload:    qdrant.NewWithPayloadInclude(outputFields...),
+		WithPayload:    qdrant.NewWithPayloadEnable(true),
 	}
 	scoredPoints, err := client.Query(context.TODO(), &query)
 	if err != nil {
@@ -286,38 +283,43 @@ func SimilaritySearch(
 	databaseResponse = make([]sharedtypes.DbResponse, len(scoredPoints))
 	for i, scoredPoint := range scoredPoints {
 
-		dbResponse, err := qdrant_utils.TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbResponse](scoredPoint.Payload)
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[sharedtypes.DbResponse](scoredPoint.Payload)
 		if err != nil {
 			logPanic(logCtx, "error converting qdrant payload to dbResponse: %q", err)
 		}
+		id, err := uuid.Parse(scoredPoint.Id.GetUuid())
+		if err != nil {
+			logPanic(logCtx, "point ID is not parseable as a UUID: %v", err)
+		}
+		dbResponse.Guid = id
 		databaseResponse[i] = dbResponse
 	}
 
 	// get related nodes if requested
 	if getLeafNodes {
 		logging.Log.Debugf(logCtx, "getting leaf nodes")
-		err := qdrant_utils.RetrieveLeafNodes(logCtx, client, collectionName, outputFields, &databaseResponse)
+		err := qdrant_utils.RetrieveLeafNodes(logCtx, client, collectionName, &databaseResponse)
 		if err != nil {
 			logPanic(logCtx, "error getting leaf nodes: %q", err)
 		}
 	}
 	if getSiblings {
 		logging.Log.Debugf(logCtx, "getting sibling nodes")
-		err := qdrant_utils.RetrieveDirectSiblingNodes(logCtx, client, collectionName, outputFields, &databaseResponse)
+		err := qdrant_utils.RetrieveDirectSiblingNodes(logCtx, client, collectionName, &databaseResponse)
 		if err != nil {
 			logPanic(logCtx, "error getting sibling nodes: %q", err)
 		}
 	}
 	if getParent {
 		logging.Log.Debugf(logCtx, "getting parent nodes")
-		err := qdrant_utils.RetrieveParentNodes(logCtx, client, collectionName, outputFields, &databaseResponse)
+		err := qdrant_utils.RetrieveParentNodes(logCtx, client, collectionName, &databaseResponse)
 		if err != nil {
 			logPanic(logCtx, "error getting parent nodes: %q", err)
 		}
 	}
 	if getChildren {
 		logging.Log.Debugf(logCtx, "getting child nodes")
-		err := qdrant_utils.RetrieveChildNodes(logCtx, client, collectionName, outputFields, &databaseResponse)
+		err := qdrant_utils.RetrieveChildNodes(logCtx, client, collectionName, &databaseResponse)
 		if err != nil {
 			logPanic(logCtx, "error getting child nodes: %q", err)
 		}
@@ -471,16 +473,16 @@ func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 	for i, doc := range documentData {
 		id := qdrant.NewIDUUID(doc.Guid.String())
 		vector := qdrant.NewVectorsDense(doc.Embedding)
-		payloadMap, err := qdrant_utils.TryIntoWithJson[sharedtypes.DbData, map[string]any](doc)
+		payload, err := qdrant_utils.ToQdrantPayload(doc)
 		if err != nil {
 			logPanic(nil, "unable to transform document data to json: %q", err)
 		}
-		delete(payloadMap, "guid")
-		delete(payloadMap, "embedding")
+		delete(payload, "guid")
+		delete(payload, "embedding")
 		points[i] = &qdrant.PointStruct{
 			Id:      id,
 			Vectors: vector,
-			Payload: qdrant.NewValueMap(payloadMap),
+			Payload: payload,
 		}
 	}
 
@@ -494,6 +496,7 @@ func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 	resp, err := client.Upsert(ctx, &qdrant.UpsertPoints{
 		CollectionName: collectionName,
 		Points:         points,
+		Wait:           qdrant.PtrOf(true),
 	})
 	if err != nil {
 		logPanic(nil, "failed to insert data: %q", err)

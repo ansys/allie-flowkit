@@ -9,6 +9,7 @@ import (
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	"github.com/google/uuid"
 	"github.com/qdrant/go-client/qdrant"
 )
 
@@ -34,22 +35,6 @@ func CreateCollectionIfNotExists(ctx context.Context, client *qdrant.Client, col
 		VectorsConfig:       vectorsConfig,
 		SparseVectorsConfig: sparseVectorsConfig,
 	})
-}
-
-// convert from one type to another, using an intermediate JSON representation
-func TryIntoWithJson[F any, T any](from F) (T, error) {
-	var to T
-
-	jsonBytes, err := json.Marshal(from)
-	if err != nil {
-		return to, fmt.Errorf("error marshaling from: %q", err)
-	}
-
-	err = json.Unmarshal(jsonBytes, &to)
-	if err != nil {
-		return to, fmt.Errorf("error unmarshaling bytes: %q", err)
-	}
-	return to, nil
 }
 
 // Get a qdrant vector distance metric from string
@@ -83,8 +68,8 @@ func DbFiltersAsQdrant(dbFilters sharedtypes.DbFilters) *qdrant.Filter {
 		"document_id":   keywordFilter(dbFilters.DocumentIdFilter),
 		"document_name": keywordFilter(dbFilters.DocumentNameFilter),
 		"level":         keywordFilter(dbFilters.LevelFilter),
-		"tags":          dbArrayFilter(dbFilters.TagsFilter),
-		"keywords":      dbArrayFilter(dbFilters.KeywordsFilter),
+		"tags[]":        dbArrayFilter(dbFilters.TagsFilter),
+		"keywords[]":    dbArrayFilter(dbFilters.KeywordsFilter),
 	}
 	for _, metadataFilter := range dbFilters.MetadataFilter {
 		asQdrantFilters[metadataFilter.FieldName] = dbArrayFilter{
@@ -137,12 +122,11 @@ func (dbArrFilt dbArrayFilter) AsQdrantFilterConditions(field string) []*qdrant.
 //   - ctx: ContextMap.
 //   - client: the qdrant client
 //   - collectionName: Name of the collection in the qdrant database to retrieve the leaves from.
-//   - outputFields: Fields to return in the response.
 //   - data: Data to retrieve the leaf nodes for.
 //
 // Returns:
 //   - error: Error if any issue occurs while retrieving the leaves.
-func RetrieveLeafNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, outputFields []string, data *[]sharedtypes.DbResponse) (funcError error) {
+func RetrieveLeafNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, data *[]sharedtypes.DbResponse) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -165,7 +149,7 @@ func RetrieveLeafNodes(ctx *logging.ContextMap, client *qdrant.Client, collectio
 				},
 			},
 			WithVectors: qdrant.NewWithVectorsEnable(false),
-			WithPayload: qdrant.NewWithPayloadInclude(outputFields...),
+			WithPayload: qdrant.NewWithPayloadEnable(true),
 		}
 	}
 	batchResults, err := client.QueryBatch(context.TODO(), &qdrant.QueryBatchPoints{
@@ -181,11 +165,17 @@ func RetrieveLeafNodes(ctx *logging.ContextMap, client *qdrant.Client, collectio
 	for i, batchRes := range batchResults {
 		leaves := make([]sharedtypes.DbData, len(batchRes.Result))
 		for j, point := range batchRes.Result {
-			dbresp, err := TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbData](point.Payload)
+			dbresp, err := QdrantPayloadToType[sharedtypes.DbData](point.Payload)
 			if err != nil {
 				logging.Log.Errorf(ctx, "error converting qdrant payload: %q", err)
 				return err
 			}
+			id, err := uuid.Parse(point.Id.GetUuid())
+			if err != nil {
+				logging.Log.Errorf(ctx, "point ID is not parseable as a UUID: %v", err)
+				return err
+			}
+			dbresp.Guid = id
 			leaves[j] = dbresp
 		}
 		(*data)[i].LeafNodes = leaves
@@ -199,12 +189,11 @@ func RetrieveLeafNodes(ctx *logging.ContextMap, client *qdrant.Client, collectio
 //   - ctx: ContextMap.
 //   - client: the qdrant client
 //   - collectionName: Name of the collection in the qdrant database to retrieve the parents from.
-//   - outputFields: Fields to return in the response.
 //   - data: Data to retrieve the parent nodes for.
 //
 // Returns:
 //   - error: Error if any issue occurs while retrieving the parents.
-func RetrieveParentNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, outputFields []string, data *[]sharedtypes.DbResponse) (funcError error) {
+func RetrieveParentNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, data *[]sharedtypes.DbResponse) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -219,16 +208,16 @@ func RetrieveParentNodes(ctx *logging.ContextMap, client *qdrant.Client, collect
 	queries := make([]*qdrant.QueryPoints, len(*data))
 	limit := uint64(1)
 	for i, dbresp := range *data {
+		filter := qdrant.Filter{}
+		if dbresp.ParentId != nil {
+			filter.Must = append(filter.Must, qdrant.NewHasID(qdrant.NewIDUUID(dbresp.ParentId.String())))
+		}
 		queries[i] = &qdrant.QueryPoints{
 			CollectionName: collectionName,
-			Filter: &qdrant.Filter{
-				Must: []*qdrant.Condition{
-					qdrant.NewHasID(qdrant.NewIDUUID(dbresp.ParentId.String())),
-				},
-			},
-			Limit:       &limit,
-			WithVectors: qdrant.NewWithVectorsEnable(false),
-			WithPayload: qdrant.NewWithPayloadInclude(outputFields...),
+			Filter:         &filter,
+			Limit:          &limit,
+			WithVectors:    qdrant.NewWithVectorsEnable(false),
+			WithPayload:    qdrant.NewWithPayloadEnable(true),
 		}
 	}
 	batchResults, err := client.QueryBatch(context.TODO(), &qdrant.QueryBatchPoints{
@@ -246,11 +235,16 @@ func RetrieveParentNodes(ctx *logging.ContextMap, client *qdrant.Client, collect
 		case 0:
 			continue
 		case 1:
-			parent, err := TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbData](batchRes.Result[0].Payload)
+			parent, err := QdrantPayloadToType[sharedtypes.DbData](batchRes.Result[0].Payload)
 			if err != nil {
 				logging.Log.Errorf(ctx, "error converting qdrant payload: %q", err)
 				return err
 			}
+			id, err := uuid.Parse(batchRes.Result[0].Id.GetUuid())
+			if err != nil {
+				return fmt.Errorf("point ID is not parseable as a UUID: %v", err)
+			}
+			parent.Guid = id
 			(*data)[i].Parent = &parent
 		default:
 			return fmt.Errorf("got more than 1 parent node (%d), but this should be impossible", len(batchRes.Result))
@@ -265,12 +259,11 @@ func RetrieveParentNodes(ctx *logging.ContextMap, client *qdrant.Client, collect
 //   - ctx: ContextMap.
 //   - client: the qdrant client
 //   - collectionName: Name of the collection in the qdrant database to retrieve the children from.
-//   - outputFields: Fields to return in the response.
 //   - data: Data to retrieve the children for.
 //
 // Returns:
 //   - error: Error if any issue occurs while retrieving the children.
-func RetrieveChildNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, outputFields []string, data *[]sharedtypes.DbResponse) (funcError error) {
+func RetrieveChildNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, data *[]sharedtypes.DbResponse) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -296,7 +289,7 @@ func RetrieveChildNodes(ctx *logging.ContextMap, client *qdrant.Client, collecti
 				},
 			},
 			WithVectors: qdrant.NewWithVectorsEnable(false),
-			WithPayload: qdrant.NewWithPayloadInclude(outputFields...),
+			WithPayload: qdrant.NewWithPayloadEnable(true),
 		}
 	}
 	batchResults, err := client.QueryBatch(context.TODO(), &qdrant.QueryBatchPoints{
@@ -312,11 +305,17 @@ func RetrieveChildNodes(ctx *logging.ContextMap, client *qdrant.Client, collecti
 	for i, batchRes := range batchResults {
 		childrenDbData := make([]sharedtypes.DbData, len(batchRes.Result))
 		for j, point := range batchRes.Result {
-			child, err := TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbData](point.Payload)
+			child, err := QdrantPayloadToType[sharedtypes.DbData](point.Payload)
 			if err != nil {
 				logging.Log.Errorf(ctx, "error converting qdrant payload: %q", err)
 				return err
 			}
+			id, err := uuid.Parse(point.Id.GetUuid())
+			if err != nil {
+				logging.Log.Errorf(ctx, "point ID is not parseable as a UUID: %v", err)
+				return err
+			}
+			child.Guid = id
 			childrenDbData[j] = child
 		}
 		(*data)[i].Children = childrenDbData
@@ -330,12 +329,11 @@ func RetrieveChildNodes(ctx *logging.ContextMap, client *qdrant.Client, collecti
 //   - ctx: ContextMap.
 //   - client: the qdrant client
 //   - collectionName: Name of the collection in the qdrant database to retrieve the siblings from.
-//   - outputFields: Fields to return in the response.
 //   - data: Data to retrieve the siblings for.
 //
 // Returns:
 //   - error: Error if any issue occurs while retrieving the siblings.
-func RetrieveDirectSiblingNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, outputFields []string, data *[]sharedtypes.DbResponse) (funcError error) {
+func RetrieveDirectSiblingNodes(ctx *logging.ContextMap, client *qdrant.Client, collectionName string, data *[]sharedtypes.DbResponse) (funcError error) {
 	defer func() {
 		r := recover()
 		if r != nil {
@@ -365,7 +363,7 @@ func RetrieveDirectSiblingNodes(ctx *logging.ContextMap, client *qdrant.Client, 
 				},
 			},
 			WithVectors: qdrant.NewWithVectorsEnable(false),
-			WithPayload: qdrant.NewWithPayloadInclude(outputFields...),
+			WithPayload: qdrant.NewWithPayloadEnable(true),
 		}
 	}
 	batchResults, err := client.QueryBatch(context.TODO(), &qdrant.QueryBatchPoints{
@@ -381,14 +379,108 @@ func RetrieveDirectSiblingNodes(ctx *logging.ContextMap, client *qdrant.Client, 
 	for i, batchRes := range batchResults {
 		siblingsDbData := make([]sharedtypes.DbData, len(batchRes.Result))
 		for j, point := range batchRes.Result {
-			sibling, err := TryIntoWithJson[map[string]*qdrant.Value, sharedtypes.DbData](point.Payload)
+			sibling, err := QdrantPayloadToType[sharedtypes.DbData](point.Payload)
 			if err != nil {
 				logging.Log.Errorf(ctx, "error converting qdrant payload: %q", err)
 				return err
 			}
+			id, err := uuid.Parse(point.Id.GetUuid())
+			if err != nil {
+				logging.Log.Errorf(ctx, "point ID is not parseable as a UUID: %v", err)
+				return err
+			}
+			sibling.Guid = id
 			siblingsDbData[j] = sibling
 		}
 		(*data)[i].Siblings = siblingsDbData
 	}
 	return nil
+}
+
+func qdrantValToAny(val *qdrant.Value) any {
+	switch val.Kind.(type) {
+	case *qdrant.Value_NullValue:
+		return nil
+	case *qdrant.Value_DoubleValue:
+		return val.GetDoubleValue()
+	case *qdrant.Value_IntegerValue:
+		return val.GetIntegerValue()
+	case *qdrant.Value_StringValue:
+		return val.GetStringValue()
+	case *qdrant.Value_BoolValue:
+		return val.GetBoolValue()
+	case *qdrant.Value_StructValue:
+		structmap := val.GetStructValue().GetFields()
+		valmap := make(map[string]any, len(structmap))
+		for k, v := range structmap {
+			valmap[k] = qdrantValToAny(v)
+		}
+		return valmap
+	case *qdrant.Value_ListValue:
+		list := val.GetListValue().GetValues()
+		vallist := make([]any, len(list))
+		for i, v := range list {
+			vallist[i] = qdrantValToAny(v)
+		}
+		return vallist
+	default:
+		panic(fmt.Sprintf("unknown qdrant value kind %q", val.Kind))
+	}
+}
+
+func QdrantPayloadToMap(payload map[string]*qdrant.Value) map[string]any {
+	m := make(map[string]any, len(payload))
+	for k, v := range payload {
+		m[k] = qdrantValToAny(v)
+	}
+	return m
+}
+
+func QdrantPayloadToType[T any](payload map[string]*qdrant.Value) (T, error) {
+	var final T
+
+	qdrantMap := QdrantPayloadToMap(payload)
+	jsonBytes, err := json.Marshal(qdrantMap)
+	if err != nil {
+		return final, fmt.Errorf("unable to marshal qdrant payload to bytes: %v", err)
+	}
+
+	err = json.Unmarshal(jsonBytes, &final)
+	if err != nil {
+		return final, fmt.Errorf("unable to unmarshal bytes to type %T: %v", final, err)
+	}
+	return final, nil
+}
+
+func ToQdrantPayload[T any](t T) (map[string]*qdrant.Value, error) {
+
+	jsonBytes, err := json.Marshal(t)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal qdrant payload to bytes: %v", err)
+	}
+
+	var jsonMap map[string]any
+	err = json.Unmarshal(jsonBytes, &jsonMap)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal bytes to map: %v", err)
+	}
+
+	qdrantPayloadTypeConversion(jsonMap)
+
+	return qdrant.TryValueMap(jsonMap)
+}
+
+func qdrantPayloadTypeConversion(payloadMap map[string]any) {
+	for k, v := range payloadMap {
+		switch v := v.(type) {
+		case []string:
+			anys := make([]any, len(v))
+			for i, v := range v {
+				anys[i] = v
+			}
+			payloadMap[k] = anys
+		default:
+			continue
+		}
+	}
 }

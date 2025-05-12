@@ -15,6 +15,7 @@ import (
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/google/uuid"
 	"github.com/qdrant/go-client/qdrant"
 	"github.com/stretchr/testify/assert"
@@ -142,7 +143,7 @@ func (lc *StdoutLogConsumer) Accept(l testcontainers.Log) {
 
 func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainerConfig flowkitTestContainersConfig) flowkitTestContainersResult {
 
-	result := flowkitTestContainersResult{config: config.Config{}}
+	result := flowkitTestContainersResult{config: config.Config{LOG_LEVEL: "debug"}}
 
 	allieNetwork, err := network.New(ctx)
 	require.NoError(t, err)
@@ -413,44 +414,44 @@ func anyMapVal[K comparable, V any](m map[K]V) map[K]any {
 	return res
 }
 
-func qdrantValToAny(val *qdrant.Value) any {
-	switch val.Kind.(type) {
-	case *qdrant.Value_NullValue:
-		return nil
-	case *qdrant.Value_DoubleValue:
-		return val.GetDoubleValue()
-	case *qdrant.Value_IntegerValue:
-		return val.GetIntegerValue()
-	case *qdrant.Value_StringValue:
-		return val.GetStringValue()
-	case *qdrant.Value_BoolValue:
-		return val.GetBoolValue()
-	case *qdrant.Value_StructValue:
-		structmap := val.GetStructValue().GetFields()
-		valmap := make(map[string]any, len(structmap))
-		for k, v := range structmap {
-			valmap[k] = qdrantValToAny(v)
-		}
-		return valmap
-	case *qdrant.Value_ListValue:
-		list := val.GetListValue().GetValues()
-		vallist := make([]any, len(list))
-		for i, v := range list {
-			vallist[i] = qdrantValToAny(v)
-		}
-		return vallist
-	default:
-		panic(fmt.Sprintf("unknown qdrant value kind %q", val.Kind))
-	}
-}
+// func qdrantValToAny(val *qdrant.Value) any {
+// 	switch val.Kind.(type) {
+// 	case *qdrant.Value_NullValue:
+// 		return nil
+// 	case *qdrant.Value_DoubleValue:
+// 		return val.GetDoubleValue()
+// 	case *qdrant.Value_IntegerValue:
+// 		return val.GetIntegerValue()
+// 	case *qdrant.Value_StringValue:
+// 		return val.GetStringValue()
+// 	case *qdrant.Value_BoolValue:
+// 		return val.GetBoolValue()
+// 	case *qdrant.Value_StructValue:
+// 		structmap := val.GetStructValue().GetFields()
+// 		valmap := make(map[string]any, len(structmap))
+// 		for k, v := range structmap {
+// 			valmap[k] = qdrantValToAny(v)
+// 		}
+// 		return valmap
+// 	case *qdrant.Value_ListValue:
+// 		list := val.GetListValue().GetValues()
+// 		vallist := make([]any, len(list))
+// 		for i, v := range list {
+// 			vallist[i] = qdrantValToAny(v)
+// 		}
+// 		return vallist
+// 	default:
+// 		panic(fmt.Sprintf("unknown qdrant value kind %q", val.Kind))
+// 	}
+// }
 
-func qdrantPayloadToMap(payload map[string]*qdrant.Value) map[string]any {
-	m := make(map[string]any, len(payload))
-	for k, v := range payload {
-		m[k] = qdrantValToAny(v)
-	}
-	return m
-}
+// func qdrantPayloadToMap(payload map[string]*qdrant.Value) map[string]any {
+// 	m := make(map[string]any, len(payload))
+// 	for k, v := range payload {
+// 		m[k] = qdrantValToAny(v)
+// 	}
+// 	return m
+// }
 
 func TestStoreExamplesInVectorDatabase(t *testing.T) {
 	if testing.Short() {
@@ -583,7 +584,7 @@ func TestStoreExamplesInVectorDatabase(t *testing.T) {
 	for _, point := range points {
 		vecOpts := point.GetVectors().VectorsOptions.(*qdrant.VectorsOutput_Vectors)
 		assert.Len(t, vecOpts.Vectors.Vectors, 2)
-		assert.Contains(t, expectedPayloads, qdrantPayloadToMap(point.Payload))
+		assert.Contains(t, expectedPayloads, qdrant_utils.QdrantPayloadToMap(point.Payload))
 	}
 }
 
@@ -713,7 +714,7 @@ func TestStoreUserGuideSectionsInVectorDatabase(t *testing.T) {
 	for _, point := range points {
 		vecOpts := point.GetVectors().VectorsOptions.(*qdrant.VectorsOutput_Vectors)
 		assert.Len(vecOpts.Vectors.Vectors, 2)
-		payloadMap := qdrantPayloadToMap(point.Payload)
+		payloadMap := qdrant_utils.QdrantPayloadToMap(point.Payload)
 		assert.Contains(expectedPayloads, payloadMap)
 	}
 }

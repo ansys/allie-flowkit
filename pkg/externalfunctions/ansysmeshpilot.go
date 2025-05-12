@@ -1703,7 +1703,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 	ctx := &logging.ContextMap{}
 
 	logging.Log.Info(ctx, "Get Actions From Config...")
-	logging.Log.Info(ctx, "Tool Name: %q", toolName)
+	logging.Log.Infof(ctx, "Tool Name: %q", toolName)
 
 	// Configuration keys for different tools, for now only tool 9 and tool 11
 	configKeys := map[string]map[string]string{
