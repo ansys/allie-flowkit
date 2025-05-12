@@ -1,6 +1,7 @@
 AaliFlowKit
 Aali Flow Kit
 [Aa]llie
+[Aa]li
 (?i)Ansys
 API
 externalfunctions
