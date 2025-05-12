@@ -1,4 +1,4 @@
-Allie Flow Kit documentation |version|
+Aali Flow Kit documentation |version|
 #######################################################
 
 
@@ -15,7 +15,7 @@ Allie Flow Kit documentation |version|
 
       :material-regular:`code;48px`
 
-      Details the Allie flow kit with external functions available for custom workflows,
+      Details the Aali flow kit with external functions available for custom workflows,
       offering a comprehensive reference for developers and users.
 
       +++

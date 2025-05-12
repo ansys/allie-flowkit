@@ -1,0 +1,73 @@
+name: Documentation Build
+
+on:
+  workflow_call:
+    inputs:
+      name:
+        type: string
+        required: true
+
+env:
+  MAIN_PYTHON_VERSION: '3.12'
+
+jobs:
+
+  doc-style:
+    name: "Documentation style"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ansys/actions/doc-style@v9
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  doc-build:
+    name: "Build project documentation"
+    runs-on: ubuntu-latest
+    needs: [doc-style]
+    steps:
+      - name: "Build project documentation"
+        uses: ansys/actions/doc-build@v9
+        with:
+          python-version: ${{ env.MAIN_PYTHON_VERSION }}
+          use-python-cache: false
+          skip-install: true
+          requirements-file: doc/requirements.txt
+          check-links: false
+
+  doc-api-reference:
+    name: "Build API reference documentation"
+    needs: [doc-build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout code"
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.MAIN_PYTHON_VERSION }}
+
+      - name: Build GoPages
+        run: |
+          go install github.com/johnstarich/go/gopages@latest
+          gopages -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
+
+      - name: Download HTML documentation artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-html
+          path: documentation-html
+
+      - name: Download and execute Python script
+        run: |
+          curl -o doc_api_reference.py https://raw.githubusercontent.com/ansys/aali-sharedtypes/main/pkg/scripts/doc_api_reference.py
+          python doc_api_reference.py ansys aali-flowkit
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-html-with-api
+          path: documentation-html

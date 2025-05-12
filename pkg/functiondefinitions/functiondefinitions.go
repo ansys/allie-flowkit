@@ -1,3 +1,25 @@
+// Copyright (C) 2025 ANSYS, Inc. and/or its affiliates.
+// SPDX-License-Identifier: MIT
+//
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package functiondefinitions
 
 import (
@@ -10,8 +32,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
-	"github.com/ansys/allie-sharedtypes/pkg/allieflowkitgrpc"
+	"github.com/ansys/aali-flowkit/pkg/internalstates"
+	"github.com/ansys/aali-sharedtypes/pkg/aaliflowkitgrpc"
 )
 
 // ExtractFunctionDefinitionsFromPackage parses the given file for public functions and populates internalstates.AvailableFunctions.
@@ -98,20 +120,20 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 				description := fn.Doc.Text()
 				displayName := extractTagValue(description, "@displayName")
 
-				funcDef := &allieflowkitgrpc.FunctionDefinition{
+				funcDef := &aaliflowkitgrpc.FunctionDefinition{
 					Name:        fn.Name.Name,
 					DisplayName: displayNameOrDefault(displayName, fn.Name.Name),
 					Description: description,
 					Category:    category,
-					Input:       []*allieflowkitgrpc.FunctionInputDefinition{},
-					Output:      []*allieflowkitgrpc.FunctionOutputDefinition{},
+					Input:       []*aaliflowkitgrpc.FunctionInputDefinition{},
+					Output:      []*aaliflowkitgrpc.FunctionOutputDefinition{},
 				}
 
 				// Handle inputs (parameters)
 				if fn.Type.Params != nil {
 					for _, param := range fn.Type.Params.List {
 						if len(param.Names) == 0 {
-							funcDef.Input = append(funcDef.Input, &allieflowkitgrpc.FunctionInputDefinition{
+							funcDef.Input = append(funcDef.Input, &aaliflowkitgrpc.FunctionInputDefinition{
 								Name:   typeExprToString(param.Type),
 								Type:   typeExprToSimpleType(param.Type),
 								GoType: typeExprToString(param.Type),
@@ -132,7 +154,7 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 									goType = "string"
 								}
 
-								funcDef.Input = append(funcDef.Input, &allieflowkitgrpc.FunctionInputDefinition{
+								funcDef.Input = append(funcDef.Input, &aaliflowkitgrpc.FunctionInputDefinition{
 									Name:    paramName.Name,
 									Type:    typeExprToSimpleType(param.Type),
 									GoType:  goType,
@@ -148,7 +170,7 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 					for _, result := range fn.Type.Results.List {
 						if len(result.Names) == 0 {
 							goType := typeExprToString(result.Type)
-							funcDef.Output = append(funcDef.Output, &allieflowkitgrpc.FunctionOutputDefinition{
+							funcDef.Output = append(funcDef.Output, &aaliflowkitgrpc.FunctionOutputDefinition{
 								Name:   goType,
 								Type:   typeExprToSimpleType(result.Type),
 								GoType: goType,
@@ -156,7 +178,7 @@ func ExtractFunctionDefinitionsFromPackage(content string, category string) erro
 						} else {
 							for _, resultName := range result.Names {
 								goType := typeExprToString(result.Type)
-								funcDef.Output = append(funcDef.Output, &allieflowkitgrpc.FunctionOutputDefinition{
+								funcDef.Output = append(funcDef.Output, &aaliflowkitgrpc.FunctionOutputDefinition{
 									Name:   resultName.Name,
 									Type:   typeExprToSimpleType(result.Type),
 									GoType: goType,

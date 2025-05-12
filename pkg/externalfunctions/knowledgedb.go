@@ -1,3 +1,25 @@
+// Copyright (C) 2025 ANSYS, Inc. and/or its affiliates.
+// SPDX-License-Identifier: MIT
+//
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package externalfunctions
 
 import (
@@ -7,9 +29,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
 
 // SendVectorsToKnowledgeDB sends the given vector to the KnowledgeDB and
@@ -74,7 +96,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -85,7 +107,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -97,7 +119,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -106,7 +128,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -119,7 +141,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -171,7 +193,7 @@ func GetListCollections() (collectionsList []string) {
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("GET", requestURL, nil)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating GET /list_collections request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error creating GET /list_collections request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -183,7 +205,7 @@ func GetListCollections() (collectionsList []string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending GET /list_collections request to allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error sending GET /list_collections request to aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -192,7 +214,7 @@ func GetListCollections() (collectionsList []string) {
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -201,14 +223,14 @@ func GetListCollections() (collectionsList []string) {
 	var response sharedtypes.DBListCollectionsOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
 	// Log the result and return the list of collections
 	if !response.Success {
-		errMessage := "Failed to retrieve list of collections from allie-db"
+		errMessage := "Failed to retrieve list of collections from aali-db"
 		logging.Log.Warn(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	} else {
@@ -261,7 +283,7 @@ func RetrieveDependencies(
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -269,7 +291,7 @@ func RetrieveDependencies(
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -281,7 +303,7 @@ func RetrieveDependencies(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -290,7 +312,7 @@ func RetrieveDependencies(
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -301,7 +323,7 @@ func RetrieveDependencies(
 	var response retrieveDependenciesOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -336,7 +358,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -344,7 +366,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -356,7 +378,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -365,7 +387,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -376,7 +398,7 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 	var response sharedtypes.GeneralNeo4jQueryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -417,7 +439,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -425,7 +447,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /query request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error creating POST /query request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -437,7 +459,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /query request to allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error sending POST /query request to aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -446,7 +468,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /query request from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /query request from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -457,7 +479,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	var response queryOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -520,7 +542,7 @@ func SimilaritySearch(
 	// Convert the resource instance to JSON.
 	jsonData, err := json.Marshal(requestInput)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -528,7 +550,7 @@ func SimilaritySearch(
 	// Create a new HTTP request with the JSON data.
 	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -540,7 +562,7 @@ func SimilaritySearch(
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -549,7 +571,7 @@ func SimilaritySearch(
 	// Read and display the response body.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
@@ -560,7 +582,7 @@ func SimilaritySearch(
 	var response similaritySearchOutput
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from aali-db: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}

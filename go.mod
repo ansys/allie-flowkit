@@ -1,4 +1,4 @@
-module github.com/ansys/allie-flowkit
+module github.com/ansys/aali-flowkit
 
 go 1.23.0
 
@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
-	github.com/ansys/allie-sharedtypes v0.0.0-20250430150515-63bf6e010b06
+	github.com/ansys/aali-sharedtypes v1.0.2
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/milvus-io/milvus-sdk-go/v2 v2.4.2
