@@ -10,7 +10,7 @@ on:
 
 env:
   MAIN_PYTHON_VERSION: '3.12'
-  DOCUMENTATION_CNAME: 'ansys.github.io/allie-flowkit'
+  DOCUMENTATION_CNAME: 'ansys.github.io/aali-flowkit'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -57,6 +57,10 @@ jobs:
         go-version-file: 'go.mod'
         cache-dependency-path: 'go.sum'
 
+    - name: setup go for private modules
+      run: |  # https://go.dev/doc/faq#git_https
+        echo "machine github.com login ${{ secrets.PYANSYS_CI_BOT_USERNAME }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > $HOME/.netrc
+
     - name: Verify library builds
       run: |
         go build ./pkg/externalfunctions
@@ -101,7 +105,7 @@ jobs:
       - name: Build GoPages
         run: |
           go install github.com/johnstarich/go/gopages@latest
-          gopages -internal -source-link "https://github.com/ansys/allie-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
+          gopages -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
 
       - name: Download HTML documentation artifacts
         uses: actions/download-artifact@v4
@@ -111,8 +115,8 @@ jobs:
 
       - name: Download and execute Python script
         run: |
-          curl -o doc_api_reference.py https://raw.githubusercontent.com/ansys/allie-sharedtypes/main/pkg/scripts/doc_api_reference.py
-          python doc_api_reference.py ansys allie-flowkit
+          curl -o doc_api_reference.py https://raw.githubusercontent.com/ansys/aali-sharedtypes/main/pkg/scripts/doc_api_reference.py
+          python doc_api_reference.py ansys aali-flowkit
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

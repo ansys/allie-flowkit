@@ -21,10 +21,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
@@ -1363,7 +1363,7 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 	for idx, chunk := range chunks {
 		// Create data child object.
 		childData := &sharedtypes.DbData{
-			Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Guid:         uuid.New(),
 			DocumentId:   documentId,
 			DocumentName: documentPath,
 			Text:         chunk,
@@ -1371,8 +1371,8 @@ func dataExtractionDocumentLevelHandler(inputChannel chan *DataExtractionLLMInpu
 
 		// Assing previous and next sibling ids if necessary.
 		if idx > 0 {
-			orderedChildData[idx-1].NextSiblingId = childData.Guid
-			childData.PreviousSiblingId = orderedChildData[idx-1].Guid
+			orderedChildData[idx-1].NextSiblingId = &childData.Guid
+			childData.PreviousSiblingId = &orderedChildData[idx-1].Guid
 		}
 
 		orderedChildData = append(orderedChildData, childData)
@@ -2613,4 +2613,16 @@ func mongoDbUpdateAccessAndWarning(mongoDbContext *MongoDbContext, indetificatio
 	}
 
 	return nil
+}
+
+func logPanic(ctx *logging.ContextMap, msg string, args ...any) {
+	errMsg := fmt.Sprintf(msg, args...)
+	var logCtx *logging.ContextMap
+	if ctx == nil {
+		logCtx = &logging.ContextMap{}
+	} else {
+		logCtx = ctx
+	}
+	logging.Log.Error(logCtx, errMsg)
+	panic(errMsg)
 }

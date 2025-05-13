@@ -1,15 +1,15 @@
 package externalfunctions
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	"io"
-	"net/http"
 
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/allie-flowkit/pkg/privatefunctions/graphdb"
+	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
+	"github.com/google/uuid"
+	"github.com/qdrant/go-client/qdrant"
 )
 
 // SendVectorsToKnowledgeDB sends the given vector to the KnowledgeDB and
@@ -34,119 +34,59 @@ import (
 // Returns:
 //   - databaseResponse: an array of the most relevant data
 func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearch bool, collection string, similaritySearchResults int, similaritySearchMinScore float64) (databaseResponse []sharedtypes.DbResponse) {
-	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
-
-	// Log the request
-	logging.Log.Debugf(&logging.ContextMap{}, "Connecting to the KnowledgeDB.")
-
-	// Build filters
-	var filters sharedtypes.DbFilters
-
-	// -- Add the keywords filter if needed
-	if keywordsSearch {
-		filters.KeywordsFilter = sharedtypes.DbArrayFilter{
-			NeedAll:    false,
-			FilterData: keywords,
-		}
+	logCtx := &logging.ContextMap{}
+	client, err := qdrant_utils.QdrantClient()
+	if err != nil {
+		logPanic(logCtx, "unable to create qdrant client: %q", err)
 	}
 
-	// -- Add the level filter
-	filters.LevelFilter = []string{"leaf"}
-
-	// Create a new resource instance
-	requestInput := similaritySearchInput{
-		CollectionName:    collection,
-		EmbeddedVector:    vector,
-		MaxRetrievalCount: similaritySearchResults,
-		Filters:           filters,
-		MinScore:          similaritySearchMinScore,
-		OutputFields: []string{
-			"guid",
-			"document_id",
-			"document_name",
-			"summary",
-			"keywords",
-			"text",
+	// perform the qdrant query
+	filter := qdrant.Filter{
+		Must: []*qdrant.Condition{
+			qdrant.NewMatch("level", "leaf"),
 		},
 	}
+	if keywordsSearch {
+		filter.Must = append(filter.Must, qdrant.NewMatchKeywords("keywords", keywords...))
 
-	// Convert the resource instance to JSON.
-	jsonData, err := json.Marshal(requestInput)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
 	}
-
-	// Specify the target endpoint.
-	requestURL := knowledgeDbEndpoint + "/similarity_search"
-
-	// Create a new HTTP request with the JSON data.
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+	limit := uint64(similaritySearchResults)
+	scoreThreshold := float32(similaritySearchMinScore)
+	query := qdrant.QueryPoints{
+		CollectionName: collection,
+		Query:          qdrant.NewQueryDense(vector),
+		Limit:          &limit,
+		ScoreThreshold: &scoreThreshold,
+		Filter:         &filter,
+		WithVectors:    qdrant.NewWithVectorsEnable(false),
+		WithPayload:    qdrant.NewWithPayloadInclude("guid", "document_id", "document_name", "summary", "keywords", "text"),
 	}
-
-	// Set the appropriate content type for the request.
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the HTTP request using the default HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	scoredPoints, err := client.Query(context.TODO(), &query)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "error in qdrant query: %q", err)
 	}
-	defer resp.Body.Close()
+	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
 
-	// Read and display the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
+	// transform qdrant result into allie type
+	dbResponses := make([]sharedtypes.DbResponse, len(scoredPoints))
+	for i, scoredPoint := range scoredPoints {
+		logging.Log.Debugf(&logging.ContextMap{}, "Result #%d:", i)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity score: %v", scoredPoint.Score)
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[sharedtypes.DbResponse](scoredPoint.GetPayload())
+		if err != nil {
+			errMsg := fmt.Sprintf("error converting qdrant payload to dbResponse: %q", err)
+			logging.Log.Errorf(logCtx, "%s", errMsg)
+			panic(errMsg)
+		}
 
-	// Log the similarity search response
-	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB response: %v", string(body))
-	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB response received!")
-
-	// Unmarshal the response body to the appropriate struct.
-	var response similaritySearchOutput
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	var mostRelevantData []sharedtypes.DbResponse
-	var count int = 1
-	for _, element := range response.SimilarityResult {
-		// Log the result
-		logging.Log.Debugf(&logging.ContextMap{}, "Result #%d:", count)
-		logging.Log.Debugf(&logging.ContextMap{}, "Similarity score: %v", element.Score)
-		logging.Log.Debugf(&logging.ContextMap{}, "Similarity file id: %v", element.Data.DocumentId)
-		logging.Log.Debugf(&logging.ContextMap{}, "Similarity file name: %v", element.Data.DocumentName)
-		logging.Log.Debugf(&logging.ContextMap{}, "Similarity summary: %v", element.Data.Summary)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity file id: %v", dbResponse.DocumentId)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity file name: %v", dbResponse.DocumentName)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity summary: %v", dbResponse.Summary)
 
 		// Add the result to the list
-		mostRelevantData = append(mostRelevantData, element.Data)
-
-		// Check whether we have enough results
-		if count >= similaritySearchResults {
-			break
-		} else {
-			count++
-		}
+		dbResponses[i] = dbResponse
 	}
-
-	// Return the most relevant data
-	return mostRelevantData
+	return dbResponses
 }
 
 // GetListCollections retrieves the list of collections from the KnowledgeDB.
@@ -162,60 +102,17 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 // Returns:
 //   - collectionsList: the list of collections
 func GetListCollections() (collectionsList []string) {
-	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
-
-	// Specify the target endpoint.
-	requestURL := knowledgeDbEndpoint + "/list_collections"
-
-	// Create a new HTTP request with the JSON data.
-	req, err := http.NewRequest("GET", requestURL, nil)
+	logCtx := &logging.ContextMap{}
+	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating GET /list_collections request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "unable to create qdrant client: %q", err)
 	}
 
-	// Set the appropriate content type for the request.
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the HTTP request using the default HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	collectionsList, err = client.ListCollections(context.TODO())
 	if err != nil {
-		errMessage := fmt.Sprintf("Error sending GET /list_collections request to allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "unable to list qdrant collections: %q", err)
 	}
-	defer resp.Body.Close()
-
-	// Read and display the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of GET /list_collections request from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	// Unmarshal the response body to the appropriate struct.
-	var response sharedtypes.DBListCollectionsOutput
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of GET /list_collections response from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	// Log the result and return the list of collections
-	if !response.Success {
-		errMessage := "Failed to retrieve list of collections from allie-db"
-		logging.Log.Warn(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	} else {
-		logging.Log.Debugf(&logging.ContextMap{}, "List collections response received!")
-		logging.Log.Debugf(&logging.ContextMap{}, "Collections: %v", response.Collections)
-		return response.Collections
-	}
+	return collectionsList
 }
 
 // RetrieveDependencies retrieves the dependencies of the specified source node.
@@ -226,7 +123,6 @@ func GetListCollections() (collectionsList []string) {
 //   - @displayName: Retrieve Dependencies
 //
 // Parameters:
-//   - collectionName: the name of the collection to which the data objects will be added.
 //   - relationshipName: the name of the relationship to retrieve dependencies for.
 //   - relationshipDirection: the direction of the relationship to retrieve dependencies for.
 //   - sourceDocumentId: the document ID of the source node.
@@ -236,152 +132,45 @@ func GetListCollections() (collectionsList []string) {
 // Returns:
 //   - dependenciesIds: the list of dependencies
 func RetrieveDependencies(
-	collectionName string,
 	relationshipName string,
 	relationshipDirection string,
 	sourceDocumentId string,
 	nodeTypesFilter sharedtypes.DbArrayFilter,
 	maxHopsNumber int) (dependenciesIds []string) {
-	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
-
-	// Create the URL
-	requestURL := knowledgeDbEndpoint + "/retrieve_dependencies"
-
-	// Create the retrieveDependenciesInput object
-	requestInput := retrieveDependenciesInput{
-		CollectionName:        collectionName,
-		RelationshipName:      relationshipName,
-		RelationshipDirection: relationshipDirection,
-		SourceDocumentId:      sourceDocumentId,
-		NodeTypesFilter:       nodeTypesFilter,
-		MaxHopsNumber:         maxHopsNumber,
-	}
-
-	// Convert the resource instance to JSON.
-	jsonData, err := json.Marshal(requestInput)
+	ctx := &logging.ContextMap{}
+	dependenciesIds, err := graphdb.GraphDbDriver.RetrieveDependencies(
+		ctx,
+		relationshipName,
+		relationshipDirection,
+		sourceDocumentId,
+		nodeTypesFilter,
+		[]string{},
+		maxHopsNumber,
+	)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /retrieve_dependencies request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(nil, "unable to retrieve dependencies: %q", err)
 	}
-
-	// Create a new HTTP request with the JSON data.
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /retrieve_dependencies request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	// Set the appropriate content type for the request.
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the HTTP request using the default HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /retrieve_dependencies request to allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-	defer resp.Body.Close()
-
-	// Read and display the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /retrieve_dependencies request from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB RetrieveDependencies response received!")
-
-	// Unmarshal the response body to the appropriate struct.
-	var response retrieveDependenciesOutput
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /retrieve_dependencies response from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	return response.DependenciesIds
+	return dependenciesIds
 }
 
-// GeneralNeo4jQuery executes the given Neo4j query and returns the response.
+// GeneralGraphDbQuery executes the given Cypher query and returns the response.
 //
 // The function returns the neo4j response.
 //
 // Tags:
-//   - @displayName: General Neo4J Query
+//   - @displayName: General Graph DB Query
 //
 // Parameters:
 //   - query: the Neo4j query to be executed.
 //
 // Returns:
 //   - databaseResponse: the Neo4j response
-func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse) {
-	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
-
-	// Create the URL
-	requestURL := knowledgeDbEndpoint + "/general_neo4j_query"
-
-	// Create the retrieveDependenciesInput object
-	requestInput := sharedtypes.GeneralNeo4jQueryInput{
-		Query: query,
-	}
-
-	// Convert the resource instance to JSON.
-	jsonData, err := json.Marshal(requestInput)
+func GeneralGraphDbQuery(query string) []map[string]any {
+	res, err := graphdb.GraphDbDriver.WriteCypherQuery(query)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /general_neo4j_query request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(nil, "error executing cypher query: %q", err)
 	}
-
-	// Create a new HTTP request with the JSON data.
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
-	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /general_neo4j_query request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	// Set the appropriate content type for the request.
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the HTTP request using the default HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /general_neo4j_query request to allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-	defer resp.Body.Close()
-
-	// Read and display the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /general_neo4j_query request from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB GeneralNeo4jQuery response received!")
-
-	// Unmarshal the response body to the appropriate struct.
-	var response sharedtypes.GeneralNeo4jQueryOutput
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /general_neo4j_query response from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	return response.Response
+	return res
 }
 
 // GeneralQuery performs a general query in the KnowledgeDB.
@@ -400,69 +189,39 @@ func GeneralNeo4jQuery(query string) (databaseResponse sharedtypes.Neo4jResponse
 // Returns:
 //   - databaseResponse: the query results
 func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []string, filters sharedtypes.DbFilters) (databaseResponse []sharedtypes.DbResponse) {
-	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
-
-	// Create the URL
-	requestURL := knowledgeDbEndpoint + "/query"
-
-	// Create the queryInput object
-	requestInput := queryInput{
-		CollectionName:    collectionName,
-		MaxRetrievalCount: maxRetrievalCount,
-		OutputFields:      outputFields,
-		Filters:           filters,
-	}
-
-	// Convert the resource instance to JSON.
-	jsonData, err := json.Marshal(requestInput)
+	logCtx := &logging.ContextMap{}
+	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /query request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "unable to create qdrant client: %q", err)
 	}
 
-	// Create a new HTTP request with the JSON data.
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
+	// perform the qdrant query
+	limit := uint64(maxRetrievalCount)
+	filter := qdrant_utils.DbFiltersAsQdrant(filters)
+	query := qdrant.QueryPoints{
+		CollectionName: collectionName,
+		Limit:          &limit,
+		Filter:         filter,
+		WithVectors:    qdrant.NewWithVectorsEnable(false),
+		WithPayload:    qdrant.NewWithPayloadInclude(outputFields...),
+	}
+	scoredPoints, err := client.Query(context.TODO(), &query)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /query request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "error in qdrant query: %q", err)
 	}
+	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
 
-	// Set the appropriate content type for the request.
-	req.Header.Set("Content-Type", "application/json")
+	// convert to allie type
+	databaseResponse = make([]sharedtypes.DbResponse, len(scoredPoints))
+	for i, scoredPoint := range scoredPoints {
 
-	// Send the HTTP request using the default HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /query request to allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[sharedtypes.DbResponse](scoredPoint.Payload)
+		if err != nil {
+			logPanic(logCtx, "error converting qdrant payload to dbResponse: %q", err)
+		}
+		databaseResponse[i] = dbResponse
 	}
-	defer resp.Body.Close()
-
-	// Read and display the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /query request from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB GeneralQuery response received!")
-
-	// Unmarshal the response body to the appropriate struct.
-	var response queryOutput
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /query response from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
-	}
-
-	return response.QueryResult
+	return databaseResponse
 }
 
 // SimilaritySearch performs a similarity search in the KnowledgeDB.
@@ -490,87 +249,82 @@ func SimilaritySearch(
 	collectionName string,
 	embeddedVector []float32,
 	maxRetrievalCount int,
-	outputFields []string,
 	filters sharedtypes.DbFilters,
 	minScore float64,
 	getLeafNodes bool,
 	getSiblings bool,
 	getParent bool,
 	getChildren bool) (databaseResponse []sharedtypes.DbResponse) {
-	// get the KnowledgeDB endpoint
-	knowledgeDbEndpoint := config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT
-
-	// Create the URL
-	requestURL := knowledgeDbEndpoint + "/similarity_search"
-
-	// Create the retrieveDependenciesInput object
-	requestInput := similaritySearchInput{
-		CollectionName:    collectionName,
-		EmbeddedVector:    embeddedVector,
-		MaxRetrievalCount: maxRetrievalCount,
-		OutputFields:      outputFields,
-		Filters:           filters,
-		MinScore:          minScore,
-		GetLeafNodes:      getLeafNodes,
-		GetSiblings:       getSiblings,
-		GetParent:         getParent,
-		GetChildren:       getChildren,
-	}
-
-	// Convert the resource instance to JSON.
-	jsonData, err := json.Marshal(requestInput)
+	logCtx := &logging.ContextMap{}
+	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
-		errMessage := fmt.Sprintf("Error marshalling JSON data of POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "unable to create qdrant client: %q", err)
 	}
 
-	// Create a new HTTP request with the JSON data.
-	req, err := http.NewRequest("POST", requestURL, bytes.NewBuffer(jsonData))
+	// perform the qdrant query
+	limit := uint64(maxRetrievalCount)
+	scoreThreshold := float32(minScore)
+	query := qdrant.QueryPoints{
+		CollectionName: collectionName,
+		Query:          qdrant.NewQueryDense(embeddedVector),
+		Limit:          &limit,
+		ScoreThreshold: &scoreThreshold,
+		Filter:         qdrant_utils.DbFiltersAsQdrant(filters),
+		WithVectors:    qdrant.NewWithVectorsEnable(false),
+		WithPayload:    qdrant.NewWithPayloadEnable(true),
+	}
+	scoredPoints, err := client.Query(context.TODO(), &query)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating POST /similarity_search request for allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(logCtx, "error in qdrant query: %q", err)
+	}
+	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
+
+	// convert to allie type
+	databaseResponse = make([]sharedtypes.DbResponse, len(scoredPoints))
+	for i, scoredPoint := range scoredPoints {
+
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[sharedtypes.DbResponse](scoredPoint.Payload)
+		if err != nil {
+			logPanic(logCtx, "error converting qdrant payload to dbResponse: %q", err)
+		}
+		id, err := uuid.Parse(scoredPoint.Id.GetUuid())
+		if err != nil {
+			logPanic(logCtx, "point ID is not parseable as a UUID: %v", err)
+		}
+		dbResponse.Guid = id
+		databaseResponse[i] = dbResponse
 	}
 
-	// Set the appropriate content type for the request.
-	req.Header.Set("Content-Type", "application/json")
-
-	// Send the HTTP request using the default HTTP client.
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error sending POST /similarity_search request to allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+	// get related nodes if requested
+	if getLeafNodes {
+		logging.Log.Debugf(logCtx, "getting leaf nodes")
+		err := qdrant_utils.RetrieveLeafNodes(logCtx, client, collectionName, &databaseResponse)
+		if err != nil {
+			logPanic(logCtx, "error getting leaf nodes: %q", err)
+		}
 	}
-	defer resp.Body.Close()
-
-	// Read and display the response body.
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error reading response body of POST /similarity_search request from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+	if getSiblings {
+		logging.Log.Debugf(logCtx, "getting sibling nodes")
+		err := qdrant_utils.RetrieveDirectSiblingNodes(logCtx, client, collectionName, &databaseResponse)
+		if err != nil {
+			logPanic(logCtx, "error getting sibling nodes: %q", err)
+		}
 	}
-
-	logging.Log.Debugf(&logging.ContextMap{}, "Knowledge DB SimilaritySearch response received!")
-
-	// Unmarshal the response body to the appropriate struct.
-	var response similaritySearchOutput
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling JSON data of POST /similarity_search response from allie-db: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+	if getParent {
+		logging.Log.Debugf(logCtx, "getting parent nodes")
+		err := qdrant_utils.RetrieveParentNodes(logCtx, client, collectionName, &databaseResponse)
+		if err != nil {
+			logPanic(logCtx, "error getting parent nodes: %q", err)
+		}
 	}
-
-	var similarityResults []sharedtypes.DbResponse
-	for _, element := range response.SimilarityResult {
-		similarityResults = append(similarityResults, element.Data)
+	if getChildren {
+		logging.Log.Debugf(logCtx, "getting child nodes")
+		err := qdrant_utils.RetrieveChildNodes(logCtx, client, collectionName, &databaseResponse)
+		if err != nil {
+			logPanic(logCtx, "error getting child nodes: %q", err)
+		}
 	}
-
-	return similarityResults
+	return databaseResponse
 }
 
 // CreateKeywordsDbFilter creates a keywords filter for the KnowledgeDB.
@@ -715,25 +469,39 @@ func CreateDbFilter(
 //   - collectionName: name of the collection the request is sent to.
 //   - data: the data to add.
 func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
-	// Create the AddDataInput object
-	requestObject := sharedtypes.DbAddDataInput{
-		CollectionName: collectionName,
-		Data:           documentData,
+	points := make([]*qdrant.PointStruct, len(documentData))
+	for i, doc := range documentData {
+		id := qdrant.NewIDUUID(doc.Guid.String())
+		vector := qdrant.NewVectorsDense(doc.Embedding)
+		payload, err := qdrant_utils.ToQdrantPayload(doc)
+		if err != nil {
+			logPanic(nil, "unable to transform document data to json: %q", err)
+		}
+		delete(payload, "guid")
+		delete(payload, "embedding")
+		points[i] = &qdrant.PointStruct{
+			Id:      id,
+			Vectors: vector,
+			Payload: payload,
+		}
 	}
 
-	// Create the URL
-	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "add_data")
-
-	// Send the HTTP POST request
-	var response sharedtypes.DbAddDataOutput
-	err, _ := createPayloadAndSendHttpRequest(url, requestObject, &response)
+	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
-		errorMessage := fmt.Sprintf("Error sending request to add_data endpoint: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errorMessage)
-		panic(errorMessage)
+		logPanic(nil, "unable to create qdrant client: %q", err)
 	}
 
-	logging.Log.Debugf(&logging.ContextMap{}, "Added data to collection: %s \n", collectionName)
+	ctx := context.TODO()
+
+	resp, err := client.Upsert(ctx, &qdrant.UpsertPoints{
+		CollectionName: collectionName,
+		Points:         points,
+		Wait:           qdrant.PtrOf(true),
+	})
+	if err != nil {
+		logPanic(nil, "failed to insert data: %q", err)
+	}
+	logging.Log.Debugf(&logging.ContextMap{}, "successfully upserted %d points into qdrant collection %q: %q", len(points), collectionName, resp.GetStatus())
 }
 
 // CreateCollectionRequest sends a request to the collection endpoint.
@@ -743,27 +511,62 @@ func AddDataRequest(collectionName string, documentData []sharedtypes.DbData) {
 //
 // Parameters:
 //   - collectionName: the name of the collection to create.
-func CreateCollectionRequest(collectionName string) {
-	// Create the CreateCollectionInput object
-	requestObject := sharedtypes.DbCreateCollectionInput{
-		CollectionName: collectionName,
-	}
+//   - vectorSize: the length of the vector embeddings
+//   - vectorDistance: the vector similarity distance algorithm to use for the vector index (cosine, dot, euclid, manhattan)
+func CreateCollectionRequest(collectionName string, vectorSize uint64, vectorDistance string) {
+	logCtx := &logging.ContextMap{}
 
-	// Create the URL
-	url := fmt.Sprintf("%s/%s", config.GlobalConfig.KNOWLEDGE_DB_ENDPOINT, "create_collection")
-
-	// Send the HTTP POST request
-	var response sharedtypes.DbCreateCollectionOutput
-	err, statusCode := createPayloadAndSendHttpRequest(url, requestObject, &response)
+	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
-		if statusCode == 409 {
-			logging.Log.Warnf(&logging.ContextMap{}, "Collection already exists %s \n", collectionName)
-		} else {
-			errorMessage := fmt.Sprintf("Error sending request to create_collection endpoint: %v", err)
-			logging.Log.Error(&logging.ContextMap{}, errorMessage)
-			panic(errorMessage)
-		}
+		logPanic(logCtx, "unable to create qdrant client: %q", err)
 	}
 
-	logging.Log.Debugf(&logging.ContextMap{}, "Created collection: %s \n", collectionName)
+	ctx := context.TODO()
+
+	// check if collection already exists
+	collectionExists, err := client.CollectionExists(ctx, collectionName)
+	if err != nil {
+		logPanic(logCtx, "unable to determine if collection already exists: %v", err)
+	}
+	if collectionExists {
+		logging.Log.Debugf(logCtx, "collection %q already exists, skipping creation", collectionName)
+		return
+	}
+
+	// create the collection
+	err = client.CreateCollection(ctx, &qdrant.CreateCollection{
+		CollectionName: collectionName,
+		VectorsConfig: qdrant.NewVectorsConfig(&qdrant.VectorParams{
+			Size:     vectorSize,
+			Distance: qdrant_utils.VectorDistance(vectorDistance),
+		}),
+	})
+	if err != nil {
+		logPanic(logCtx, "failed to create collection: %q", err)
+	}
+	logging.Log.Debugf(logCtx, "Created collection: %s", collectionName)
+
+	// now create the default indexes (these are the things that other knowledgedb functions filter/search on)
+	// does ID need to be indexed?
+	indexes := []struct {
+		name      string
+		fieldType qdrant.FieldType
+	}{
+		{"level", qdrant.FieldType_FieldTypeKeyword},
+		{"keywords", qdrant.FieldType_FieldTypeKeyword},
+		{"document_id", qdrant.FieldType_FieldTypeKeyword},
+		{"tags", qdrant.FieldType_FieldTypeKeyword},
+	}
+	for _, index := range indexes {
+		request := qdrant.CreateFieldIndexCollection{
+			CollectionName: collectionName,
+			FieldName:      index.name,
+			FieldType:      &index.fieldType,
+		}
+		res, err := client.CreateFieldIndex(ctx, &request)
+		if err != nil {
+			logPanic(logCtx, "error creating payload index on %q: %v", index.name, err)
+		}
+		logging.Log.Debugf(logCtx, "created payload index on %q: %q", index.name, res.Status)
+	}
 }
