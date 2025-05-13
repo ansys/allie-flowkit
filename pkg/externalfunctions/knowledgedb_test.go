@@ -54,22 +54,22 @@ func TestSendVectorsToKnowledgeDB(t *testing.T) {
 		assert.True(collExists, "collection %q should exist but doesn't", collection)
 
 		// now insert some data
-		data := []map[string]any{
-			{
+		data := []any{
+			map[string]any{
 				"id":            uuid.NewString(),
 				"vector":        []float32{0, -1, -2, -3},
 				"document_name": "Doc 1",
 				"keywords":      []any{"kw1", "kw2"},
 				"level":         "leaf",
 			},
-			{
+			map[string]any{
 				"id":            uuid.NewString(),
 				"vector":        []float32{4, 5, 6, 7},
 				"document_name": "Doc 2",
 				"keywords":      []any{"kw2", "kw3", "kw4"},
 				"level":         "leaf",
 			},
-			{
+			map[string]any{
 				"id":            uuid.NewString(),
 				"vector":        []float32{4, 5, 6, 8},
 				"document_name": "Doc 3",
@@ -180,8 +180,8 @@ func TestGeneralQuery(t *testing.T) {
 	assert.True(collExists, "collection %q should exist but doesn't", COLLECTIONNAME)
 
 	// now insert some data
-	data := []map[string]any{
-		{
+	data := []any{
+		map[string]any{
 			"id":            uuid.NewString(),
 			"vector":        []float32{0, -1, -2, -3},
 			"document_name": "Doc",
@@ -189,7 +189,7 @@ func TestGeneralQuery(t *testing.T) {
 			"level":         "leaf",
 			"tags":          []any{},
 		},
-		{
+		map[string]any{
 			"id":            uuid.NewString(),
 			"vector":        []float32{4, 5, 6, 7},
 			"document_name": "Document 2",
@@ -197,7 +197,7 @@ func TestGeneralQuery(t *testing.T) {
 			"level":         "leaf",
 			"tags":          []any{"tag1", "tag2"},
 		},
-		{
+		map[string]any{
 			"id":            uuid.NewString(),
 			"vector":        []float32{4, 5, 6, 8},
 			"document_name": "Doc",
@@ -205,7 +205,7 @@ func TestGeneralQuery(t *testing.T) {
 			"level":         "leaf",
 			"tags":          []any{"tag1"},
 		},
-		{
+		map[string]any{
 			"id":            uuid.NewString(),
 			"vector":        []float32{4, 5, 6, 8},
 			"document_name": "Main",
@@ -213,7 +213,7 @@ func TestGeneralQuery(t *testing.T) {
 			"level":         "root",
 			"tags":          []any{"tag1", "tag2"},
 		},
-		{
+		map[string]any{
 			"id":            uuid.NewString(),
 			"vector":        []float32{4, 5, 6, 8},
 			"document_name": "title",
@@ -296,8 +296,8 @@ func TestSimilaritySearch(t *testing.T) {
 	docId := uuid.NewString()
 
 	// now insert some data
-	data := []map[string]any{
-		{
+	data := []any{
+		map[string]any{
 			"id":            uuids[0],
 			"vector":        []float32{0, -1, -2, -3},
 			"document_name": "Doc 1",
@@ -307,7 +307,7 @@ func TestSimilaritySearch(t *testing.T) {
 			"document_id":   docId,
 			"parent_id":     uuids[3],
 		},
-		{
+		map[string]any{
 			"id":            uuids[1],
 			"vector":        []float32{4, 5, 6, 7},
 			"document_name": "Document 2",
@@ -317,7 +317,7 @@ func TestSimilaritySearch(t *testing.T) {
 			"document_id":   docId,
 			"parent_id":     uuids[3],
 		},
-		{
+		map[string]any{
 			"id":            uuids[2],
 			"vector":        []float32{4, 5, 6, 8},
 			"document_name": "Doc 3",
@@ -326,7 +326,7 @@ func TestSimilaritySearch(t *testing.T) {
 			"tags":          []any{"tag1"},
 			"document_id":   uuid.NewString(),
 		},
-		{
+		map[string]any{
 			"id":            uuids[3],
 			"vector":        []float32{4, 5, 6, 8},
 			"document_name": "Main",
@@ -335,7 +335,7 @@ func TestSimilaritySearch(t *testing.T) {
 			"tags":          []any{"tag1", "tag2"},
 			"document_id":   docId,
 		},
-		{
+		map[string]any{
 			"id":              uuids[4],
 			"vector":          []float32{4, 5, 6, 8},
 			"document_name":   "title",
@@ -347,7 +347,7 @@ func TestSimilaritySearch(t *testing.T) {
 			"parent_id":       uuids[3],
 			"child_ids":       []any{uuids[0]},
 		},
-		{
+		map[string]any{
 			"id":                  uuids[5],
 			"vector":              []float32{0, 0, 0, 0},
 			"document_name":       "title 2",
