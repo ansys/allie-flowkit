@@ -46,20 +46,21 @@ func QdrantCreateCollection(collectionName string, vectorSize uint64, vectorDist
 //
 // Params:
 //   - collectionName (string): The name of the collection
-//   - data ([]map[string]any): The data points to insert
+//   - data ([]interface{}): The data points to insert (func will fail if elements are not `map[string]any`)
 //   - idFieldName (string): The name of the field to use as the ID
 //   - vectorFieldName (string): The name of the field to use as the vector
-func QdrantInsertData(collectionName string, data []map[string]any, idFieldName string, vectorFieldName string) {
+func QdrantInsertData(collectionName string, data []interface{}, idFieldName string, vectorFieldName string) {
 	points := make([]*qdrant.PointStruct, len(data))
 	for i, d := range data {
-		id := qdrant.NewIDUUID(d[idFieldName].(string))
-		vector := qdrant.NewVectorsDense(d[vectorFieldName].([]float32))
-		delete(d, idFieldName)
-		delete(d, vectorFieldName)
+		dataMap := d.(map[string]any)
+		id := qdrant.NewIDUUID(dataMap[idFieldName].(string))
+		vector := qdrant.NewVectorsDense(dataMap[vectorFieldName].([]float32))
+		delete(dataMap, idFieldName)
+		delete(dataMap, vectorFieldName)
 		points[i] = &qdrant.PointStruct{
 			Id:      id,
 			Vectors: vector,
-			Payload: qdrant.NewValueMap(d),
+			Payload: qdrant.NewValueMap(dataMap),
 		}
 	}
 
