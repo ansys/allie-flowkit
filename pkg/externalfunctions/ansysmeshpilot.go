@@ -17,7 +17,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
-	"github.com/ansys/allie-flowkit/pkg/meshpilot/azure"
+	"github.com/ansys/aali-flowkit/pkg/meshpilot/azure"
 )
 
 // MeshPilotReAct decides which tool to use based on user input

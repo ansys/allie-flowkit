@@ -9,10 +9,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/codegeneration"
 	"github.com/ansys/aali-graphdb-goclient/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
 )
 
 type graphDbContext struct {

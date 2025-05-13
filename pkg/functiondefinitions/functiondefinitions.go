@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ansys/aali-flowkit/pkg/internalstates"
 	"github.com/ansys/aali-sharedtypes/pkg/aaliflowkitgrpc"
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 )
 
 // ExtractFunctionDefinitionsFromPackage parses the given file for public functions and populates internalstates.AvailableFunctions.

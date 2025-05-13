@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
+	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/graphdb"
-	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/google/uuid"
 	"github.com/qdrant/go-client/qdrant"
 )
@@ -67,7 +67,7 @@ func SendVectorsToKnowledgeDB(vector []float32, keywords []string, keywordsSearc
 	}
 	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
 
-	// transform qdrant result into allie type
+	// transform qdrant result into aali type
 	dbResponses := make([]sharedtypes.DbResponse, len(scoredPoints))
 	for i, scoredPoint := range scoredPoints {
 		logging.Log.Debugf(&logging.ContextMap{}, "Result #%d:", i)
@@ -211,7 +211,7 @@ func GeneralQuery(collectionName string, maxRetrievalCount int, outputFields []s
 	}
 	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
 
-	// convert to allie type
+	// convert to aali type
 	databaseResponse = make([]sharedtypes.DbResponse, len(scoredPoints))
 	for i, scoredPoint := range scoredPoints {
 
@@ -279,7 +279,7 @@ func SimilaritySearch(
 	}
 	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
 
-	// convert to allie type
+	// convert to aali type
 	databaseResponse = make([]sharedtypes.DbResponse, len(scoredPoints))
 	for i, scoredPoint := range scoredPoints {
 

@@ -106,8 +106,8 @@ COPY --from=builder --chown=appuser:appgroup /app/configs/config.yaml ./configs/
 EXPOSE 50051
 
 # Add labels to the image
-LABEL org.opencontainers.image.source=https://github.com/ansys/allie-flowkit
-LABEL org.opencontainers.image.description="Allie Flowkit"
+LABEL org.opencontainers.image.source=https://github.com/ansys/aali-flowkit
+LABEL org.opencontainers.image.description="Aali Flowkit"
 LABEL org.opencontainers.image.authors="ANSYS Inc."
 LABEL org.opencontainers.image.vendor="ANSYS Inc."
 

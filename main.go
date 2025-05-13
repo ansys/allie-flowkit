@@ -6,9 +6,9 @@ import (
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 
-	"github.com/ansys/allie-flowkit/pkg/functiondefinitions"
-	"github.com/ansys/allie-flowkit/pkg/grpcserver"
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
+	"github.com/ansys/aali-flowkit/pkg/functiondefinitions"
+	"github.com/ansys/aali-flowkit/pkg/grpcserver"
+	"github.com/ansys/aali-flowkit/pkg/internalstates"
 )
 
 //go:embed pkg/externalfunctions/dataextraction.go
@@ -38,7 +38,7 @@ var authFile string
 func init() {
 	// initialize config
 	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
-		"SERVICE_NAME":        "allie-flowkit",
+		"SERVICE_NAME":        "aali-flowkit",
 		"VERSION":             "1.0",
 		"STAGE":               "PROD",
 		"ERROR_FILE_LOCATION": "error.log",

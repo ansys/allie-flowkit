@@ -278,7 +278,7 @@ func PerformKeywordExtractionRequest(input string, maxKeywordsSearch uint32) (ke
 	// Unmarshal JSON data into the result variable
 	err := json.Unmarshal([]byte(responseAsStr), &keywords)
 	if err != nil {
-		errMessage := fmt.Sprintf("Error unmarshalling keywords response from allie-llm: %v", err)
+		errMessage := fmt.Sprintf("Error unmarshalling keywords response from aali-llm: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}

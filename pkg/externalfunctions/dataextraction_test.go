@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
+	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/ansys/aali-graphdb-goclient/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
-	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/google/uuid"
 	"github.com/qdrant/go-client/qdrant"
 	"github.com/stretchr/testify/assert"
@@ -114,10 +114,10 @@ func TestAppendStringSlices(t *testing.T) {
 }
 
 type flowkitTestContainersConfig struct {
-	qdrant        bool
-	allieEmbedder bool
-	allieLlm      bool
-	aaliGraphDb   bool
+	qdrant       bool
+	aaliEmbedder bool
+	aaliLlm      bool
+	aaliGraphDb  bool
 }
 
 type hostPort struct {
@@ -126,11 +126,11 @@ type hostPort struct {
 }
 
 type flowkitTestContainersResult struct {
-	config        config.Config
-	qdrant        *hostPort
-	allieEmbedder *hostPort
-	allieLlm      *hostPort
-	aaliGraphdDb  *hostPort
+	config       config.Config
+	qdrant       *hostPort
+	aaliEmbedder *hostPort
+	aaliLlm      *hostPort
+	aaliGraphdDb *hostPort
 }
 
 // StdoutLogConsumer is a LogConsumer that prints the log to stdout
@@ -145,9 +145,9 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 
 	result := flowkitTestContainersResult{config: config.Config{LOG_LEVEL: "debug"}}
 
-	allieNetwork, err := network.New(ctx)
+	aaliNetwork, err := network.New(ctx)
 	require.NoError(t, err)
-	testcontainers.CleanupNetwork(t, allieNetwork)
+	testcontainers.CleanupNetwork(t, aaliNetwork)
 
 	logConsumer := testcontainers.LogConsumerConfig{
 		Opts:      []testcontainers.LogProductionOption{testcontainers.WithLogProductionTimeout(10 * time.Second)},
@@ -163,8 +163,8 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 				wait.ForLog("Qdrant gRPC listening on 6334"),
 				wait.ForListeningPort("6334/tcp"),
 			),
-			Networks:       []string{allieNetwork.Name},
-			NetworkAliases: map[string][]string{allieNetwork.Name: {"qdrant"}},
+			Networks:       []string{aaliNetwork.Name},
+			NetworkAliases: map[string][]string{aaliNetwork.Name: {"qdrant"}},
 			LogConsumerCfg: &logConsumer,
 		}
 		qdrantCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -182,54 +182,54 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 		result.config.QDRANT_PORT = qdrantPort.Int()
 	}
 
-	if testContainerConfig.allieEmbedder {
-		// setup allie-codegen-embedder
-		allieEmbedderReq := testcontainers.ContainerRequest{
-			Image:        "ghcr.io/ansys-internal/allie-embedding:latest",
+	if testContainerConfig.aaliEmbedder {
+		// setup aali-codegen-embedder
+		aaliEmbedderReq := testcontainers.ContainerRequest{
+			Image:        "ghcr.io/ansys-internal/aali-embedding:latest",
 			ExposedPorts: []string{"8000/tcp"},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Uvicorn running on http://0.0.0.0:8000"),
 				wait.ForListeningPort("8000/tcp"),
 			),
-			Networks:       []string{allieNetwork.Name},
-			NetworkAliases: map[string][]string{allieNetwork.Name: {"allie-codegen-embedder"}},
+			Networks:       []string{aaliNetwork.Name},
+			NetworkAliases: map[string][]string{aaliNetwork.Name: {"aali-codegen-embedder"}},
 			LogConsumerCfg: &logConsumer,
 		}
-		allieEmbedderCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-			ContainerRequest: allieEmbedderReq, Started: true,
+		aaliEmbedderCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: aaliEmbedderReq, Started: true,
 		})
-		defer testcontainers.CleanupContainer(t, allieEmbedderCont)
+		defer testcontainers.CleanupContainer(t, aaliEmbedderCont)
 		require.NoError(t, err)
-		allieEmbedderHost, err := allieEmbedderCont.Host(ctx)
+		aaliEmbedderHost, err := aaliEmbedderCont.Host(ctx)
 		require.NoError(t, err)
-		allieEmbedderPort, err := allieEmbedderCont.MappedPort(ctx, "8000/tcp")
+		aaliEmbedderPort, err := aaliEmbedderCont.MappedPort(ctx, "8000/tcp")
 		require.NoError(t, err)
 
-		result.allieEmbedder = &hostPort{allieEmbedderHost, allieEmbedderPort.Int()}
+		result.aaliEmbedder = &hostPort{aaliEmbedderHost, aaliEmbedderPort.Int()}
 	}
 
-	if testContainerConfig.allieLlm {
-		// setup allie-llm
+	if testContainerConfig.aaliLlm {
+		// setup aali-llm
 		// setup config
-		allieLlmConfigFile, err := os.CreateTemp("", "test-allie-config")
+		aaliLlmConfigFile, err := os.CreateTemp("", "test-aali-config")
 		require.NoError(t, err)
-		defer require.NoError(t, os.Remove(allieLlmConfigFile.Name()))
-		allieLlmConfig, err := yaml.Marshal(config.Config{WEBSERVER_PORT: "9003", LOG_LEVEL: "debug"})
+		defer require.NoError(t, os.Remove(aaliLlmConfigFile.Name()))
+		aaliLlmConfig, err := yaml.Marshal(config.Config{WEBSERVER_PORT: "9003", LOG_LEVEL: "debug"})
 		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(allieLlmConfigFile.Name(), allieLlmConfig, 0644))
+		require.NoError(t, os.WriteFile(aaliLlmConfigFile.Name(), aaliLlmConfig, 0644))
 
 		// setup models.yaml
-		allieLlmModelsFile, err := os.CreateTemp("", "test-allie-models")
+		aaliLlmModelsFile, err := os.CreateTemp("", "test-aali-models")
 		require.NoError(t, err)
-		defer require.NoError(t, os.Remove(allieLlmModelsFile.Name()))
+		defer require.NoError(t, os.Remove(aaliLlmModelsFile.Name()))
 
-		// embedder will only actually work if `testContainerConfig.allieEmbedder=true`, but set it up
+		// embedder will only actually work if `testContainerConfig.aaliEmbedder=true`, but set it up
 		// here since you need something
 		modelsYml := []string{
 			"EMBEDDING_MODELS:",
 			"  - MODEL_TYPE: bge-m3",
 			"    MODEL_NAME: BAAI/bge-m3",
-			"    URL: http://allie-codegen-embedder:8000/",
+			"    URL: http://aali-codegen-embedder:8000/",
 			"    NUMBER_OF_WORKERS: 2",
 			"",
 			"CHAT_MODELS:",
@@ -240,47 +240,47 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 			"    API_KEY: ", // don't actually need it for any of these tests
 			"    NUMBER_OF_WORKERS: 2",
 		}
-		require.NoError(t, os.WriteFile(allieLlmModelsFile.Name(), []byte(strings.Join(modelsYml, "\n")), 0644))
+		require.NoError(t, os.WriteFile(aaliLlmModelsFile.Name(), []byte(strings.Join(modelsYml, "\n")), 0644))
 
 		// now start the container with the 2 files mounted
-		allieLlmReq := testcontainers.ContainerRequest{
+		aaliLlmReq := testcontainers.ContainerRequest{
 			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    "../../../allie-llm",
+				Context:    "../../../aali-llm",
 				Dockerfile: "deployments/docker/Dockerfile",
 			},
 			ExposedPorts: []string{"9003/tcp"},
 			WaitingFor: wait.ForAll(
-				wait.ForLog("Allie LLM started successfully; Webserver is listening on port 9003"),
+				wait.ForLog("Aali LLM started successfully; Webserver is listening on port 9003"),
 				wait.ForListeningPort("9003/tcp"),
 			),
 			Files: []testcontainers.ContainerFile{
 				{
-					HostFilePath:      allieLlmConfigFile.Name(),
+					HostFilePath:      aaliLlmConfigFile.Name(),
 					ContainerFilePath: "/app/config.yaml",
 					FileMode:          0644,
 				},
 				{
-					HostFilePath:      allieLlmModelsFile.Name(),
+					HostFilePath:      aaliLlmModelsFile.Name(),
 					ContainerFilePath: "/app/models.yaml",
 					FileMode:          0644,
 				},
 			},
-			Networks:       []string{allieNetwork.Name},
-			NetworkAliases: map[string][]string{allieNetwork.Name: {"allie-llm"}},
+			Networks:       []string{aaliNetwork.Name},
+			NetworkAliases: map[string][]string{aaliNetwork.Name: {"aali-llm"}},
 			LogConsumerCfg: &logConsumer,
 		}
-		allieLlmCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-			ContainerRequest: allieLlmReq, Started: true,
+		aaliLlmCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: aaliLlmReq, Started: true,
 		})
-		defer testcontainers.CleanupContainer(t, allieLlmCont)
+		defer testcontainers.CleanupContainer(t, aaliLlmCont)
 		require.NoError(t, err)
-		allieLlmHost, err := allieLlmCont.Host(ctx)
+		aaliLlmHost, err := aaliLlmCont.Host(ctx)
 		require.NoError(t, err)
-		allieLlmPort, err := allieLlmCont.MappedPort(ctx, "9003/tcp")
+		aaliLlmPort, err := aaliLlmCont.MappedPort(ctx, "9003/tcp")
 		require.NoError(t, err)
 
-		result.allieLlm = &hostPort{allieLlmHost, allieLlmPort.Int()}
-		result.config.LLM_HANDLER_ENDPOINT = fmt.Sprintf("ws://%s:%d", allieLlmHost, allieLlmPort.Int())
+		result.aaliLlm = &hostPort{aaliLlmHost, aaliLlmPort.Int()}
+		result.config.LLM_HANDLER_ENDPOINT = fmt.Sprintf("ws://%s:%d", aaliLlmHost, aaliLlmPort.Int())
 	}
 
 	if testContainerConfig.aaliGraphDb {
@@ -292,8 +292,8 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 				wait.ForLog("listening on 0.0.0.0:8080"),
 				wait.ForListeningPort("8080/tcp"),
 			),
-			Networks:       []string{allieNetwork.Name},
-			NetworkAliases: map[string][]string{allieNetwork.Name: {"aali-graphdb"}},
+			Networks:       []string{aaliNetwork.Name},
+			NetworkAliases: map[string][]string{aaliNetwork.Name: {"aali-graphdb"}},
 			LogConsumerCfg: &logConsumer,
 		}
 		aaliGraphDbCont, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -322,9 +322,9 @@ func TestStoreElementsInVectorDatabase(t *testing.T) {
 
 	// start containers & set config
 	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
-		qdrant:        true,
-		allieEmbedder: true,
-		allieLlm:      true,
+		qdrant:       true,
+		aaliEmbedder: true,
+		aaliLlm:      true,
 	})
 	config.GlobalConfig = &setup.config
 	logging.InitLogger(&setup.config)
@@ -462,9 +462,9 @@ func TestStoreExamplesInVectorDatabase(t *testing.T) {
 
 	// start containers & set config
 	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
-		qdrant:        true,
-		allieEmbedder: true,
-		allieLlm:      true,
+		qdrant:       true,
+		aaliEmbedder: true,
+		aaliLlm:      true,
 	})
 	config.GlobalConfig = &setup.config
 	logging.InitLogger(&setup.config)
@@ -598,9 +598,9 @@ func TestStoreUserGuideSectionsInVectorDatabase(t *testing.T) {
 
 	// start containers & set config
 	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
-		qdrant:        true,
-		allieEmbedder: true,
-		allieLlm:      true,
+		qdrant:       true,
+		aaliEmbedder: true,
+		aaliLlm:      true,
 	})
 	config.GlobalConfig = &setup.config
 	logging.InitLogger(&setup.config)
@@ -730,10 +730,10 @@ func TestStoreElementsInGraphDatabase(t *testing.T) {
 
 	// start containers & set config
 	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
-		qdrant:        false,
-		allieEmbedder: false,
-		allieLlm:      false,
-		aaliGraphDb:   true,
+		qdrant:       false,
+		aaliEmbedder: false,
+		aaliLlm:      false,
+		aaliGraphDb:  true,
 	})
 	config.GlobalConfig = &setup.config
 	logging.InitLogger(&setup.config)
@@ -831,10 +831,10 @@ func TestStoreExamplesInGraphDatabase(t *testing.T) {
 
 	// start containers & set config
 	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
-		qdrant:        false,
-		allieEmbedder: false,
-		allieLlm:      false,
-		aaliGraphDb:   true,
+		qdrant:       false,
+		aaliEmbedder: false,
+		aaliLlm:      false,
+		aaliGraphDb:  true,
 	})
 	config.GlobalConfig = &setup.config
 	logging.InitLogger(&setup.config)
@@ -902,10 +902,10 @@ func TestStoreUserGuideSectionsInGraphDatabase(t *testing.T) {
 
 	// start containers & set config
 	setup := setupFlowkitTestContainers(t, ctx, flowkitTestContainersConfig{
-		qdrant:        false,
-		allieEmbedder: false,
-		allieLlm:      false,
-		aaliGraphDb:   true,
+		qdrant:       false,
+		aaliEmbedder: false,
+		aaliLlm:      false,
+		aaliGraphDb:  true,
 	})
 	config.GlobalConfig = &setup.config
 	logging.InitLogger(&setup.config)

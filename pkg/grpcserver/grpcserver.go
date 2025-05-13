@@ -6,13 +6,13 @@ import (
 	"net"
 	"reflect"
 
+	"github.com/ansys/aali-flowkit/pkg/externalfunctions"
 	"github.com/ansys/aali-sharedtypes/pkg/aaliflowkitgrpc"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/typeconverters"
-	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
 
+	"github.com/ansys/aali-flowkit/pkg/internalstates"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -60,7 +60,7 @@ func StartServer() {
 	// Create the gRPC server with the options
 	s := grpc.NewServer(opts...)
 	aaliflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
-	logging.Log.Infof(&logging.ContextMap{}, "Allie FlowKit started successfully; gRPC server listening on port %v...", config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
+	logging.Log.Infof(&logging.ContextMap{}, "Aali FlowKit started successfully; gRPC server listening on port %v...", config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
 	if err := s.Serve(lis); err != nil {
 		logging.Log.Fatalf(&logging.ContextMap{}, "failed to serve: %v", err)
 	}
@@ -127,7 +127,7 @@ func (s *server) RunFunction(ctx context.Context, req *aaliflowkitgrpc.FunctionI
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = fmt.Errorf("error occured in gRPC server allie-flowkit during RunFunction of '%v': %v", req.Name, r)
+			err = fmt.Errorf("error occured in gRPC server aali-flowkit during RunFunction of '%v': %v", req.Name, r)
 		}
 	}()
 
@@ -212,7 +212,7 @@ func (s *server) StreamFunction(req *aaliflowkitgrpc.FunctionInputs, stream aali
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = fmt.Errorf("error occured in gRPC server allie-flowkit during StreamFunction of '%v': %v", req.Name, r)
+			err = fmt.Errorf("error occured in gRPC server aali-flowkit during StreamFunction of '%v': %v", req.Name, r)
 		}
 	}()
 

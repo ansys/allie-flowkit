@@ -1,4 +1,4 @@
-module github.com/ansys/allie-flowkit
+module github.com/ansys/aali-flowkit
 
 go 1.23.0
 

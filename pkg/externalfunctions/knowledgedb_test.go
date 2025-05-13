@@ -5,10 +5,10 @@ import (
 	"maps"
 	"testing"
 
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/graphdb"
 	"github.com/google/uuid"
 	"github.com/qdrant/go-client/qdrant"
 	"github.com/stretchr/testify/assert"
@@ -28,10 +28,10 @@ func TestSendVectorsToKnowledgeDB(t *testing.T) {
 			t,
 			ctx,
 			flowkitTestContainersConfig{
-				qdrant:        true,
-				allieEmbedder: false,
-				allieLlm:      false,
-				aaliGraphDb:   false,
+				qdrant:       true,
+				aaliEmbedder: false,
+				aaliLlm:      false,
+				aaliGraphDb:  false,
 			},
 		)
 		config.GlobalConfig = &setup.config
@@ -109,10 +109,10 @@ func TestCreateAndListCollections(t *testing.T) {
 		t,
 		ctx,
 		flowkitTestContainersConfig{
-			qdrant:        true,
-			allieEmbedder: false,
-			allieLlm:      false,
-			aaliGraphDb:   false,
+			qdrant:       true,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  false,
 		},
 	)
 	config.GlobalConfig = &setup.config
@@ -153,10 +153,10 @@ func TestGeneralQuery(t *testing.T) {
 		t,
 		ctx,
 		flowkitTestContainersConfig{
-			qdrant:        true,
-			allieEmbedder: false,
-			allieLlm:      false,
-			aaliGraphDb:   false,
+			qdrant:       true,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  false,
 		},
 	)
 	config.GlobalConfig = &setup.config
@@ -262,10 +262,10 @@ func TestSimilaritySearch(t *testing.T) {
 		t,
 		ctx,
 		flowkitTestContainersConfig{
-			qdrant:        true,
-			allieEmbedder: false,
-			allieLlm:      false,
-			aaliGraphDb:   false,
+			qdrant:       true,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  false,
 		},
 	)
 	config.GlobalConfig = &setup.config
@@ -411,10 +411,10 @@ func TestAddDataRequest(t *testing.T) {
 		t,
 		ctx,
 		flowkitTestContainersConfig{
-			qdrant:        true,
-			allieEmbedder: false,
-			allieLlm:      false,
-			aaliGraphDb:   false,
+			qdrant:       true,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  false,
 		},
 	)
 	config.GlobalConfig = &setup.config
@@ -515,10 +515,10 @@ func TestRetrieveDependencies(t *testing.T) {
 		t,
 		ctx,
 		flowkitTestContainersConfig{
-			qdrant:        false,
-			allieEmbedder: false,
-			allieLlm:      false,
-			aaliGraphDb:   true,
+			qdrant:       false,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  true,
 		},
 	)
 	config.GlobalConfig = &setup.config
@@ -575,10 +575,10 @@ func TestGeneralGraphDbQuery(t *testing.T) {
 		t,
 		ctx,
 		flowkitTestContainersConfig{
-			qdrant:        false,
-			allieEmbedder: false,
-			allieLlm:      false,
-			aaliGraphDb:   true,
+			qdrant:       false,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  true,
 		},
 	)
 	config.GlobalConfig = &setup.config

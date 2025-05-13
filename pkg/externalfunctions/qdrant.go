@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
-	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/qdrant/go-client/qdrant"
 )
 

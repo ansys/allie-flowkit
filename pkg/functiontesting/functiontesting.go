@@ -3,7 +3,7 @@ package functiontesting
 import (
 	"fmt"
 
-	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
+	"github.com/ansys/aali-flowkit/pkg/externalfunctions"
 )
 
 // TestAnsysGPTACSSearchIndex tests the AnsysGPTACSSemanticHybridSearch function.

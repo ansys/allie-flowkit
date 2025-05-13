@@ -11,14 +11,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/graphdb"
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/codegeneration"
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
 	"github.com/qdrant/go-client/qdrant"
 
+	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
-	qdrant_utils "github.com/ansys/allie-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/google/uuid"
 	"github.com/pandodao/tokenizer-go"
 	"github.com/tmc/langchaingo/documentloaders"
