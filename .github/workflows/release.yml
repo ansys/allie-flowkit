@@ -14,9 +14,9 @@ concurrency:
 jobs:
 
 # ---------------------------------------------------------------------
-# UPDATE VERSION  ── update VERSION file and check if tag is on main branch
+# CHECK TAG BRANCH  ── check if tag is on main branch
 # ---------------------------------------------------------------------
-  update-version-file:
+  check-tag-branch:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,27 +40,12 @@ jobs:
             echo "Tag is on main branch. Continuing workflow."
           fi
 
-      - name: Configure Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Update VERSION file
-        run: |
-          echo "${{ github.ref_name }}" > VERSION
-
-      - name: Commit and push changes
-        run: |
-          git add VERSION
-          git commit -m "Update VERSION file to ${{ github.ref_name }}"
-          git push origin main
-
 # ---------------------------------------------------------------------
 # BUILD DOCS  ── build documentation
 # ---------------------------------------------------------------------
   docs-build:
     name: Build Documentation
-    needs: [update-version-file]
+    needs: [check-tag-branch]
     uses: "./.github/workflows/docs_build.yml"
     with:
       name: "Build Documentation"
@@ -287,6 +272,8 @@ jobs:
           file: docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
           tags: |
             ghcr.io/${{ github.repository }}:${{ env.X }} ,
             ghcr.io/${{ github.repository }}:${{ env.X }}.${{ env.Y }} ,
@@ -301,6 +288,8 @@ jobs:
           file: docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 

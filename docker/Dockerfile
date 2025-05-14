@@ -13,10 +13,9 @@ RUN chown -R appuser:appgroup /app
 # setup for private go dependencies, needs to be done before user switch
 RUN apk add --no-cache git openssh
 COPY --chown=appuser:appgroup go.mod go.sum ./
-RUN git config --global url.ssh://git@github.com/.insteadOf https://github.com/
-RUN mkdir -p -m 600 ~/.ssh && \
-    ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-RUN --mount=type=ssh go mod download
+ARG GITHUB_TOKEN
+RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+RUN go mod download
 
 # Switch to the non-root user
 USER appuser
