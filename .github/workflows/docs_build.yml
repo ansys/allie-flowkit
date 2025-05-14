@@ -50,22 +50,14 @@ jobs:
         with:
           python-version: ${{ env.MAIN_PYTHON_VERSION }}
 
-      - name: Generate Go Pages (with Debugging)
+      - name: setup go for private modules
         run: |
-          echo "--- Debug Info ---"
-          pwd
-          ls -la
-          go version
-          go env
-          echo "--- go list . ---"
-          go list .
-          echo "--- go list ./... ---"
-          go list ./...
-          echo "--- End Debug Info ---"
+          echo "machine github.com login ${{ secrets.PYANSYS_CI_BOT_USERNAME }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > $HOME/.netrc
 
+      - name: Build GoPages
+        run: |
           go install github.com/johnstarich/go/gopages@latest
-          gopages -module . -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}" ./...
-        shell: /usr/bin/bash -e {0}
+          gopages -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
 
       - name: Download HTML documentation artifacts
         uses: actions/download-artifact@v4
