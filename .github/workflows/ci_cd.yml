@@ -87,6 +87,7 @@ jobs:
     uses: "./.github/workflows/docs_build.yml"
     with:
       name: "Build Documentation"
+    secrets: inherit
 
   upload_dev_docs:
     name: Upload dev documentation
