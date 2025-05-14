@@ -70,7 +70,7 @@ jobs:
           echo "--- End Debug Info ---"
 
           go install github.com/johnstarich/go/gopages@latest
-          gopages -module . -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}" ./...
+          gopages -internal -source-link "https://github.com/ansys/aali-agent/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
           echo "Cleaning up .netrc"
           rm -f ~/.netrc
         shell: /usr/bin/bash -e {0}
