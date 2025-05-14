@@ -1,3 +1,25 @@
+// Copyright (C) 2025 ANSYS, Inc. and/or its affiliates.
+// SPDX-License-Identifier: MIT
+//
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package externalfunctions
 
 import (
@@ -9,15 +31,15 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/russross/blackfriday/v2"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
-	"github.com/ansys/allie-flowkit/pkg/meshpilot/azure"
+	"github.com/ansys/aali-flowkit/pkg/meshpilot/azure"
 )
 
 // MeshPilotReAct decides which tool to use based on user input
@@ -1703,7 +1725,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 	ctx := &logging.ContextMap{}
 
 	logging.Log.Info(ctx, "Get Actions From Config...")
-	logging.Log.Info(ctx, "Tool Name: %q", toolName)
+	logging.Log.Infof(ctx, "Tool Name: %q", toolName)
 
 	// Configuration keys for different tools, for now only tool 9 and tool 11
 	configKeys := map[string]map[string]string{

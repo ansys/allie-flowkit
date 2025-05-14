@@ -1,11 +1,31 @@
+// Copyright (C) 2025 ANSYS, Inc. and/or its affiliates.
+// SPDX-License-Identifier: MIT
+//
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package codegeneration
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
 )
 
 // RemoveEmptyLines removes empty lines from a string
@@ -145,30 +165,4 @@ func ProcessElementName(fullName string, dependencies []string) (namePseudocode 
 		}
 	}
 	return namePseudocode, nameFormatted, nil
-}
-
-// StringToCodeGenerationType converts a string to a CodeGenerationType
-// enum value.
-//
-// Parameters:
-//   - nodeTypeString: the string to convert
-//
-// Returns:
-//   - the CodeGenerationType value
-//   - an error if the string is invalid
-func StringToCodeGenerationType(nodeTypeString string) (sharedtypes.CodeGenerationType, error) {
-	switch nodeTypeString {
-	case "Function":
-		return sharedtypes.Function, nil
-	case "Class":
-		return sharedtypes.Class, nil
-	case "Method":
-		return sharedtypes.Method, nil
-	case "Enum":
-		return sharedtypes.Enum, nil
-	case "Module":
-		return sharedtypes.Module, nil
-	default:
-		return "", fmt.Errorf("invalid node type: %s", nodeTypeString)
-	}
 }

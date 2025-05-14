@@ -9,7 +9,7 @@ ____________________
 
 Example:
 ```go
-// File: allie-flowkit/pkg/externalfunctions/data_extraction.go
+// File: aali-flowkit/pkg/externalfunctions/data_extraction.go
 package externalfunctions
 
 // TransformData processes input data and returns a transformed result.
@@ -29,7 +29,7 @@ Now, we **must** add this newly defined method to externalfunctions.
 
 Example (continued):
 ```go
-// File: allie-flowkit/pkg/externalfunctions/externalfunctions.go
+// File: aali-flowkit/pkg/externalfunctions/externalfunctions.go
 var ExternalFunctionsMap = map[string]interface{}{
     // llm handler
     "PerformVectorEmbeddingRequest":                                   PerformVectorEmbeddingRequest,
@@ -60,7 +60,7 @@ Define your new type in the appropriate package within `types.go`.
 
 Example:
 ```go
-// File: allie-flowkit/pkg/externalfunctions/types.go
+// File: aali-flowkit/pkg/externalfunctions/types.go
 
 package externalfunctions
 
@@ -71,11 +71,11 @@ type RLAgent struct {
 }
 ```
 ### Step 2: Include the Type
-Incorperate the new type into its respective location in `allie-sharedtypes` repo.
+Incorperate the new type into its respective location in `aali-sharedtypes` repo.
 
 Example:
 ```go
-// File: allie-sharedtypes/pkg/sharedtypes/dataextraction.go
+// File: aali-sharedtypes/pkg/sharedtypes/dataextraction.go
 
 package externalfunctions
 
@@ -86,11 +86,11 @@ type RLAgent struct {
 }
 ```
 ### Step 3: Configure the Type
-Now you must make the changes in the `allie-agent-configurator` repo.
+Now you must make the changes in the `aali-agent-configurator` repo.
 
 Example:
 ```ts
-// File: allie-agent-configurator/src/app/constants/constants.ts
+// File: aali-agent-configurator/src/app/constants/constants.ts
 
 import { MatTooltipDefaultOptions } from "@angular/material/tooltip";
 // CONTINUED
@@ -139,11 +139,11 @@ export const goTypes: string[] = [
 ```
 
 ### Step 4: Update Type Checking
-When adding a type, you must ensure it's registered and convertible in `allie-sharedtypes`. Specifically, for the `ConvertStringToGivenType` and `ConvertGivenTypeToString` functions.
+When adding a type, you must ensure it's registered and convertible in `aali-sharedtypes`. Specifically, for the `ConvertStringToGivenType` and `ConvertGivenTypeToString` functions.
 
 Example:
 ```go
-// File: allie-sharedtypes/pkg/typeconverters/typeconverters.go
+// File: aali-sharedtypes/pkg/typeconverters/typeconverters.go
 
 package typeconverters
 
@@ -153,7 +153,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
 // . . .
 func ConvertStringToGivenType(value string, goType string) (output interface{}, err error) {
@@ -209,7 +209,7 @@ Update the `main.go` file to include the new category (if necessary) with the co
 
 Example:
 ```go
-// File: allie-flowkit/main.go
+// File: aali-flowkit/main.go
 
 func main() {
     // . . .
@@ -236,11 +236,11 @@ func main() {
 }
 ```
 ### Step 3: Update the Agent Config
-Update the `allie-agent-configurator` to include the new category (if necessary) with the corresponding name, same constants file as the type
+Update the `aali-agent-configurator` to include the new category (if necessary) with the corresponding name, same constants file as the type
 
 Example:
 ```ts
-// File: allie-agent-configurator/src/app/constants/constants.ts
+// File: aali-agent-configurator/src/app/constants/constants.ts
 
 import { MatTooltipDefaultOptions } from "@angular/material/tooltip";
 // CONTINUED
@@ -262,7 +262,7 @@ export const functionCategories = {
 Using the guide from earlier, let's simply add a function to `generic.go` for the sake of testing. It will simply output a random name from a set of names, in this case LLMs!
 
 ```go
-// File: allie-flowkit/pkg/externalfunctions/generic.go
+// File: aali-flowkit/pkg/externalfunctions/generic.go
 
 // RandomLLMNamePredictor predicts a random LLM name based on the input text.
 //
@@ -306,7 +306,7 @@ Now, we **must** add this newly defined method to externalfunctions.
 
 Example (continued):
 ```go
-// File: allie-flowkit/pkg/externalfunctions/externalfunctions.go
+// File: aali-flowkit/pkg/externalfunctions/externalfunctions.go
 
 var ExternalFunctionsMap = map[string]interface{}{
     // llm handler
@@ -322,7 +322,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 }
 ```
 
-### 3. Build a quick flow in Allie-Chat
+### 3. Build a quick flow in Aali-Chat
 Below is an easy demonstration on how to visualize and verify both the method's availability as well as the output in a simple workflow. Use port 9008 on localhost to develop a workflow, and localhost 9006 to chat with a selected workflow!
-![Allie Workflow](tutorial/workflow_ex.png)
-![Allie Chat](tutorial/testMethod.png)
+![Aali Workflow](tutorial/workflow_ex.png)
+![Aali Chat](tutorial/testMethod.png)
