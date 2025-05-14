@@ -49,6 +49,7 @@ jobs:
     uses: "./.github/workflows/docs_build.yml"
     with:
       name: "Build Documentation"
+    secrets: inherit
 
 # ---------------------------------------------------------------------
 # BUILD BINARIES  ── build binaries for Linux, Windows & macOS
