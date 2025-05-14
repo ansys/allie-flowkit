@@ -50,10 +50,21 @@ jobs:
         with:
           python-version: ${{ env.MAIN_PYTHON_VERSION }}
 
-      - name: Build GoPages
+      - name: Generate Go Pages (with Debugging)
         run: |
+          echo "--- Debug Info ---"
+          pwd
+          ls -la
+          go version
+          go env
+          echo "--- go list . ---"
+          go list .
+          echo "--- go list ./... ---"
+          go list ./...
+          echo "--- End Debug Info ---"
+
           go install github.com/johnstarich/go/gopages@latest
-          gopages -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}" ./...
+          gopages -module . -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}" ./...
         shell: /usr/bin/bash -e {0}
 
       - name: Download HTML documentation artifacts
