@@ -8,7 +8,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
 	github.com/ansys/aali-graphdb-goclient v0.3.1
-	github.com/ansys/aali-sharedtypes v1.0.1-0.20250508201128-59153413e1a8
+	github.com/ansys/aali-sharedtypes v1.0.3-0.20250513175807-72cff5257c20
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/pandodao/tokenizer-go v0.2.0
