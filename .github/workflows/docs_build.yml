@@ -53,19 +53,9 @@ jobs:
       - name: Generate Go Pages
         env:
           GOPRIVATE: "github.com/ansys"
-          # If PYANSYS_CI_BOT_TOKEN is a PAT, the username for .netrc should be x-access-token
-          # If it's an actual password for a user, use that username.
-          # Assuming PYANSYS_CI_BOT_TOKEN is a PAT:
-          GIT_USER: "x-access-token"
         run: |
-          # Option 1: Remove any previous git config that might interfere
-          # git config --global --unset url."https://x-access-token:${{ secrets.PYANSYS_CI_BOT_TOKEN }}@github.com/".insteadOf
-          # Or more generally, to clear any such https rewrites for github.com:
-          # git config --global --unset-all url.https://github.com/.insteadof
-          # Better to just not have the problematic config in the first place if switching methods.
-
           echo "Setting up .netrc for Git authentication"
-          echo "machine github.com login ${{ env.GIT_USER }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > ~/.netrc
+          echo "machine github.com login ${{ secrets.PYANSYS_CI_BOT_USERNAME }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > ~/.netrc
           chmod 600 ~/.netrc
           echo ".netrc configured"
 
@@ -81,9 +71,6 @@ jobs:
 
           go install github.com/johnstarich/go/gopages@latest
           gopages -module . -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}" ./...
-
-          # Good practice: remove .netrc after use if it contains sensitive info
-          # although the runner environment is ephemeral.
           echo "Cleaning up .netrc"
           rm -f ~/.netrc
         shell: /usr/bin/bash -e {0}
