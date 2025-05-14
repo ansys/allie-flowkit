@@ -207,7 +207,7 @@ func setupFlowkitTestContainers(t *testing.T, ctx context.Context, testContainer
 	if testContainerConfig.aaliEmbedder {
 		// setup aali-codegen-embedder
 		aaliEmbedderReq := testcontainers.ContainerRequest{
-			Image:        "ghcr.io/ansys-internal/aali-embedding:latest",
+			Image:        "ghcr.io/ansys/aali-embedding:latest",
 			ExposedPorts: []string{"8000/tcp"},
 			WaitingFor: wait.ForAll(
 				wait.ForLog("Uvicorn running on http://0.0.0.0:8000"),
