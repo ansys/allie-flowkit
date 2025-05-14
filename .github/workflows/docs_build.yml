@@ -50,11 +50,26 @@ jobs:
         with:
           python-version: ${{ env.MAIN_PYTHON_VERSION }}
 
-      - name: Build GoPages
+      - name: Generate Go Pages
+        env:
+          GOPRIVATE: "github.com/ansys"
         run: |
-          git config --global url."https://x-access-token:${{ secrets.PYANSYS_CI_BOT_TOKEN }}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+          echo "--- Debug Info ---"
+          pwd
+          # ls -la # You can keep or remove this
+          go version
+          go env # Check GOPRIVATE is now set
+          echo "--- go list . ---"
+          go list .
+          echo "--- go list ./... ---"
+          go list ./... # This should now pass
+          echo "--- End Debug Info ---"
+
           go install github.com/johnstarich/go/gopages@latest
-          gopages -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
+          gopages -module . -internal -source-link "https://github.com/ansys/aali-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}" ./...
+        shell: /usr/bin/bash -e {0}
 
       - name: Download HTML documentation artifacts
         uses: actions/download-artifact@v4
