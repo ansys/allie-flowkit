@@ -34,7 +34,7 @@ import (
 	"time"
 
 	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
-	"github.com/ansys/aali-graphdb-goclient/aali_graphdb"
+	"github.com/ansys/aali-sharedtypes/pkg/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
