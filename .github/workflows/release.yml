@@ -1,123 +1,242 @@
-name: Allie Release
+name: Aali Release
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 env:
-  MAIN_PYTHON_VERSION: '3.12'
-  DOCUMENTATION_CNAME: 'laughing-guide-5m1lvq6.pages.github.io'
+  DOCUMENTATION_CNAME: 'ansys.github.io/aali-flowkit'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  binaries:
-    name: Create binaries for Windows and Linux
+
+# ---------------------------------------------------------------------
+# CHECK TAG BRANCH  ── check if tag is on main branch
+# ---------------------------------------------------------------------
+  check-tag-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if tag is on main branch and delete if not
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          BRANCH=$(git branch -r --contains ${{ github.ref }} | grep 'origin/main' || echo '')
+
+          if [ -z "$BRANCH" ]; then
+            echo "❌ Tag $TAG_NAME was not added to the main branch. Deleting tag and exiting."
+            git push origin --delete $TAG_NAME
+            echo "Tag $TAG_NAME has been deleted."
+            exit 0  # Exit successfully to avoid workflow failure notification
+          else
+            echo "Tag is on main branch. Continuing workflow."
+          fi
+
+# ---------------------------------------------------------------------
+# BUILD DOCS  ── build documentation
+# ---------------------------------------------------------------------
+  docs-build:
+    name: Build Documentation
+    needs: [check-tag-branch]
+    uses: "./.github/workflows/docs_build.yml"
+    with:
+      name: "Build Documentation"
+    secrets: inherit
+
+# ---------------------------------------------------------------------
+# BUILD BINARIES  ── build binaries for Linux, Windows & macOS
+# ---------------------------------------------------------------------
+  build:
+    name: Create binaries for Linux, Windows & macOS
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
-
+        include:
+          # ── Linux
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            platform: linux_amd64
+            ext: ""
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            platform: linux_arm64
+            ext: ""
+          # ── Windows
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
+            platform: windows_amd64
+            ext: ".exe"
+          - os: windows-latest
+            goos: windows
+            goarch: arm64
+            platform: windows_arm64
+            ext: ".exe"
+          # ── macOS
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+            platform: macos_amd64
+            ext: ""
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            platform: macos_arm64
+            ext: ""
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: 'go.mod'
-        cache-dependency-path: 'go.sum'
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
-    - name: Build binaries (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        # Build the binaries
-        go build -tags netgo -o dist/${{ github.event.repository.name }}-${{ github.ref_name }}
+      - name: setup go for private modules
+        run: |
+          echo "machine github.com login ${{ secrets.PYANSYS_CI_BOT_USERNAME }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > $HOME/.netrc
 
-    - name: Build binaries (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        # Build the binaries
-        go build -tags netgo -o dist/${{ github.event.repository.name }}-${{ github.ref_name }}.exe
+      - name: Build ${{ matrix.platform }} binary
+        shell: bash
+        env:
+            GOOS:   ${{ matrix.goos }}
+            GOARCH: ${{ matrix.goarch }}
+        run: |
+            set -euo pipefail
+            mkdir -p dist
+            out="dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}${{ matrix.ext }}"
+            go build -tags netgo -o "$out"
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.os }}-binaries
-        path: dist/${{ github.event.repository.name }}-*
+      - name: Upload ${{ matrix.platform }} artifact
+        uses: actions/upload-artifact@v4
+        with:
+            name: ${{ matrix.platform }}_binaries
+            path: dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}*
+            if-no-files-found: error
 
-  sign-windows-binary:
-    name: Sign Windows binary
-    needs: [binaries]
+# ---------------------------------------------------------------------
+# SIGN  ── sign all Windows executables (amd64 & arm64)
+# ---------------------------------------------------------------------
+  sign-windows-binaries:
+    name: Sign Windows binaries
+    needs: [build]
     runs-on:
       group: ansys-network
       labels: [self-hosted, Windows, signtool]
     steps:
-      - name: Checkout the SignTool
+      - name: Checkout SignTool
         uses: actions/checkout@v4
         with:
           repository: ansys-internal/signtool-ansys-apps
           token: ${{ secrets.SIGNTOOL_ACCESS_TOKEN }}
 
-      - uses: actions/download-artifact@v4
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: windows-latest-binaries
+          pattern: windows_*_binaries
           path: signtool/installer
 
-      - name: List current structure
-        run: ls -R
+      - name: List contents
+        run: ls -R signtool/installer
 
-      - name: Sign application
+      - name: Create dist directory
+        shell: pwsh
+        run: mkdir -p signtool/installer/dist
+
+      - name: Sign Windows executables
         working-directory: signtool
+        shell: pwsh
         run: |
-          $filename = (get-ChildItem installer -recurse | where {$_.name -like "allie-flowkit-*"}).Name
-          $jobname = $filename -replace ".{4}$"
-          .\Ansys.SignClient.exe sign `
-            --signUrl https://csign.ansys.com `
-            -r gh_signtool_account `
-            -s '${{ secrets.SIGNTOOL_PWD }}' `
-            -n $jobname `
-            -i installer/$filename `
-            -o installer/$filename
+            # collect every .exe that came from the download‑artifact step
+            $files = Get-ChildItem installer -Recurse -Filter "*.exe"
 
-      - uses: actions/upload-artifact@v4
+            if ($files.Count -eq 0) {
+                Write-Error "❌  No Windows executables found in signtool/installer — signing aborted."
+                exit 1               # → step fails → job fails → workflow fails
+            }
+
+            # Create dist directory if it doesn't exist
+            if (!(Test-Path installer/dist)) {
+                New-Item -ItemType Directory -Path installer/dist
+            }
+
+            foreach ($file in $files) {
+                $jobname = $file.BaseName
+                $destFile = "installer/dist/$($file.Name)"
+                .\Ansys.SignClient.exe sign --signUrl https://csign.ansys.com -r gh_signtool_account -s '${{ secrets.SIGNTOOL_PWD }}' -n $jobname -i $file.FullName -o $file.FullName
+
+                # Copy the signed file to the dist directory
+                Copy-Item -Path $file.FullName -Destination $destFile
+            }
+
+      - name: Upload signed Windows artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: windows-latest-binaries-signed
-          path: signtool/installer/*.exe
+          name: windows-binaries-signed
+          path: signtool/installer/dist/*
+          if-no-files-found: error
 
+# ---------------------------------------------------------------------
+# RELEASE  ── publish files to GitHub
+# ---------------------------------------------------------------------
   release:
-    name: Create release
-    needs: [sign-windows-binary, binaries]
+    needs: [sign-windows-binaries]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Download Windows binaries
-        uses: actions/download-artifact@v4
+      # Create a directory to collect all binaries
+      - name: Create release directory
+        run: mkdir -p release_files
+
+      # Download all artifacts to the release directory
+      - uses: actions/download-artifact@v4
         with:
-          name: windows-latest-binaries-signed
-          path: dist
+          pattern: "*_binaries*"
+          path: release_files
+          merge-multiple: true
 
-      - name: Download Linux binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: ubuntu-latest-binaries
-          path: dist
+      # List all files for verification
+      - name: Verify collected binaries
+        run: |
+          echo "▼ release_files contains:"
+          find release_files -type f | sort
 
-      - name: Release to GitHub
+      # Create GitHub release with all files
+      - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          fail_on_unmatched_files: true
           generate_release_notes: true
+          fail_on_unmatched_files: false
           files: |
-            dist/${{ github.event.repository.name }}-**
+            release_files/**/${{ github.event.repository.name }}_*_${{ github.ref_name }}*
 
-  docker:
-    name: Build and push Docker image
+# ---------------------------------------------------------------------
+# RELEASE DOCKER ── publish Docker image to GitHub Container Registry
+# ---------------------------------------------------------------------
+  release-docker:
+    name : Generate Docker release
+    needs: [sign-windows-binaries]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: setup go for private modules
+        run: |
+          echo "machine github.com login ${{ secrets.PYANSYS_CI_BOT_USERNAME }} password ${{ secrets.PYANSYS_CI_BOT_TOKEN }}" > $HOME/.netrc
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -130,10 +249,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Check if tag name contains 'dev'
-        run: echo "is_dev_tag=$(echo ${{ github.ref_name }} | grep -q 'dev' && echo 'true' || echo 'false')" >> $GITHUB_ENV
+        run: echo "IS_DEV_TAG=$(echo ${{ github.ref_name }} | grep -q 'dev' && echo 'true' || echo 'false')" >> $GITHUB_ENV
 
       - name: Decompose tag into components
-        if: env.is_dev_tag == 'false'
+        if: env.IS_DEV_TAG == 'false'
         run: |
           if [[ ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Split the tag into its components
@@ -147,13 +266,15 @@ jobs:
           fi
 
       - name: Build and push Docker image
-        if: env.is_dev_tag == 'false'
         uses: docker/build-push-action@v6
+        if: env.IS_DEV_TAG == 'false'
         with:
           context: .
           file: docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
           tags: |
             ghcr.io/${{ github.repository }}:${{ env.X }} ,
             ghcr.io/${{ github.repository }}:${{ env.X }}.${{ env.Y }} ,
@@ -168,65 +289,18 @@ jobs:
           file: docker/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
           tags: |
             ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
-  doc-build:
-    name: "Build project documentation"
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Build project documentation"
-        uses: ansys/actions/doc-build@v9
-        with:
-          python-version: ${{ env.MAIN_PYTHON_VERSION }}
-          use-python-cache: false
-          skip-install: true
-          requirements-file: doc/requirements.txt
-          check-links: false
-
-  doc-api-reference:
-    name: "Build API reference documentation"
-    needs: [doc-build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout code"
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.MAIN_PYTHON_VERSION }}
-
-      - name: Build GoPages
-        run: |
-          go install github.com/johnstarich/go/gopages@latest
-          gopages -internal -source-link "https://github.com/ansys/allie-flowkit/blob/main/{{.Path}}{{if .Line}}#L{{.Line}}{{end}}"
-
-      - name: Download HTML documentation artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: documentation-html
-          path: documentation-html
-
-      - name: Download and execute Python script
-        run: |
-          curl -o doc_api_reference.py https://raw.githubusercontent.com/ansys/allie-sharedtypes/main/pkg/scripts/doc_api_reference.py
-          python doc_api_reference.py ansys allie-flowkit
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation-html-with-api
-          path: documentation-html
-
+# ---------------------------------------------------------------------
+# UPLOAD RELEASE DOCS ── upload release documentation to GitHub Pages
+# ---------------------------------------------------------------------
   upload_docs_release:
     name: Upload release documentation
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
-    needs: [release, doc-api-reference]
+    needs: [release, docs-build]
     steps:
       - name: Deploy the stable documentation
         uses: ansys/actions/doc-deploy-stable@v9
@@ -236,3 +310,38 @@ jobs:
           bot-user: ${{ secrets.PYANSYS_CI_BOT_USERNAME }}
           bot-email: ${{ secrets.PYANSYS_CI_BOT_EMAIL }}
           doc-artifact-name: documentation-html-with-api
+
+# ---------------------------------------------------------------------
+# UPDATE MAIN AALI REPO ── update main aali repo and create release
+# ---------------------------------------------------------------------
+  main-repo-release:
+    name: Update main aali repo and create release
+    needs: [release, release-docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout aali repository
+        run: |
+          git clone --branch main https://${{ secrets.PYANSYS_CI_BOT_TOKEN }}@github.com/ansys/aali.git
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'aali/scripts/releasehelper/go.mod'
+
+      - name: Run tag script
+        run: |
+          cd aali/scripts/releasehelper
+          go run main.go "tag" ${{ github.ref_name }} ${{ secrets.PYANSYS_CI_BOT_TOKEN }}
+
+      - name: Commit and push to aali
+        run: |
+          cd aali
+          git config --global user.email '${{ github.actor }}@users.noreply.github.com'
+          git config --global user.name '${{ github.actor }}'
+          git commit -a -m 'New release triggered by ${{ github.event.repository.name }}'
+          git push origin main
+
+      - name: Run release script
+        run: |
+          cd aali/scripts/releasehelper
+          go run main.go "release" ${{ github.ref_name }} ${{ secrets.PYANSYS_CI_BOT_TOKEN }}

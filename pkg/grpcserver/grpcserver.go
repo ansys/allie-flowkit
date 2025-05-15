@@ -1,3 +1,25 @@
+// Copyright (C) 2025 ANSYS, Inc. and/or its affiliates.
+// SPDX-License-Identifier: MIT
+//
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package grpcserver
 
 import (
@@ -6,13 +28,13 @@ import (
 	"net"
 	"reflect"
 
-	"github.com/ansys/allie-flowkit/pkg/externalfunctions"
-	"github.com/ansys/allie-sharedtypes/pkg/allieflowkitgrpc"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
-	"github.com/ansys/allie-sharedtypes/pkg/typeconverters"
+	"github.com/ansys/aali-flowkit/pkg/externalfunctions"
+	"github.com/ansys/aali-sharedtypes/pkg/aaliflowkitgrpc"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/typeconverters"
 
-	"github.com/ansys/allie-flowkit/pkg/internalstates"
-	"github.com/ansys/allie-sharedtypes/pkg/config"
+	"github.com/ansys/aali-flowkit/pkg/internalstates"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -22,7 +44,7 @@ import (
 
 // server is used to implement grpc_definition.ExternalFunctionsServer.
 type server struct {
-	allieflowkitgrpc.UnimplementedExternalFunctionsServer
+	aaliflowkitgrpc.UnimplementedExternalFunctionsServer
 }
 
 // StartServer starts the gRPC server
@@ -59,8 +81,8 @@ func StartServer() {
 
 	// Create the gRPC server with the options
 	s := grpc.NewServer(opts...)
-	allieflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
-	logging.Log.Infof(&logging.ContextMap{}, "Allie FlowKit started successfully; gRPC server listening on port %v...", config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
+	aaliflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
+	logging.Log.Infof(&logging.ContextMap{}, "Aali FlowKit started successfully; gRPC server listening on port %v...", config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
 	if err := s.Serve(lis); err != nil {
 		logging.Log.Fatalf(&logging.ContextMap{}, "failed to serve: %v", err)
 	}
@@ -104,12 +126,12 @@ func apiKeyAuthInterceptor(apiKey string) grpc.UnaryServerInterceptor {
 // - req: the request to list all available functions
 //
 // Returns:
-// - allieflowkitgrpc.ListOfFunctions: a list of all available functions
+// - aaliflowkitgrpc.ListOfFunctions: a list of all available functions
 // - error: an error if the function fails
-func (s *server) ListFunctions(ctx context.Context, req *allieflowkitgrpc.ListFunctionsRequest) (*allieflowkitgrpc.ListFunctionsResponse, error) {
+func (s *server) ListFunctions(ctx context.Context, req *aaliflowkitgrpc.ListFunctionsRequest) (*aaliflowkitgrpc.ListFunctionsResponse, error) {
 
 	// return all available functions
-	return &allieflowkitgrpc.ListFunctionsResponse{Functions: internalstates.AvailableFunctions}, nil
+	return &aaliflowkitgrpc.ListFunctionsResponse{Functions: internalstates.AvailableFunctions}, nil
 }
 
 // RunFunction runs a function from the external functions package
@@ -121,13 +143,13 @@ func (s *server) ListFunctions(ctx context.Context, req *allieflowkitgrpc.ListFu
 // - req: the request to run a function
 //
 // Returns:
-// - allieflowkitgrpc.FunctionOutputs: the outputs of the function
+// - aaliflowkitgrpc.FunctionOutputs: the outputs of the function
 // - error: an error if the function fails
-func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.FunctionInputs) (output *allieflowkitgrpc.FunctionOutputs, err error) {
+func (s *server) RunFunction(ctx context.Context, req *aaliflowkitgrpc.FunctionInputs) (output *aaliflowkitgrpc.FunctionOutputs, err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = fmt.Errorf("error occured in gRPC server allie-flowkit during RunFunction of '%v': %v", req.Name, r)
+			err = fmt.Errorf("error occured in gRPC server aali-flowkit during RunFunction of '%v': %v", req.Name, r)
 		}
 	}()
 
@@ -178,7 +200,7 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 	results := funcValue.Call(args)
 
 	// create output slice
-	outputs := []*allieflowkitgrpc.FunctionOutput{}
+	outputs := []*aaliflowkitgrpc.FunctionOutput{}
 	for i, result := range results {
 		// marshal value to json string
 		value, err := typeconverters.ConvertGivenTypeToString(result.Interface(), functionDefinition.Output[i].GoType)
@@ -187,7 +209,7 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 		}
 
 		// append output to slice
-		outputs = append(outputs, &allieflowkitgrpc.FunctionOutput{
+		outputs = append(outputs, &aaliflowkitgrpc.FunctionOutput{
 			Name:   functionDefinition.Output[i].Name,
 			GoType: functionDefinition.Output[i].GoType,
 			Value:  value,
@@ -195,7 +217,7 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 	}
 
 	// return outputs
-	return &allieflowkitgrpc.FunctionOutputs{Name: req.Name, Outputs: outputs}, nil
+	return &aaliflowkitgrpc.FunctionOutputs{Name: req.Name, Outputs: outputs}, nil
 }
 
 // StreamFunction streams a function from the external functions package
@@ -208,11 +230,11 @@ func (s *server) RunFunction(ctx context.Context, req *allieflowkitgrpc.Function
 //
 // Returns:
 // - error: an error if the function fails
-func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream allieflowkitgrpc.ExternalFunctions_StreamFunctionServer) (err error) {
+func (s *server) StreamFunction(req *aaliflowkitgrpc.FunctionInputs, stream aaliflowkitgrpc.ExternalFunctions_StreamFunctionServer) (err error) {
 	defer func() {
 		r := recover()
 		if r != nil {
-			err = fmt.Errorf("error occured in gRPC server allie-flowkit during StreamFunction of '%v': %v", req.Name, r)
+			err = fmt.Errorf("error occured in gRPC server aali-flowkit during StreamFunction of '%v': %v", req.Name, r)
 		}
 	}()
 
@@ -272,10 +294,10 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 
 	// listen to channel and send to stream
 	var counter int32
-	var previousOutput *allieflowkitgrpc.StreamOutput
+	var previousOutput *aaliflowkitgrpc.StreamOutput
 	for message := range *streamChannel {
 		// create output
-		output := &allieflowkitgrpc.StreamOutput{
+		output := &aaliflowkitgrpc.StreamOutput{
 			MessageCounter: counter,
 			IsLast:         false,
 			Value:          message,
@@ -297,7 +319,7 @@ func (s *server) StreamFunction(req *allieflowkitgrpc.FunctionInputs, stream all
 	}
 
 	// send last message
-	output := &allieflowkitgrpc.StreamOutput{
+	output := &aaliflowkitgrpc.StreamOutput{
 		MessageCounter: counter,
 		IsLast:         true,
 		Value:          previousOutput.Value,

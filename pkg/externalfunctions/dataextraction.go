@@ -1,3 +1,25 @@
+// Copyright (C) 2025 ANSYS, Inc. and/or its affiliates.
+// SPDX-License-Identifier: MIT
+//
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 package externalfunctions
 
 import (
@@ -11,12 +33,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/codegeneration"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/milvus"
-	"github.com/ansys/allie-flowkit/pkg/privatefunctions/neo4j"
-	"github.com/ansys/allie-sharedtypes/pkg/config"
-	"github.com/ansys/allie-sharedtypes/pkg/logging"
-	"github.com/ansys/allie-sharedtypes/pkg/sharedtypes"
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/codegeneration"
+	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
+	"github.com/qdrant/go-client/qdrant"
+
+	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
+	"github.com/ansys/aali-sharedtypes/pkg/logging"
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"github.com/google/uuid"
 	"github.com/pandodao/tokenizer-go"
 	"github.com/tmc/langchaingo/documentloaders"
@@ -405,13 +429,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 
 	// Create root data object.
 	rootData := &sharedtypes.DbData{
-		Guid:         "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+		Guid:         uuid.New(),
 		DocumentId:   documentId,
 		DocumentName: documentName,
 		Text:         "",
 		Summary:      "",
 		Embedding:    make([]float32, embeddingsDimensions),
-		ChildIds:     make([]string, 0, len(documentChunks)),
+		ChildIds:     make([]uuid.UUID, 0, len(documentChunks)),
 		Level:        "root",
 	}
 
@@ -433,15 +457,15 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 	if !getSummary {
 		for _, childData := range orderedChildDataObjects {
 			rootData.ChildIds = append(rootData.ChildIds, childData.Guid)
-			childData.ParentId = rootData.Guid
+			childData.ParentId = &rootData.Guid
 			childData.Level = "leaf"
 			documentData = append(documentData, childData)
 		}
 
 		// Assign first and last child ids to root data object.
 		if len(orderedChildDataObjects) > 0 {
-			rootData.FirstChildId = orderedChildDataObjects[0].Guid
-			rootData.LastChildId = orderedChildDataObjects[len(orderedChildDataObjects)-1].Guid
+			rootData.FirstChildId = &orderedChildDataObjects[0].Guid
+			rootData.LastChildId = &orderedChildDataObjects[len(orderedChildDataObjects)-1].Guid
 		}
 	}
 
@@ -472,7 +496,7 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 					branch = &DataExtractionBranch{
 						Text:             "",
 						ChildDataObjects: []*sharedtypes.DbData{},
-						ChildDataIds:     []string{},
+						ChildDataIds:     []uuid.UUID{},
 					}
 					branches = append(branches, branch)
 				}
@@ -509,13 +533,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 
 				// Assign parent id to child data objects.
 				for _, childData := range branches[0].ChildDataObjects {
-					childData.ParentId = rootData.Guid
+					childData.ParentId = &rootData.Guid
 				}
 
 				// Assign first and last child ids to root data object.
 				if len(branches[0].ChildDataIds) > 0 {
-					rootData.FirstChildId = branches[0].ChildDataIds[0]
-					rootData.LastChildId = branches[0].ChildDataIds[len(branches[0].ChildDataIds)-1]
+					rootData.FirstChildId = &branches[0].ChildDataIds[0]
+					rootData.LastChildId = &branches[0].ChildDataIds[len(branches[0].ChildDataIds)-1]
 				}
 
 				// Exit loop because top of the tree has been reached.
@@ -530,13 +554,13 @@ func GenerateDocumentTree(documentName string, documentId string, documentChunks
 
 				// Assign first and last child ids to parent data object.
 				if len(branch.ChildDataIds) > 0 {
-					parentData.FirstChildId = branch.ChildDataIds[0]
-					parentData.LastChildId = branch.ChildDataIds[len(branch.ChildDataIds)-1]
+					parentData.FirstChildId = &branch.ChildDataIds[0]
+					parentData.LastChildId = &branch.ChildDataIds[len(branch.ChildDataIds)-1]
 				}
 
 				// Assign parent id to child data objects.
 				for _, childData := range branch.ChildDataObjects {
-					childData.ParentId = parentData.Guid
+					childData.ParentId = &parentData.Guid
 				}
 
 				// Add parent data object to document data.
@@ -629,7 +653,7 @@ func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elemen
 
 		// Create the code generation element.
 		element := sharedtypes.CodeGenerationElement{
-			Guid:              "d" + strings.ReplaceAll(uuid.New().String(), "-", ""),
+			Guid:              uuid.New(),
 			Name:              name,
 			Summary:           objectDefinition.Summary,
 			ReturnType:        objectDefinition.ReturnType,
@@ -724,6 +748,18 @@ func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elemen
 	return elements
 }
 
+func mapToSparseVec(m map[uint]float32) *qdrant.Vector {
+	keys := make([]uint32, len(m))
+	vals := make([]float32, len(m))
+	i := 0
+	for k, v := range m {
+		keys[i] = uint32(k)
+		vals[i] = v
+		i++
+	}
+	return qdrant.NewVectorSparse(keys, vals)
+}
+
 // StoreElementsInVectorDatabase stores elements in the vector database.
 //
 // Tags:
@@ -733,7 +769,8 @@ func LoadCodeGenerationElements(content []byte, elementsFilePath string) (elemen
 //   - elements: code generation elements.
 //   - elementsCollectionName: name of the collection.
 //   - batchSize: batch size for embeddings.
-func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement, elementsCollectionName string, batchSize int) {
+//   - vectorDistance: the distance metric to use for the vector index (cosine, dot, euclid, manhattan)
+func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement, elementsCollectionName string, batchSize int, vectorDistance string) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 2
@@ -749,88 +786,96 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 		panic(errMessage)
 	}
 
+	// if you have no embeddings, quit
+	if len(denseEmbeddings) == 0 {
+		return
+	}
+	// assume that all embeddings have same length
+	vectorSize := uint64(len(denseEmbeddings[0]))
+
 	// Create the vector database objects.
-	vectorElements := []codegeneration.VectorDatabaseElement{}
+	// vectorElements := []codegeneration.VectorDatabaseElement{}
+	points := make([]*qdrant.PointStruct, len(elements))
 	for i, element := range elements {
-		// Create a new vector database object.
-		vectorElement := codegeneration.VectorDatabaseElement{
-			Guid:           element.Guid,
-			DenseVector:    denseEmbeddings[i],
-			SparseVector:   sparseEmbeddings[i],
-			Name:           element.Name,
-			NamePseudocode: element.NamePseudocode,
-			NameFormatted:  element.NameFormatted,
-			Type:           string(element.Type),
-			ParentClass:    strings.Join(element.Dependencies, "."),
+		points[i] = &qdrant.PointStruct{
+			Id: qdrant.NewIDUUID(element.Guid.String()),
+			Vectors: qdrant.NewVectorsMap(map[string]*qdrant.Vector{
+				"":              qdrant.NewVectorDense(denseEmbeddings[i]),
+				"sparse_vector": mapToSparseVec(sparseEmbeddings[i]),
+			}),
+			Payload: qdrant.NewValueMap(map[string]any{
+				"name":            element.Name,
+				"name_pseudocode": element.NamePseudocode,
+				"name_formatted":  element.NameFormatted,
+				"type":            string(element.Type),
+				"parent_class":    strings.Join(element.Dependencies, "."),
+			}),
 		}
-
-		// Add the new vector database object to the list.
-		vectorElements = append(vectorElements, vectorElement)
 	}
 
-	// Create the schema for this collection
-	schemaFields := []milvus.SchemaField{
-		{
-			Name: "guid",
-			Type: "string",
-		},
-		{
-			Name: "dense_vector",
-			Type: "[]float32",
-		},
-		{
-			Name: "sparse_vector",
-			Type: "map[uint]float32",
-		},
-		{
-			Name: "type",
-			Type: "string",
-		},
-		{
-			Name: "name",
-			Type: "string",
-		},
-		{
-			Name: "name_pseudocode",
-			Type: "string",
-		},
-		{
-			Name: "name_formatted",
-			Type: "string",
-		},
-		{
-			Name: "parent_class",
-			Type: "string",
-		},
-	}
-
-	schema, err := milvus.CreateCustomSchema(elementsCollectionName, schemaFields, "collection for code generation elements")
+	client, err := qdrant.NewClient(&qdrant.Config{
+		Host: config.GlobalConfig.QDRANT_HOST,
+		Port: config.GlobalConfig.QDRANT_PORT,
+	})
 	if err != nil {
-		errMessage := fmt.Sprintf("Error creating the schema for the collection: %v", err)
+		errMessage := fmt.Sprintf("Error creating qdrant client: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
+	ctx := context.TODO()
+
 	// Create the collection.
-	err = milvus.CreateCollection(schema)
+	err = qdrant_utils.CreateCollectionIfNotExists(
+		ctx,
+		client,
+		elementsCollectionName,
+		qdrant.NewVectorsConfig(&qdrant.VectorParams{
+			Size:     vectorSize,
+			Distance: qdrant_utils.VectorDistance(vectorDistance),
+		}),
+		qdrant.NewSparseVectorsConfig(map[string]*qdrant.SparseVectorParams{
+			"sparse_vector": {},
+		}),
+	)
 	if err != nil {
 		errMessage := fmt.Sprintf("Error creating the collection: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
 	}
 
-	// Convert []VectorDatabaseElement to []interface{}
-	elementsAsInterface := make([]interface{}, len(vectorElements))
-	for i, v := range vectorElements {
-		elementsAsInterface[i] = v
-	}
-
-	// Insert the elements into the vector database.
-	err = milvus.InsertData(elementsCollectionName, elementsAsInterface, "Name", "name")
+	// insert into db
+	_, err = client.Upsert(ctx, &qdrant.UpsertPoints{
+		CollectionName: elementsCollectionName,
+		Points:         points,
+	})
 	if err != nil {
 		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
+	}
+
+	// create some indexes
+	// TODO: are these the right ones to create? anything that will be searched/filtered on should be indexed
+	indexes := []*qdrant.CreateFieldIndexCollection{
+		{
+			CollectionName: elementsCollectionName,
+			FieldName:      "name",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+		{
+			CollectionName: elementsCollectionName,
+			FieldName:      "type",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+	}
+	for _, index := range indexes {
+		_, err = client.CreateFieldIndex(ctx, index)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error creating index on field %q: %v", index.FieldName, err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
 	}
 }
 
@@ -842,14 +887,31 @@ func StoreElementsInVectorDatabase(elements []sharedtypes.CodeGenerationElement,
 // Parameters:
 //   - elements: code generation elements.
 func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) {
+	ctx := &logging.ContextMap{}
+
 	// Initialize the graph database.
-	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+	err := graphdb.Initialize(config.GlobalConfig.GRAPHDB_ADDRESS)
+	if err != nil {
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddCodeGenerationElementNodes(elements)
+	err = graphdb.GraphDbDriver.AddCodeGenerationElementNodes(elements)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding code gen element nodes to graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateCodeGenerationRelationships(elements)
+	err = graphdb.GraphDbDriver.CreateCodeGenerationRelationships(elements)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding code gen relationships to graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 }
 
 // LoadAndCheckExampleDependencies loads and checks the dependencies of the examples.
@@ -1091,81 +1153,30 @@ func LoadCodeGenerationExamples(
 //   - examples: code generation examples.
 //   - examplesCollectionName: name of the collection.
 //   - batchSize: batch size for embeddings.
-func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int) {
+//   - vectorDistance: the distance metric to use for the vector index (cosine, dot, euclid, manhattan)
+func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample, examplesCollectionName string, batchSize int, vectorDistance string) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 2
 	}
 
-	// Create the schema for this collection
-	schemaFields := []milvus.SchemaField{
-		{
-			Name: "guid",
-			Type: "string",
-		},
-		{
-			Name: "document_name",
-			Type: "string",
-		},
-		{
-			Name: "previous_chunk",
-			Type: "string",
-		},
-		{
-			Name: "next_chunk",
-			Type: "string",
-		},
-		{
-			Name: "dense_vector",
-			Type: "[]float32",
-		},
-		{
-			Name: "sparse_vector",
-			Type: "map[uint]float32",
-		},
-		{
-			Name: "text",
-			Type: "string",
-		},
-		{
-			Name: "dependency_equivalences",
-			Type: "map[string]string",
-		},
-	}
-
-	schema, err := milvus.CreateCustomSchema(examplesCollectionName, schemaFields, "collection for code generation examples")
-	if err != nil {
-		errMessage := "error creating the schema for the collection"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
-	// Create the collection.
-	err = milvus.CreateCollection(schema)
-	if err != nil {
-		errMessage := "error creating the collection"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
 	// Create the vector database objects.
 	vectorExamples := []codegeneration.VectorDatabaseExample{}
 	for _, element := range examples {
-		chunkGuids := make([]string, len(element.Chunks)) // Track GUIDs for all chunks in the current element
+		chunkGuids := make([]uuid.UUID, len(element.Chunks)) // Track GUIDs for all chunks in the current element
 
 		// Generate GUIDs for each chunk in advance.
-		for j := 0; j < len(element.Chunks); j++ {
-			guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
-			chunkGuids[j] = guid
+		for j := range element.Chunks {
+			chunkGuids[j] = uuid.New()
 		}
 
 		// Create vector database objects and assign PreviousChunk and NextChunk.
-		for j := 0; j < len(element.Chunks); j++ {
+		for j := range element.Chunks {
 			vectorExample := codegeneration.VectorDatabaseExample{
 				Guid:                   chunkGuids[j], // Current chunk's GUID
 				DocumentName:           element.Name,
-				PreviousChunk:          "", // Default empty
-				NextChunk:              "", // Default empty
+				PreviousChunk:          nil, // Default empty
+				NextChunk:              nil, // Default empty
 				Dependencies:           element.Dependencies,
 				DependencyEquivalences: element.DependencyEquivalences,
 				Text:                   element.Chunks[j],
@@ -1173,10 +1184,10 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 
 			// Assign PreviousChunk and NextChunk GUIDs.
 			if j > 0 {
-				vectorExample.PreviousChunk = chunkGuids[j-1]
+				vectorExample.PreviousChunk = &chunkGuids[j-1]
 			}
 			if j < len(element.Chunks)-1 {
-				vectorExample.NextChunk = chunkGuids[j+1]
+				vectorExample.NextChunk = &chunkGuids[j+1]
 			}
 
 			// Add the new vector database object to the list.
@@ -1192,24 +1203,104 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 		panic(errMessage)
 	}
 
-	// Assign embeddings to the vector database objects.
-	for i := range vectorExamples {
-		vectorExamples[i].DenseVector = denseEmbeddings[i]
-		vectorExamples[i].SparseVector = sparseEmbeddings[i]
+	// if you have no embeddings, quit
+	if len(denseEmbeddings) == 0 {
+		return
+	}
+	// assume that all embeddings have same length
+	vectorSize := uint64(len(denseEmbeddings[0]))
+
+	// transform into qdrant points
+	points := make([]*qdrant.PointStruct, len(vectorExamples))
+	for i, ex := range vectorExamples {
+		payload := map[string]any{
+			"document_name": ex.DocumentName,
+			"text":          ex.Text,
+		}
+
+		if ex.PreviousChunk != nil {
+			payload["previous_chunk"] = ex.PreviousChunk.String()
+		}
+
+		if ex.NextChunk != nil {
+			payload["next_chunk"] = ex.NextChunk.String()
+		}
+
+		deps := make([]any, len(ex.Dependencies))
+		for i, dep := range ex.Dependencies {
+			deps[i] = dep
+		}
+		payload["dependencies"] = deps
+
+		depEquivs := make(map[string]any, len(ex.DependencyEquivalences))
+		for k, v := range ex.DependencyEquivalences {
+			depEquivs[k] = v
+		}
+		payload["dependency_equivalences"] = depEquivs
+		points[i] = &qdrant.PointStruct{
+			Id: qdrant.NewIDUUID(ex.Guid.String()),
+			Vectors: qdrant.NewVectorsMap(map[string]*qdrant.Vector{
+				"":              qdrant.NewVectorDense(denseEmbeddings[i]),
+				"sparse_vector": mapToSparseVec(sparseEmbeddings[i]),
+			}),
+			Payload: qdrant.NewValueMap(payload),
+		}
 	}
 
-	// Convert []VectorDatabaseElement to []interface{}
-	elementsAsInterface := make([]interface{}, len(vectorExamples))
-	for i, v := range vectorExamples {
-		elementsAsInterface[i] = v
-	}
-
-	// Insert the elements into the vector database.
-	err = milvus.InsertData(examplesCollectionName, elementsAsInterface, "DocumentName", "document_name")
+	client, err := qdrant_utils.QdrantClient()
 	if err != nil {
-		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMessage)
-		panic(errMessage)
+		logPanic(nil, "Error creating qdrant client: %v", err)
+	}
+
+	ctx := context.TODO()
+
+	// Create the collection.
+	err = qdrant_utils.CreateCollectionIfNotExists(
+		ctx,
+		client,
+		examplesCollectionName,
+		qdrant.NewVectorsConfig(&qdrant.VectorParams{
+			Size:     vectorSize,
+			Distance: qdrant_utils.VectorDistance(vectorDistance),
+		}),
+		qdrant.NewSparseVectorsConfig(map[string]*qdrant.SparseVectorParams{
+			"sparse_vector": {},
+		}),
+	)
+	if err != nil {
+		logPanic(nil, "Error creating the collection: %v", err)
+	}
+
+	// insert into db
+	_, err = client.Upsert(ctx, &qdrant.UpsertPoints{
+		CollectionName: examplesCollectionName,
+		Points:         points,
+	})
+	if err != nil {
+		logPanic(nil, "Error inserting data into the vector database: %v", err)
+	}
+
+	// create some indexes
+	// TODO: are these the right ones to create? anything that will be searched/filtered on should be indexed
+	indexes := []*qdrant.CreateFieldIndexCollection{
+		{
+			CollectionName: examplesCollectionName,
+			FieldName:      "document_name",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+		{
+			CollectionName: examplesCollectionName,
+			FieldName:      "text",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+	}
+	for _, index := range indexes {
+		_, err = client.CreateFieldIndex(ctx, index)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error creating index on field %q: %v", index.FieldName, err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
 	}
 }
 
@@ -1221,14 +1312,31 @@ func StoreExamplesInVectorDatabase(examples []sharedtypes.CodeGenerationExample,
 // Parameters:
 //   - examples: code generation examples.
 func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) {
+	ctx := &logging.ContextMap{}
+
 	// Initialize the graph database.
-	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+	err := graphdb.Initialize(config.GlobalConfig.GRAPHDB_ADDRESS)
+	if err != nil {
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddCodeGenerationExampleNodes(examples)
+	err = graphdb.GraphDbDriver.AddCodeGenerationExampleNodes(examples)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding code gen example nodes to graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateCodeGenerationExampleRelationships(examples)
+	err = graphdb.GraphDbDriver.CreateCodeGenerationExampleRelationships(examples)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding code gen example relationships to graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 }
 
 // LoadUserGuideSections loads user guide sections from the provided paths.
@@ -1307,69 +1415,11 @@ func LoadUserGuideSections(source string, sectionFilePaths []string, githubRepoN
 //   - batchSize: batch size for embeddings.
 //   - chunkSize: size of the chunks.
 //   - chunkOverlap: overlap of the chunks.
-func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int) {
+//   - vectorDistance: the distance metric to use for the vector index (cosine, dot, euclid, manhattan)
+func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, userGuideCollectionName string, batchSize int, chunkSize int, chunkOverlap int, vectorDistance string) {
 	// Set default batch size if not provided.
 	if batchSize <= 0 {
 		batchSize = 2
-	}
-
-	// Create the schema for this collection
-	schemaFields := []milvus.SchemaField{
-		{
-			Name: "guid",
-			Type: "string",
-		},
-		{
-			Name: "section_name",
-			Type: "string",
-		},
-		{
-			Name: "level",
-			Type: "string",
-		},
-		{
-			Name: "document_name",
-			Type: "string",
-		},
-		{
-			Name: "parent_section_name",
-			Type: "string",
-		},
-		{
-			Name: "previous_chunk",
-			Type: "string",
-		},
-		{
-			Name: "next_chunk",
-			Type: "string",
-		},
-		{
-			Name: "dense_vector",
-			Type: "[]float32",
-		},
-		{
-			Name: "sparse_vector",
-			Type: "map[uint]float32",
-		},
-		{
-			Name: "text",
-			Type: "string",
-		},
-	}
-
-	schema, err := milvus.CreateCustomSchema(userGuideCollectionName, schemaFields, "collection for code generation user guide sections")
-	if err != nil {
-		errMessage := "error creating the schema for the collection"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
-	}
-
-	// Create the collection.
-	err = milvus.CreateCollection(schema)
-	if err != nil {
-		errMessage := "error creating the collection"
-		logging.Log.Errorf(&logging.ContextMap{}, "%s: %v", errMessage, err)
-		panic(fmt.Errorf("%s: %v", errMessage, err))
 	}
 
 	// Create the vector database objects.
@@ -1384,16 +1434,15 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		}
 		section.Chunks = chunks
 
-		chunkGuids := make([]string, len(section.Chunks)) // Track GUIDs for all chunks in the current element
+		chunkGuids := make([]uuid.UUID, len(section.Chunks)) // Track GUIDs for all chunks in the current element
 
 		// Generate GUIDs for each chunk in advance.
-		for j := 0; j < len(section.Chunks); j++ {
-			guid := "d" + strings.ReplaceAll(uuid.New().String(), "-", "")
-			chunkGuids[j] = guid
+		for j := range section.Chunks {
+			chunkGuids[j] = uuid.New()
 		}
 
 		// Create vector database objects and assign PreviousChunk and NextChunk.
-		for j := 0; j < len(section.Chunks); j++ {
+		for j := range section.Chunks {
 			vectorUserGuideSectionChunk := codegeneration.VectorDatabaseUserGuideSection{
 				Guid:              chunkGuids[j], // Current chunk's GUID
 				SectionName:       section.Name,
@@ -1401,17 +1450,17 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 				Title:             section.Title,
 				ParentSectionName: section.Parent,
 				Level:             section.Level,
-				PreviousChunk:     "", // Default empty
-				NextChunk:         "", // Default empty
+				PreviousChunk:     nil, // Default empty
+				NextChunk:         nil, // Default empty
 				Text:              section.Chunks[j],
 			}
 
 			// Assign PreviousChunk and NextChunk GUIDs.
 			if j > 0 {
-				vectorUserGuideSectionChunk.PreviousChunk = chunkGuids[j-1]
+				vectorUserGuideSectionChunk.PreviousChunk = &chunkGuids[j-1]
 			}
 			if j < len(section.Chunks)-1 {
-				vectorUserGuideSectionChunk.NextChunk = chunkGuids[j+1]
+				vectorUserGuideSectionChunk.NextChunk = &chunkGuids[j+1]
 			}
 
 			// Add the new vector database object to the list.
@@ -1427,24 +1476,102 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 		panic(errMessage)
 	}
 
-	// Assign embeddings to the vector database objects.
-	for i := range vectorUserGuideSectionChunks {
-		vectorUserGuideSectionChunks[i].DenseVector = denseEmbeddings[i]
-		vectorUserGuideSectionChunks[i].SparseVector = sparseEmbeddings[i]
+	// if you have no embeddings, quit
+	if len(denseEmbeddings) == 0 {
+		return
+	}
+	// assume that all embeddings have same length
+	vectorSize := uint64(len(denseEmbeddings[0]))
+
+	// transform into qdrant points
+	points := make([]*qdrant.PointStruct, len(vectorUserGuideSectionChunks))
+	for i, chunk := range vectorUserGuideSectionChunks {
+		payload := map[string]any{
+			"section_name":        chunk.SectionName,
+			"document_name":       chunk.DocumentName,
+			"title":               chunk.Title,
+			"parent_section_name": chunk.ParentSectionName,
+			"level":               chunk.Level,
+			"text":                chunk.Text,
+		}
+		if chunk.PreviousChunk != nil {
+			payload["previous_chunk"] = chunk.PreviousChunk.String()
+		}
+		if chunk.NextChunk != nil {
+			payload["next_chunk"] = chunk.NextChunk.String()
+		}
+		points[i] = &qdrant.PointStruct{
+			Id: qdrant.NewIDUUID(chunk.Guid.String()),
+			Vectors: qdrant.NewVectorsMap(map[string]*qdrant.Vector{
+				"":              qdrant.NewVectorDense(denseEmbeddings[i]),
+				"sparse_vector": mapToSparseVec(sparseEmbeddings[i]),
+			}),
+			Payload: qdrant.NewValueMap(payload),
+		}
 	}
 
-	// Convert []VectorDatabaseElement to []interface{}
-	elementsAsInterface := make([]interface{}, len(vectorUserGuideSectionChunks))
-	for i, v := range vectorUserGuideSectionChunks {
-		elementsAsInterface[i] = v
+	client, err := qdrant_utils.QdrantClient()
+	if err != nil {
+		logPanic(nil, "Error creating qdrant client: %v", err)
 	}
 
-	// Insert the elements into the vector database.
-	err = milvus.InsertData(userGuideCollectionName, elementsAsInterface, "SectionName", "section_name")
+	ctx := context.TODO()
+
+	// Create the collection.
+	err = qdrant_utils.CreateCollectionIfNotExists(
+		ctx,
+		client,
+		userGuideCollectionName,
+		qdrant.NewVectorsConfig(&qdrant.VectorParams{
+			Size:     vectorSize,
+			Distance: qdrant_utils.VectorDistance(vectorDistance),
+		}),
+		qdrant.NewSparseVectorsConfig(map[string]*qdrant.SparseVectorParams{
+			"sparse_vector": {},
+		}))
+	if err != nil {
+		errMessage := fmt.Sprintf("Error creating the collection: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMessage)
+		panic(errMessage)
+	}
+
+	// insert into db
+	_, err = client.Upsert(ctx, &qdrant.UpsertPoints{
+		CollectionName: userGuideCollectionName,
+		Points:         points,
+	})
 	if err != nil {
 		errMessage := fmt.Sprintf("Error inserting data into the vector database: %v", err)
 		logging.Log.Error(&logging.ContextMap{}, errMessage)
 		panic(errMessage)
+	}
+
+	// create some indexes
+	// TODO: are these the right ones to create? anything that will be searched/filtered on should be indexed
+	indexes := []*qdrant.CreateFieldIndexCollection{
+		{
+			CollectionName: userGuideCollectionName,
+			FieldName:      "level",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+		{
+			CollectionName: userGuideCollectionName,
+			FieldName:      "document_name",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+		{
+			CollectionName: userGuideCollectionName,
+			FieldName:      "text",
+			FieldType:      qdrant.FieldType_FieldTypeKeyword.Enum(),
+		},
+	}
+	for _, index := range indexes {
+		_, err = client.CreateFieldIndex(ctx, index)
+		if err != nil {
+			errMessage := fmt.Sprintf("Error creating index on field %q: %v", index.FieldName, err)
+			logging.Log.Error(&logging.ContextMap{}, errMessage)
+			panic(errMessage)
+		}
 	}
 }
 
@@ -1456,15 +1583,32 @@ func StoreUserGuideSectionsInVectorDatabase(sections []sharedtypes.CodeGeneratio
 // Parameters:
 //   - elements: user guide sections.
 //   - label: label for the sections (UserGuide by default).
-func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection, label string) {
+func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGenerationUserGuideSection) {
+	ctx := &logging.ContextMap{}
+
 	// Initialize the graph database.
-	neo4j.Initialize(config.GlobalConfig.NEO4J_URI, config.GlobalConfig.NEO4J_USERNAME, config.GlobalConfig.NEO4J_PASSWORD)
+	err := graphdb.Initialize(config.GlobalConfig.GRAPHDB_ADDRESS)
+	if err != nil {
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Add the elements to the graph database.
-	neo4j.Neo4j_Driver.AddUserGuideSectionNodes(sections, label)
+	err = graphdb.GraphDbDriver.AddUserGuideSectionNodes(sections)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding user guide section nodes to graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Add the dependencies to the graph database.
-	neo4j.Neo4j_Driver.CreateUserGuideSectionRelationships(sections, label)
+	err = graphdb.GraphDbDriver.CreateUserGuideSectionRelationships(sections)
+	if err != nil {
+		errMsg := fmt.Sprintf("error adding user guide section relationships to graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 }
 
 // CreateGeneralDataExtractionDocumentObjects creates general data extraction document objects from
