@@ -10,15 +10,12 @@ WORKDIR /app
 # Ensure /app directory is owned by the non-root user
 RUN chown -R appuser:appgroup /app
 
-# setup for private go dependencies, needs to be done before user switch
-RUN apk add --no-cache git openssh
-COPY --chown=appuser:appgroup go.mod go.sum ./
-ARG GITHUB_TOKEN
-RUN git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-RUN go mod download
-
 # Switch to the non-root user
 USER appuser
+
+# Copy the Go module files and download dependencies
+COPY --chown=appuser:appgroup go.mod go.sum ./
+RUN go mod download
 
 # Copy the rest of the source code and build the Go service
 COPY --chown=appuser:appgroup . ./
