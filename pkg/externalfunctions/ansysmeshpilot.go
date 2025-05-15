@@ -1078,7 +1078,7 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 		}
 	}
 
-	logging.Log.Info(ctx, "The Updated Actions: %q\n", updatedActions)
+	logging.Log.Debugf(ctx, "The Updated Actions: %q\n", updatedActions)
 
 	return
 }
@@ -1105,9 +1105,9 @@ func SynthesizeActionsTool13(instruction string) (result string) {
 	}
 
 	client, err := azopenai.NewClientWithKeyCredential(
-	azureOpenAIEndpoint,
-	azcore.NewKeyCredential(azureOpenAIKey),
-	nil,
+		azureOpenAIEndpoint,
+		azcore.NewKeyCredential(azureOpenAIKey),
+		nil,
 	)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create client: %v", err))
@@ -1123,7 +1123,7 @@ func SynthesizeActionsTool13(instruction string) (result string) {
 		DeploymentName: &modelDeploymentID,
 		Messages: []azopenai.ChatRequestMessageClassification{
 			&azopenai.ChatRequestUserMessage{
-			Content: azopenai.NewChatRequestUserMessageContent(prompt),
+				Content: azopenai.NewChatRequestUserMessageContent(prompt),
 			},
 		},
 		Temperature: to.Ptr[float32](0.0),
@@ -1175,8 +1175,8 @@ func SynthesizeActionsTool13(instruction string) (result string) {
 
 	actions := []map[string]string{
 		{
-			actionKey1: actionValue1,
-			actionKey2: actionValue2,
+			actionKey1: 	 actionValue1,
+			actionKey2: 	 actionValue2,
 			"ArgumentUnits": unitSystem,
 		},
 	}
