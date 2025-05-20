@@ -25,6 +25,7 @@ package externalfunctions
 var ExternalFunctionsMap = map[string]interface{}{
 	// llm handler
 	"PerformVectorEmbeddingRequest":                                                  PerformVectorEmbeddingRequest,
+	"PerformSageMakerEmbeddingRequest":                                               PerformSageMakerEmbeddingRequest,
 	"PerformVectorEmbeddingRequestWithTokenLimitCatch":                               PerformVectorEmbeddingRequestWithTokenLimitCatch,
 	"PerformBatchEmbeddingRequest":                                                   PerformBatchEmbeddingRequest,
 	"PerformBatchHybridEmbeddingRequest":                                             PerformBatchHybridEmbeddingRequest,

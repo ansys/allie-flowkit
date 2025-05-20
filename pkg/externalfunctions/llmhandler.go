@@ -23,8 +23,10 @@
 package externalfunctions
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -87,6 +89,54 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 	}
 
 	return embedding32
+}
+
+// PerformSageMakerEmbeddingRequest performs an embedding request to a SageMaker endpoint.
+//
+// Parameters:
+//   - input: the input string
+//   - endpoint: the SageMaker endpoint URL
+//
+// Returns:
+//   - embeddedVector: the embedded vector in float32 format
+func PerformSageMakerEmbeddingRequest(input string, endpoint string) (embeddedVector []float32, err error) {
+	// Prepare the payload
+	payload := map[string]string{"input": input}
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal payload: %v", err)
+	}
+
+	// Send the request to the SageMaker endpoint
+	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request to SageMaker: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check for non-200 status codes
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("SageMaker returned non-200 status: %d", resp.StatusCode)
+	}
+
+	// Parse the response
+	var response map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode SageMaker response: %v", err)
+	}
+
+	// Convert the response to a float32 slice
+	interfaceArray, ok := response["embedding"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid response format from SageMaker")
+	}
+	embeddedVector, err = convertToFloat32Slice(interfaceArray)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert embedding to float32 slice: %v", err)
+	}
+
+	return embeddedVector, nil
 }
 
 // PerformVectorEmbeddingRequestWithTokenLimitCatch performs a vector embedding request to LLM
