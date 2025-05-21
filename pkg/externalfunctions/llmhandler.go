@@ -25,14 +25,19 @@ package externalfunctions
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/binary"
 	"fmt"
-	"net/http"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sagemakerruntime"
 )
 
 // PerformVectorEmbeddingRequest performs a vector embedding request to LLM
@@ -100,43 +105,53 @@ func PerformVectorEmbeddingRequest(input string) (embeddedVector []float32) {
 // Returns:
 //   - embeddedVector: the embedded vector in float32 format
 func PerformSageMakerEmbeddingRequest(input string, endpoint string) (embeddedVector []float32, err error) {
-	// Prepare the payload
-	payload := map[string]string{"input": input}
+	// Session with explicit credentials, similar to boto3 client configuration
+	sess, err := session.NewSession(&aws.Config{
+		Region:      aws.String("us-east-2"),
+		Credentials: credentials.NewStaticCredentials(config.GlobalConfig.ACCESS_KEY_ID, config.GlobalConfig.SECRET_KEY, ""), // Empty session token
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create AWS session: %v", err)
+	}
+
+	// Create SageMaker Runtime client
+	sagemaker := sagemakerruntime.New(sess)
+
+	// Prepare the payload - BGE-M3 with "inputs"
+	payload := map[string]interface{}{
+		"inputs": input,
+	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal payload: %v", err)
 	}
 
-	// Send the request to the SageMaker endpoint
-	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(payloadBytes))
+	// InvokeEndpoint input params
+	params := &sagemakerruntime.InvokeEndpointInput{
+		EndpointName: aws.String(endpoint),
+		ContentType:  aws.String("application/json"),
+		Body:         payloadBytes,
+	}
+
+	// Invoke endpoint
+	resp, err := sagemaker.InvokeEndpoint(params)
 	if err != nil {
-		return nil, fmt.Errorf("failed to send request to SageMaker: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Check for non-200 status codes
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("SageMaker returned non-200 status: %d", resp.StatusCode)
+		return nil, fmt.Errorf("failed to invoke SageMaker endpoint: %v", err)
 	}
 
-	// Parse the response
-	var response map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&response)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode SageMaker response: %v", err)
+	// Create a float32 slice from raw bytes
+	embedding := make([]float32, len(resp.Body)/4)
+	for i := 0; i < len(embedding); i++ {
+		bits := binary.LittleEndian.Uint32(resp.Body[i*4 : (i+1)*4])
+		embedding[i] = math.Float32frombits(bits)
 	}
 
-	// Convert the response to a float32 slice
-	interfaceArray, ok := response["embedding"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid response format from SageMaker")
-	}
-	embeddedVector, err = convertToFloat32Slice(interfaceArray)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert embedding to float32 slice: %v", err)
+	// Validate embedding
+	if len(embedding) == 0 {
+		return nil, fmt.Errorf("no embeddings returned")
 	}
 
-	return embeddedVector, nil
+	return embedding, nil
 }
 
 // PerformVectorEmbeddingRequestWithTokenLimitCatch performs a vector embedding request to LLM
