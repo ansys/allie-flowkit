@@ -204,6 +204,15 @@ jobs:
           path: release_files
           merge-multiple: true
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-binaries-signed
+          path: release_files
+
+      # Delete unsigned Windows binaries
+      - name: Drop unsigned Windows binaries
+        run: rm -rf release_files/windows_*_binaries
+
       # List all files for verification
       - name: Verify collected binaries
         run: |
