@@ -31,6 +31,7 @@ import (
 	"github.com/ansys/aali-flowkit/pkg/functiondefinitions"
 	"github.com/ansys/aali-flowkit/pkg/grpcserver"
 	"github.com/ansys/aali-flowkit/pkg/internalstates"
+	_ "github.com/ansys/aali-flowkit/pkg/mcp"
 )
 
 //go:embed pkg/externalfunctions/dataextraction.go
