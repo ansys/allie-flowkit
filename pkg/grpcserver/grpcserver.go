@@ -51,8 +51,14 @@ type server struct {
 // The server listens on the port specified in the configuration file
 // The server implements the ExternalFunctionsServer interface
 func StartServer() {
-	// Create listener on the specified port
-	lis, err := net.Listen("tcp", ":"+config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
+	// Get webserver address
+	webserverAddress, err := config.HandleLegacyPortDefinition(config.GlobalConfig.FLOWKIT_ADDRESS, config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
+	if err != nil {
+		logging.Log.Fatalf(&logging.ContextMap{}, "Error getting webserver address: %v", err)
+	}
+
+	// Create listener on the specified address
+	lis, err := net.Listen("tcp", webserverAddress)
 	if err != nil {
 		logging.Log.Fatalf(&logging.ContextMap{}, "failed to listen: %v", err)
 	}
@@ -82,7 +88,7 @@ func StartServer() {
 	// Create the gRPC server with the options
 	s := grpc.NewServer(opts...)
 	aaliflowkitgrpc.RegisterExternalFunctionsServer(s, &server{})
-	logging.Log.Infof(&logging.ContextMap{}, "Aali FlowKit started successfully; gRPC server listening on port %v...", config.GlobalConfig.EXTERNALFUNCTIONS_GRPC_PORT)
+	logging.Log.Infof(&logging.ContextMap{}, "Aali FlowKit started successfully; gRPC server listening on address '%s'...\n", webserverAddress)
 	if err := s.Serve(lis); err != nil {
 		logging.Log.Fatalf(&logging.ContextMap{}, "failed to serve: %v", err)
 	}
