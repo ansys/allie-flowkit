@@ -32,8 +32,8 @@ github.com/PuerkitoBio/goquery v1.9.2 h1:4/wZksC3KgkQw7SQgkKotmKljk0M6V8TUvA8Wb4
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=
 github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsViSLyss=
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
-github.com/ansys/aali-sharedtypes v1.0.3-0.20250515072743-0f9f1fb1efff h1:dUy6ENLGDV/HTFNX7tYpn782aW0FerGH8qzLIaxZgxo=
-github.com/ansys/aali-sharedtypes v1.0.3-0.20250515072743-0f9f1fb1efff/go.mod h1:0EW/5tawNgU2UD4AVNhL59Ozspx/Hib3tAnXI4hEBbU=
+github.com/ansys/aali-sharedtypes v1.0.3-0.20250528102120-081315cff14d h1:0NLcX9o0+AW/KDn0bneOjd7DqkS974lTNHI1MP9utdo=
+github.com/ansys/aali-sharedtypes v1.0.3-0.20250528102120-081315cff14d/go.mod h1:0EW/5tawNgU2UD4AVNhL59Ozspx/Hib3tAnXI4hEBbU=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
