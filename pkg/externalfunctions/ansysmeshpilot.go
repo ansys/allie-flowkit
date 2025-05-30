@@ -212,6 +212,12 @@ func MeshPilotReAct(instruction string,
 			&azopenai.ChatCompletionsFunctionToolDefinition{
 				Function: azure.Tool13(),
 			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool14(),
+			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool15(),
+			},
 		},
 		Temperature: to.Ptr[float32](0.0),
 	}, nil)
@@ -1867,6 +1873,18 @@ func GetActionsFromConfig(toolName string) (result string) {
 			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL12",
 			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_2",
 		},
+		"tool14": {
+			"resultName":    "APP_TOOL14_RESULT_NAME",
+			"resultMessage": "APP_TOOL14_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL14",
+			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_1",
+		},
+		"tool15": {
+			"resultName":    "APP_TOOL15_RESULT_NAME",
+			"resultMessage": "APP_TOOL15_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL15",
+			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_3",
+		},
 	}
 
 	// Help function to get the config value
@@ -1884,11 +1902,15 @@ func GetActionsFromConfig(toolName string) (result string) {
 	tool9ResultName := getConfigValue(configKeys["tool9"]["resultName"], "failed to load tool 9 result name from the configuration")
 	tool11ResultName := getConfigValue(configKeys["tool11"]["resultName"], "failed to load tool 11 result name from the configuration")
 	tool12ResultName := getConfigValue(configKeys["tool12"]["resultName"], "failed to load tool 12 result name from the configuration")
+	tool14ResultName := getConfigValue(configKeys["tool14"]["resultName"], "failed to load tool 14 result name from the configuration")
+	tool15ResultName := getConfigValue(configKeys["tool15"]["resultName"], "failed to load tool 15 result name from the configuration")
 
 	// Get tool result message from the configuration
 	tool9ResultMessage := getConfigValue(configKeys["tool9"]["resultMessage"], "failed to load tool 9 result message from the configuration")
 	tool11ResultMessage := getConfigValue(configKeys["tool11"]["resultMessage"], "failed to load tool 11 result message from the configuration")
 	tool12ResultMessage := getConfigValue(configKeys["tool12"]["resultMessage"], "failed to load tool 12 result message from the configuration")
+	tool14ResultMessage := getConfigValue(configKeys["tool14"]["resultMessage"], "failed to load tool 14 result message from the configuration")
+	tool15ResultMessage := getConfigValue(configKeys["tool15"]["resultMessage"], "failed to load tool 15 result message from the configuration")
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage := getConfigValue("APP_TOOL_ACTION_SUCCESS_MESSAGE", "failed to load tool action success message from the configuration")
@@ -1911,6 +1933,14 @@ func GetActionsFromConfig(toolName string) (result string) {
 		actionValue1 = getConfigValue(configKeys["tool12"]["actionValue1"], "failed to load tool 12 action value 1 from the configuration")
 		actionValue2 = getConfigValue(configKeys["tool12"]["actionValue2"], "failed to load tool 12 action value 2 from the configuration")
 		selectedMessage = tool12ResultMessage
+	} else if toolName == tool14ResultName {
+		actionValue1 = getConfigValue(configKeys["tool14"]["actionValue1"], "failed to load tool 14 action value 1 from the configuration")
+		actionValue2 = getConfigValue(configKeys["tool14"]["actionValue2"], "failed to load tool 14 action value 2 from the configuration")
+		selectedMessage = tool14ResultMessage
+	} else if toolName == tool15ResultName {
+		actionValue1 = getConfigValue(configKeys["tool15"]["actionValue1"], "failed to load tool 15 action value 1 from the configuration")
+		actionValue2 = getConfigValue(configKeys["tool15"]["actionValue2"], "failed to load tool 15 action value 2 from the configuration")
+		selectedMessage = tool15ResultMessage
 	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
@@ -1920,7 +1950,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 	message := toolActionSuccessMessage
 	actions := []map[string]string{}
 	switch toolName {
-	case tool9ResultName, tool11ResultName, tool12ResultName:
+	case tool9ResultName, tool11ResultName, tool12ResultName, tool14ResultName, tool15ResultName:
 		message = selectedMessage
 		actions = append(actions, map[string]string{
 			actionKey1: actionValue1,
