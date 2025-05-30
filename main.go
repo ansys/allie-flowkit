@@ -59,12 +59,12 @@ var authFile string
 
 func init() {
 	// initialize config
-	config.InitConfig([]string{"EXTERNALFUNCTIONS_GRPC_PORT", "LLM_HANDLER_ENDPOINT"}, map[string]interface{}{
+	config.InitConfig([]string{}, map[string]interface{}{
 		"SERVICE_NAME":        "aali-flowkit",
 		"VERSION":             "1.0",
 		"STAGE":               "PROD",
-		"ERROR_FILE_LOCATION": "error.log",
 		"LOG_LEVEL":           "error",
+		"ERROR_FILE_LOCATION": "error.log",
 		"LOCAL_LOGS_LOCATION": "logs.log",
 		"DATADOG_SOURCE":      "nginx",
 	})
@@ -97,7 +97,7 @@ func main() {
 		}
 	}
 
-	// start the gRPC server
+	// Start the gRPC server
 	grpcserver.StartServer()
 	logging.Log.Fatalf(&logging.ContextMap{}, "Error in gRPC server. Exiting application.")
 }
