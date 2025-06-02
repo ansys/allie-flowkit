@@ -39,7 +39,11 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
+	"github.com/ansys/aali-flowkit/pkg/meshpilot/ampgraphdb"
 	"github.com/ansys/aali-flowkit/pkg/meshpilot/azure"
+
+	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
+	"github.com/qdrant/go-client/qdrant"
 )
 
 // MeshPilotReAct decides which tool to use based on user input
@@ -632,16 +636,27 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		panic(errorMessage)
 	}
 
+	// Log the response content for debugging
+	logging.Log.Debugf(ctx, "Response Content: %s", *message.Content)
+
+	// Strip backticks and "json" label from the response content
+	cleanedContent := strings.TrimSpace(*message.Content)
+	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
+		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
+		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
+		cleanedContent = strings.TrimSpace(cleanedContent)
+	}
+
 	var output *struct {
 		Index int `json:"index"`
 	}
 
-	err = json.Unmarshal([]byte(*message.Content), &output)
-
+	err = json.Unmarshal([]byte(cleanedContent), &output)
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to un marshal index output")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", cleanedContent, err)
+		logging.Log.Warn(ctx, "Falling back to the first description as relevant.")
+		relevantDescription = descriptions[0]
+		return
 	}
 
 	logging.Log.Debugf(ctx, "The Index: %d", output.Index)
@@ -651,7 +666,8 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 	} else {
 		errorMessage := fmt.Sprintf("Output Index: %d, out of range( 0, %d )", output.Index, len(descriptions))
 		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+		logging.Log.Warn(ctx, "Falling back to the first description as relevant.")
+		relevantDescription = descriptions[0]
 	}
 
 	logging.Log.Infof(ctx, "The relevant description: %s", relevantDescription)
@@ -669,72 +685,30 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 //
 // Returns:
 //   - properties: the list of descriptions
-func FetchPropertiesFromPathDescription(description string) (properties []string) {
+func FetchPropertiesFromPathDescription(db_name, description string) (properties []string) {
 
 	ctx := &logging.ContextMap{}
 
 	logging.Log.Infof(ctx, "Fetching Properties From Path Descriptions...")
 
-	// Get environment variables
-	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
 
-	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/properties/from/prompt_node/description")
-	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
-
-	body := map[string]string{
-		"description": description,
-	}
-	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
 	}
-	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
 
-	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
+	query := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_PROPERTIES_QUERY"]
+
+	properties, err = ampgraphdb.GraphDbDriver.GetProperties(description, query)
+
 	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		errorMessage := fmt.Sprintf("Error fetching properties from path description: %v", err)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
-
-	var response struct {
-		Properties []string `json:"properties"`
-	}
-	err = json.Unmarshal(responseBody, &response)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	properties = response.Properties
 	logging.Log.Debugf(ctx, "Propetries: %q\n", properties)
 	return
 }
@@ -749,79 +723,33 @@ func FetchPropertiesFromPathDescription(description string) (properties []string
 //
 // Returns:
 //   - actionDescriptions: action descriptions
-func FetchNodeDescriptionsFromPathDescription(description string) (actionDescriptions string) {
+func FetchNodeDescriptionsFromPathDescription(db_name, description string) (actionDescriptions string) {
 
 	ctx := &logging.ContextMap{}
 
 	logging.Log.Infof(ctx, "Fetching Node Descriptions From Path Descriptions...")
 
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
+
+	if err != nil {
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
+
 	// Get environment variables
-	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
+	query := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_STATE_NODE_QUERY"]
 
-	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/summaries/from/state_node/description")
-	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
+	summaries, err := ampgraphdb.GraphDbDriver.GetSummaries(description, query)
 
-	body := map[string]string{
-		"description": description,
-	}
-	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
-
-	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		errorMessage := fmt.Sprintf("Error fetching summaries from path description: %v", err)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
-
-	var response struct {
-		Descriptions []string `json:"summaries"`
-	}
-	err = json.Unmarshal(responseBody, &response)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	byteStream, err := json.Marshal(response.Descriptions)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to marshal response: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	actionDescriptions = string(byteStream)
-	logging.Log.Debugf(ctx, "Propetries: %q\n", actionDescriptions)
+	actionDescriptions = summaries
+	logging.Log.Debugf(ctx, "Summaries: %q\n", actionDescriptions)
 
 	return
 }
@@ -837,14 +765,18 @@ func FetchNodeDescriptionsFromPathDescription(description string) (actionDescrip
 //
 // Returns:
 //   - actions: the list of actions to execute
-func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions []map[string]string) {
+func FetchActionsPathFromPathDescription(db_name, description, nodeLabel string) (actions []map[string]string) {
 	ctx := &logging.ContextMap{}
 
 	logging.Log.Infof(ctx, "Fetching Actions From Path Descriptions...")
 
-	// Get environment variables
-	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
+
+	if err != nil {
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
 
 	// Get the node label 1 from the configuration
 	nodeLabel1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_FETCH_PATH_NODES_QUERY_NODE_LABEL_1"]
@@ -862,74 +794,23 @@ func FetchActionsPathFromPathDescription(description, nodeLabel string) (actions
 		panic(errorMessage)
 	}
 
-	db_url := ""
-	if nodeLabel == nodeLabel2 {
-		// Get the query from the configuration
-		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/prompt_node/description")
-		logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
-	} else if nodeLabel == nodeLabel1 {
-		// Get the query from the configuration
-		db_url = fmt.Sprintf("%s%s", db_endpoint, "/kuzu/actions/from/state_node/description")
-		logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
+	var query string
+	if nodeLabel == nodeLabel1 {
+		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_ACTIONS_QUERY_LABEL_1"]
+	} else if nodeLabel == nodeLabel2 {
+		query, exists = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_ACTIONS_QUERY_LABEL_2"]
 	} else {
-		logging.Log.Infof(ctx, "Invalid Node Label: %q", nodeLabel)
-		return
+		errorMessage := fmt.Sprintf("Invalid Node Label: %q", nodeLabel)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
 	}
 
-	body := map[string]string{
-		"description": description,
-	}
-
-	bodyBytes, err := json.Marshal(body)
+	actions, err = ampgraphdb.GraphDbDriver.GetActions(description, query)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		errorMessage := fmt.Sprintf("Error fetching actions from path description: %v", err)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
-
-	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	var response struct {
-		Actions []map[string]string `json:"actions"`
-	}
-	err = json.Unmarshal(responseBody, &response)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	actions = response.Actions
-	logging.Log.Debugf(ctx, "Actions: %q\n", actions)
 
 	return
 }
@@ -1028,11 +909,19 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 
 	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
 
+	// Clean the response content
+	cleanedContent := strings.TrimSpace(*message.Content)
+	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
+		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
+		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
+		cleanedContent = strings.TrimSpace(cleanedContent)
+	}
+
 	var output struct {
 		ScopePattern string `json:"ScopePattern"`
 	}
 
-	err = json.Unmarshal([]byte(*message.Content), &output)
+	err = json.Unmarshal([]byte(cleanedContent), &output)
 	if err != nil {
 		errorMessage := fmt.Sprintf("SynthesizeActionsTool4: Failed to unmarshal response: %v", err)
 		logging.Log.Error(ctx, errorMessage)
@@ -1180,12 +1069,26 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 
 	var output map[string]interface{}
 
+	// Attempt to unmarshal the response
 	err = json.Unmarshal([]byte(*message.Content), &output)
-
 	if err != nil {
-		errorMessage := fmt.Sprintf("failed to un marshal synthesizing actions")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
+		// Log the error and fallback to an empty output
+		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", *message.Content, err)
+
+		// Attempt to clean the response and retry unmarshaling
+		cleanedContent := strings.TrimSpace(*message.Content)
+		if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
+			cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
+			cleanedContent = strings.TrimSuffix(cleanedContent, "```")
+			cleanedContent = strings.TrimSpace(cleanedContent)
+		}
+
+		err = json.Unmarshal([]byte(cleanedContent), &output)
+		if err != nil {
+			logging.Log.Errorf(ctx, "Failed to unmarshal cleaned response content: %s, error: %v", cleanedContent, err)
+			logging.Log.Warn(ctx, "Returning an empty output as fallback.")
+			output = make(map[string]interface{})
+		}
 	}
 
 	logging.Log.Debugf(ctx, "The LLM Output of properties processing: %q\n", output)
@@ -1481,77 +1384,33 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 //
 // Returns:
 //   - solutions: the list of solutions in json
-func GetSolutionsToFixProblem(fmFailureCode, primeMeshFailureCode string) (solutions string) {
+func GetSolutionsToFixProblem(db_name, fmFailureCode, primeMeshFailureCode string) (solutions string) {
 
 	ctx := &logging.ContextMap{}
 
 	logging.Log.Infof(ctx, "Get Solutions To Fix Problem...")
 
-	// Get environment variables
-	db_endpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["MESHPILOT_DB_ENDPOINT"]
-	logging.Log.Debugf(ctx, "DB Endpoint: %q", db_endpoint)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
 
-	db_url := fmt.Sprintf("%s%s", db_endpoint, "/kuzu/state_node/descriptions/from/failure_codes")
-	logging.Log.Debugf(ctx, "Constructed URL: %s", db_url)
-
-	body := map[string]string{
-		"fm_failure_code":    fmFailureCode,
-		"prime_failure_code": primeMeshFailureCode,
-	}
-
-	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to marshal request body: %v", err)
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(ctx, errMsg)
+		panic(errMsg)
+	}
+
+	query, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_SOLUTIONS_QUERY"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load query from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	logging.Log.Debugf(ctx, "Request Body: %s", string(bodyBytes))
-
-	req, err := http.NewRequest("POST", db_url, bytes.NewBuffer(bodyBytes))
+	solutionsVec, err := ampgraphdb.GraphDbDriver.GetSolutions(fmFailureCode, primeMeshFailureCode, query)
 	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to create request: %v", err)
+		errorMessage := fmt.Sprintf("Error fetching solutions from path description: %v", err)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to send request: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		errorMessage := fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to read response body: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "Response: %s", string(responseBody))
-
-	var response struct {
-		Descriptions []string `json:"descriptions"`
-	}
-	err = json.Unmarshal(responseBody, &response)
-	if err != nil {
-		errorMessage := fmt.Sprintf("Failed to unmarshal response: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	solutionsVec := response.Descriptions
-	logging.Log.Debugf(ctx, "Solutions: %q\n", solutionsVec)
 
 	byteStream, err := json.Marshal(solutionsVec)
 	if err != nil {
@@ -1828,5 +1687,68 @@ func GetActionsFromConfig(toolName string) (result string) {
 	result = string(bytesStream)
 	logging.Log.Info(ctx, "successfully converted actions to json")
 
+	return
+}
+
+// SimilartitySearchOnPathDescriptions (Qdrant) do similarity search on path description
+//
+// Tags:
+//   - @displayName: SimilartitySearchOnPathDescriptions (Qdrant)
+//
+// Parameters:
+//   - instruction: the user query
+//   - toolName: the tool name
+//
+// Returns:
+//   - descriptions: the list of descriptions
+func SimilartitySearchOnPathDescriptionsQdrant(vector []float32, collection string, similaritySearchResults int, similaritySearchMinScore float64) (descriptions []string) {
+	descriptions = []string{}
+
+	logCtx := &logging.ContextMap{}
+
+	client, err := qdrant_utils.QdrantClient()
+	if err != nil {
+		logPanic(logCtx, "unable to create qdrant client: %q", err)
+	}
+
+	limit := uint64(similaritySearchResults)
+	scoreThreshold := float32(similaritySearchMinScore)
+	query := qdrant.QueryPoints{
+		CollectionName: collection,
+		Query:          qdrant.NewQueryDense(vector),
+		Limit:          &limit,
+		ScoreThreshold: &scoreThreshold,
+		WithVectors:    qdrant.NewWithVectorsEnable(false),
+		WithPayload:    qdrant.NewWithPayloadInclude("Description"),
+	}
+
+	scoredPoints, err := client.Query(context.TODO(), &query)
+	if err != nil {
+		logPanic(logCtx, "error in qdrant query: %q", err)
+	}
+	logging.Log.Debugf(logCtx, "Got %d points from qdrant query", len(scoredPoints))
+
+	for i, scoredPoint := range scoredPoints {
+		logging.Log.Debugf(&logging.ContextMap{}, "Result #%d:", i)
+		logging.Log.Debugf(&logging.ContextMap{}, "Similarity score: %v", scoredPoint.Score)
+		dbResponse, err := qdrant_utils.QdrantPayloadToType[map[string]interface{}](scoredPoint.GetPayload())
+
+		if err != nil {
+			errMsg := fmt.Sprintf("error converting qdrant payload to dbResponse: %q", err)
+			logging.Log.Errorf(logCtx, "%s", errMsg)
+			panic(errMsg)
+		}
+
+		description, ok := dbResponse["Description"].(string)
+		if !ok {
+			logging.Log.Errorf(&logging.ContextMap{}, "Description not found or not a string for scored point #%d", i)
+			continue
+		}
+		logging.Log.Debugf(&logging.ContextMap{}, "Description: %s", description)
+
+		descriptions = append(descriptions, description)
+	}
+
+	logging.Log.Debugf(&logging.ContextMap{}, "Descriptions: %q", descriptions)
 	return
 }
