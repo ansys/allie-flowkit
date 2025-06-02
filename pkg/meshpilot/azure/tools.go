@@ -474,14 +474,23 @@ func Tool14() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 	// Get context
 	ctx := &logging.ContextMap{}
 
-	// Get the tool name and description from the configuration
+	// Get the tool name from the configuration
 	toolName := mustCfg(ctx, "APP_TOOL_14_NAME")
 	toolDescription := mustCfg(ctx, "APP_TOOL_14_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description1 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_8")
 
 	// Define the parameters for the function
 	jsonBytes, err := json.Marshal(map[string]any{
-		"type":       "object",
-		"properties": map[string]any{},
+		"required": []string{toolProperty2Name},
+		"type":     "object",
+		"properties": map[string]any{
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description1,
+			},
+		},
 	})
 
 	if err != nil {
