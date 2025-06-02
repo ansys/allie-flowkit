@@ -39,8 +39,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 
+	"github.com/ansys/aali-flowkit/pkg/meshpilot/ampgraphdb"
 	"github.com/ansys/aali-flowkit/pkg/meshpilot/azure"
-	"github.com/ansys/aali-flowkit/pkg/meshpilot/graphdb"
 
 	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/qdrant/go-client/qdrant"
@@ -691,7 +691,7 @@ func FetchPropertiesFromPathDescription(db_name, description string) (properties
 
 	logging.Log.Infof(ctx, "Fetching Properties From Path Descriptions...")
 
-	err := graphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
@@ -701,7 +701,7 @@ func FetchPropertiesFromPathDescription(db_name, description string) (properties
 
 	query := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_PROPERTIES_QUERY"]
 
-	properties, err = graphdb.GraphDbDriver.GetProperties(description, query)
+	properties, err = ampgraphdb.GraphDbDriver.GetProperties(description, query)
 
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error fetching properties from path description: %v", err)
@@ -729,7 +729,7 @@ func FetchNodeDescriptionsFromPathDescription(db_name, description string) (acti
 
 	logging.Log.Infof(ctx, "Fetching Node Descriptions From Path Descriptions...")
 
-	err := graphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
@@ -740,7 +740,7 @@ func FetchNodeDescriptionsFromPathDescription(db_name, description string) (acti
 	// Get environment variables
 	query := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_DATABASE_GET_STATE_NODE_QUERY"]
 
-	summaries, err := graphdb.GraphDbDriver.GetSummaries(description, query)
+	summaries, err := ampgraphdb.GraphDbDriver.GetSummaries(description, query)
 
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error fetching summaries from path description: %v", err)
@@ -770,7 +770,7 @@ func FetchActionsPathFromPathDescription(db_name, description, nodeLabel string)
 
 	logging.Log.Infof(ctx, "Fetching Actions From Path Descriptions...")
 
-	err := graphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
@@ -805,7 +805,7 @@ func FetchActionsPathFromPathDescription(db_name, description, nodeLabel string)
 		panic(errorMessage)
 	}
 
-	actions, err = graphdb.GraphDbDriver.GetActions(description, query)
+	actions, err = ampgraphdb.GraphDbDriver.GetActions(description, query)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error fetching actions from path description: %v", err)
 		logging.Log.Error(ctx, errorMessage)
@@ -1390,7 +1390,7 @@ func GetSolutionsToFixProblem(db_name, fmFailureCode, primeMeshFailureCode strin
 
 	logging.Log.Infof(ctx, "Get Solutions To Fix Problem...")
 
-	err := graphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
+	err := ampgraphdb.EstablishConnection(config.GlobalConfig.GRAPHDB_ADDRESS, db_name)
 
 	if err != nil {
 		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
@@ -1405,7 +1405,7 @@ func GetSolutionsToFixProblem(db_name, fmFailureCode, primeMeshFailureCode strin
 		panic(errorMessage)
 	}
 
-	solutionsVec, err := graphdb.GraphDbDriver.GetSolutions(fmFailureCode, primeMeshFailureCode, query)
+	solutionsVec, err := ampgraphdb.GraphDbDriver.GetSolutions(fmFailureCode, primeMeshFailureCode, query)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error fetching solutions from path description: %v", err)
 		logging.Log.Error(ctx, errorMessage)
