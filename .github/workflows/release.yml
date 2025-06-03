@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
@@ -377,7 +377,7 @@ jobs:
     needs: [release, docs-build]
     steps:
       - name: Deploy the stable documentation
-        uses: ansys/actions/doc-deploy-stable@v9
+        uses: ansys/actions/doc-deploy-stable@v10
         with:
           cname: ${{ env.DOCUMENTATION_CNAME }}
           token: ${{ secrets.PYANSYS_CI_BOT_TOKEN }}
