@@ -56,6 +56,7 @@ jobs:
 # ---------------------------------------------------------------------
   build:
     name: Create binaries for Linux, Windows & macOS
+    needs: [check-tag-branch]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -67,60 +68,132 @@ jobs:
             goarch: amd64
             platform: linux_amd64
             ext: ""
+            container: null
           - os: ubuntu-latest
             goos: linux
             goarch: arm64
             platform: linux_arm64
             ext: ""
+            container: null
+          # ── Linux (Rocky Linux compatible)
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+            platform: rocky8_amd64
+            ext: ""
+            container: rockylinux
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            platform: rocky8_arm64
+            ext: ""
+            container: rockylinux
           # ── Windows
           - os: windows-latest
             goos: windows
             goarch: amd64
             platform: windows_amd64
             ext: ".exe"
+            container: null
           - os: windows-latest
             goos: windows
             goarch: arm64
             platform: windows_arm64
             ext: ".exe"
+            container: null
           # ── macOS
           - os: macos-latest
             goos: darwin
             goarch: amd64
             platform: macos_amd64
             ext: ""
+            container: null
           - os: macos-latest
             goos: darwin
             goarch: arm64
             platform: macos_arm64
             ext: ""
+            container: null
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Setup Go
+        if: matrix.container != 'rockylinux'
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
 
       - name: Build ${{ matrix.platform }} binary
+        if: matrix.container != 'rockylinux'
         shell: bash
         env:
-            GOOS:   ${{ matrix.goos }}
-            GOARCH: ${{ matrix.goarch }}
+          GOOS:   ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
         run: |
+          set -euo pipefail
+          mkdir -p dist
+          out="dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}${{ matrix.ext }}"
+          go build -tags netgo -o "$out"
+
+      - name: Build in Rocky Linux container
+        if: matrix.container == 'rockylinux'
+        run: |
+          # Get Go version from go.mod
+          GO_VERSION=$(grep '^go ' go.mod | awk '{print $2}')
+
+          docker run --rm -v $PWD:/workspace -w /workspace rockylinux:8 bash -c "
             set -euo pipefail
+
+            # Show Rocky Linux version
+            cat /etc/rocky-release
+
+            # Install dependencies including file command
+            dnf install -y wget tar file git
+
+            # Download AMD64 Go binary for the runner
+            echo 'Installing Go version: ${GO_VERSION} (amd64 for cross-compilation)'
+            wget -q \"https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz\"
+            tar -C /usr/local -xzf \"go${GO_VERSION}.linux-amd64.tar.gz\"
+            export PATH=/usr/local/go/bin:\$PATH
+
+            # Verify Go installation
+            go version
+
+            # Create dist directory
             mkdir -p dist
-            out="dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}${{ matrix.ext }}"
-            go build -tags netgo -o "$out"
+
+            # Build static binary for target architecture
+            echo 'Building for GOOS=linux GOARCH=${{ matrix.goarch }}'
+            CGO_ENABLED=0 GOOS=linux GOARCH=${{ matrix.goarch }} \\
+            go build -buildvcs=false -mod=readonly -tags 'netgo osusergo' \\
+              -ldflags '-extldflags \"-static\" -s -w' \\
+              -o 'dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}'
+
+            # Verify binary
+            echo '=== Binary verification ==='
+            file 'dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}'
+
+            # ldd check only works for amd64 binaries on amd64 host
+            if [ '${{ matrix.goarch }}' = 'amd64' ]; then
+              echo '=== Checking for dynamic dependencies ==='
+              ldd 'dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}' 2>/dev/null || echo 'No dynamic dependencies (static binary confirmed)'
+            else
+              echo '=== Cross-compiled for ${{ matrix.goarch }} - cannot run ldd on this host ==='
+            fi
+
+            echo '=== Binary size ==='
+            ls -lh 'dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}'
+          "
 
       - name: Upload ${{ matrix.platform }} artifact
         uses: actions/upload-artifact@v4
         with:
-            name: ${{ matrix.platform }}_binaries
-            path: dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}*
-            if-no-files-found: error
+          name: ${{ matrix.platform }}_binaries
+          path: dist/${{ github.event.repository.name }}_${{ matrix.platform }}_${{ github.ref_name }}*
+          if-no-files-found: error
 
 # ---------------------------------------------------------------------
 # SIGN  ── sign all Windows executables (amd64 & arm64)
