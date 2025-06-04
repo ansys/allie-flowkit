@@ -213,6 +213,15 @@ func MeshPilotReAct(instruction string,
 			&azopenai.ChatCompletionsFunctionToolDefinition{
 				Function: azure.Tool12(),
 			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool13(),
+			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool14(),
+			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool15(),
+			},
 		},
 		Temperature: to.Ptr[float32](0.0),
 	}, nil)
@@ -969,6 +978,240 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 	return
 }
 
+// SynthesizeActionsTool13 synthesize actions based on user instruction
+//
+// Tags:
+//   - @displayName: SynthesizeActionsTool13
+//
+// Parameters:
+//   - instruction: the user instruction
+//
+// Returns:
+//   - unitSystem: the synthesized string
+func SynthesizeActionsTool13(instruction string) (result string) {
+	ctx := &logging.ContextMap{}
+
+	azureOpenAIKey := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
+	modelDeploymentID := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
+	azureOpenAIEndpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
+	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
+		logging.Log.Error(ctx, "missing Azure OpenAI environment variables")
+		panic("environment variables missing")
+	}
+
+	client, err := azopenai.NewClientWithKeyCredential(
+		azureOpenAIEndpoint,
+		azcore.NewKeyCredential(azureOpenAIKey),
+		nil,
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create client: %v", err))
+	}
+
+	promptTpl := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_13"]
+	if promptTpl == "" {
+		panic("APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_13 not found in config")
+	}
+	prompt := fmt.Sprintf(promptTpl, instruction)
+
+	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
+		DeploymentName: &modelDeploymentID,
+		Messages: []azopenai.ChatRequestMessageClassification{
+			&azopenai.ChatRequestUserMessage{
+				Content: azopenai.NewChatRequestUserMessageContent(prompt),
+			},
+		},
+		Temperature: to.Ptr[float32](0.0),
+	}, nil)
+	if err != nil || len(resp.Choices) == 0 || resp.Choices[0].Message == nil {
+		panic(fmt.Sprintf("chat completion error: %v", err))
+	}
+
+	var out struct {
+		UnitSystem string `json:"UnitSystem"`
+	}
+	if err := json.Unmarshal([]byte(*resp.Choices[0].Message.Content), &out); err != nil {
+		panic(fmt.Sprintf("unmarshal UnitSystem failed: %v", err))
+	}
+	unitSystem := out.UnitSystem
+	logging.Log.Infof(ctx, "Synthesized UnitSystem: %s", unitSystem)
+
+	message, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_13_ACTION_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_13_ACTION_MESSAGE from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	actionKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_1"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_KEY_1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_KEY_2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_13_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_13_NAME from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_TARGET_1"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_TARGET_1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	actions := []map[string]string{
+		{
+			actionKey1:      actionValue1,
+			actionKey2:      actionValue2,
+			"ArgumentUnits": unitSystem,
+		},
+	}
+
+	finalMessage := map[string]interface{}{
+		"Message": message,
+		"Actions": actions,
+	}
+
+	resultStream, err := json.Marshal(finalMessage)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to marshal final message for tool 13: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	result = string(resultStream)
+	logging.Log.Infof(ctx, "SynthesizeActionsTool13 result: %s", result)
+	logging.Log.Infof(ctx, "successfully synthesized actions for tool 13")
+
+	return
+}
+
+// SynthesizeActionsTool14 synthesize actions based on user instruction
+//
+// Tags:
+//   - @displayName: SynthesizeActionsTool14
+//
+// Parameters:
+//   - instruction: the user instruction
+//
+// Returns:
+//   - result: the synthesized string
+func SynthesizeActionsTool14(instruction string) (result string) {
+	ctx := &logging.ContextMap{}
+
+	azureOpenAIKey := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
+	modelDeploymentID := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
+	azureOpenAIEndpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
+	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
+		logging.Log.Error(ctx, "missing Azure OpenAI environment variables")
+		panic("environment variables missing")
+	}
+
+	client, err := azopenai.NewClientWithKeyCredential(
+		azureOpenAIEndpoint,
+		azcore.NewKeyCredential(azureOpenAIKey),
+		nil,
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create client: %v", err))
+	}
+
+	promptTpl := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_14"]
+	if promptTpl == "" {
+		panic("APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_14 not found in config")
+	}
+	prompt := fmt.Sprintf(promptTpl, instruction)
+
+	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
+		DeploymentName: &modelDeploymentID,
+		Messages: []azopenai.ChatRequestMessageClassification{
+			&azopenai.ChatRequestUserMessage{
+				Content: azopenai.NewChatRequestUserMessageContent(prompt),
+			},
+		},
+		Temperature: to.Ptr[float32](0.0),
+	}, nil)
+	if err != nil || len(resp.Choices) == 0 || resp.Choices[0].Message == nil {
+		panic(fmt.Sprintf("chat completion error: %v", err))
+	}
+
+	var out struct {
+		Argument string `json:"Argument"`
+	}
+	if err := json.Unmarshal([]byte(*resp.Choices[0].Message.Content), &out); err != nil {
+		panic(fmt.Sprintf("unmarshal Argument failed: %v", err))
+	}
+	Argument := out.Argument
+	logging.Log.Infof(ctx, "Synthesized Argument: %s", Argument)
+
+	message, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTION_SUCCESS_MESSAGE from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	actionKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_1"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_KEY_1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_KEY_2 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_14_NAME"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_14_NAME from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_TARGET_1"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_TARGET_1 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	actions := []map[string]string{
+		{
+			actionKey1: actionValue1,
+			actionKey2: actionValue2,
+			"Argument": Argument,
+		},
+	}
+
+	finalMessage := map[string]interface{}{
+		"Message": message,
+		"Actions": actions,
+	}
+
+	resultStream, err := json.Marshal(finalMessage)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to marshal final message for tool 14: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	result = string(resultStream)
+	logging.Log.Infof(ctx, "SynthesizeActionsTool14 result: %s", result)
+	logging.Log.Infof(ctx, "successfully synthesized actions for tool 14")
+
+	return result
+}
+
 // SynthesizeActions update action as per user instruction
 //
 // Tags:
@@ -1606,6 +1849,12 @@ func GetActionsFromConfig(toolName string) (result string) {
 			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL12",
 			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_2",
 		},
+		"tool15": {
+			"resultName":    "APP_TOOL15_RESULT_NAME",
+			"resultMessage": "APP_TOOL15_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL15",
+			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_3",
+		},
 	}
 
 	// Help function to get the config value
@@ -1623,11 +1872,13 @@ func GetActionsFromConfig(toolName string) (result string) {
 	tool9ResultName := getConfigValue(configKeys["tool9"]["resultName"], "failed to load tool 9 result name from the configuration")
 	tool11ResultName := getConfigValue(configKeys["tool11"]["resultName"], "failed to load tool 11 result name from the configuration")
 	tool12ResultName := getConfigValue(configKeys["tool12"]["resultName"], "failed to load tool 12 result name from the configuration")
+	tool15ResultName := getConfigValue(configKeys["tool15"]["resultName"], "failed to load tool 15 result name from the configuration")
 
 	// Get tool result message from the configuration
 	tool9ResultMessage := getConfigValue(configKeys["tool9"]["resultMessage"], "failed to load tool 9 result message from the configuration")
 	tool11ResultMessage := getConfigValue(configKeys["tool11"]["resultMessage"], "failed to load tool 11 result message from the configuration")
 	tool12ResultMessage := getConfigValue(configKeys["tool12"]["resultMessage"], "failed to load tool 12 result message from the configuration")
+	tool15ResultMessage := getConfigValue(configKeys["tool15"]["resultMessage"], "failed to load tool 15 result message from the configuration")
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage := getConfigValue("APP_TOOL_ACTION_SUCCESS_MESSAGE", "failed to load tool action success message from the configuration")
@@ -1650,6 +1901,10 @@ func GetActionsFromConfig(toolName string) (result string) {
 		actionValue1 = getConfigValue(configKeys["tool12"]["actionValue1"], "failed to load tool 12 action value 1 from the configuration")
 		actionValue2 = getConfigValue(configKeys["tool12"]["actionValue2"], "failed to load tool 12 action value 2 from the configuration")
 		selectedMessage = tool12ResultMessage
+	} else if toolName == tool15ResultName {
+		actionValue1 = getConfigValue(configKeys["tool15"]["actionValue1"], "failed to load tool 15 action value 1 from the configuration")
+		actionValue2 = getConfigValue(configKeys["tool15"]["actionValue2"], "failed to load tool 15 action value 2 from the configuration")
+		selectedMessage = tool15ResultMessage
 	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
@@ -1659,7 +1914,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 	message := toolActionSuccessMessage
 	actions := []map[string]string{}
 	switch toolName {
-	case tool9ResultName, tool11ResultName, tool12ResultName:
+	case tool9ResultName, tool11ResultName, tool12ResultName, tool15ResultName:
 		message = selectedMessage
 		actions = append(actions, map[string]string{
 			actionKey1: actionValue1,
