@@ -1187,8 +1187,8 @@ func SynthesizeActionsTool14(instruction string) (result string) {
 
 	actions := []map[string]string{
 		{
-			actionKey1:      actionValue1,
-			actionKey2:      actionValue2,
+			actionKey1: actionValue1,
+			actionKey2: actionValue2,
 			"Argument": Argument,
 		},
 	}
