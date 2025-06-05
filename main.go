@@ -31,6 +31,7 @@ import (
 	"github.com/ansys/aali-flowkit/pkg/functiondefinitions"
 	"github.com/ansys/aali-flowkit/pkg/grpcserver"
 	"github.com/ansys/aali-flowkit/pkg/internalstates"
+	
 )
 
 //go:embed pkg/externalfunctions/dataextraction.go
@@ -56,6 +57,9 @@ var ansysMeshPilotFile string
 
 //go:embed pkg/externalfunctions/auth.go
 var authFile string
+
+//go:embed pkg/externalfunctions/mcp.go
+var mcpFile string
 
 func init() {
 	// initialize config
@@ -87,6 +91,7 @@ func main() {
 		"qdrant":           qdrantFile,
 		"ansys_mesh_pilot": ansysMeshPilotFile,
 		"auth":             authFile,
+		"mcp":              mcpFile,
 	}
 
 	// Load function definitions
