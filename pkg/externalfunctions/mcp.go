@@ -1,10 +1,8 @@
 package externalfunctions
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/gorilla/websocket"
 )
 
 // ListAll retrieves all tools, resources, and prompts from the MCP server.
@@ -23,7 +21,10 @@ func ListAll(serverURL string) (map[string][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer func() {
+		// Use websocket.StatusNormalClosure (1000) for normal closure and an empty reason.
+		conn.Close(1000, "")
+	}()
 
 	request := map[string]interface{}{"intent": "list"}
 	response, err := sendMCPRequest(conn, request)
@@ -68,7 +69,7 @@ func ExecuteTool(serverURL, toolName string, args map[string]interface{}) (map[s
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer conn.Close(1000, "")
 
 	request := map[string]interface{}{
 		"intent": "execute",
@@ -95,7 +96,7 @@ func GetResource(serverURL, resourceName string) (map[string]interface{}, error)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close()
+	defer conn.Close(1000, "")
 
 	request := map[string]interface{}{
 		"intent": "get_resource",
@@ -121,7 +122,7 @@ func GetSystemPrompt(serverURL, promptName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer conn.Close()
+	defer conn.Close(1000, "")
 
 	request := map[string]interface{}{
 		"intent": "get_prompt",
@@ -141,33 +142,4 @@ func GetSystemPrompt(serverURL, promptName string) (string, error) {
 		return "", fmt.Errorf("prompt is not a string")
 	}
 	return promptStr, nil
-}
-
-// connectToMCP establishes a WebSocket connection to the MCP server
-func connectToMCP(serverURL string) (*websocket.Conn, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(serverURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to WebSocket server: %w", err)
-	}
-	return conn, nil
-}
-
-// sendMCPRequest sends a JSON request over the WebSocket connection and returns the parsed response
-func sendMCPRequest(conn *websocket.Conn, request interface{}) (map[string]interface{}, error) {
-	data, err := json.Marshal(request)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-	if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-	_, responseData, err := conn.ReadMessage()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response: %w", err)
-	}
-	var response map[string]interface{}
-	if err := json.Unmarshal(responseData, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-	return response, nil
 }

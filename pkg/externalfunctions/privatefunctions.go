@@ -2648,3 +2648,51 @@ func logPanic(ctx *logging.ContextMap, msg string, args ...any) {
 	logging.Log.Error(logCtx, errMsg)
 	panic(errMsg)
 }
+
+// connectToMCP establishes a WebSocket connection to the MCP server.
+//
+// Parameters:
+//   - serverURL: The WebSocket URL of the MCP server.
+//
+// Returns:
+//   - conn: The established WebSocket connection.
+//   - err: An error if the connection fails.
+func connectToMCP(serverURL string) (*websocket.Conn, error) {
+	conn, _, err := websocket.Dial(context.Background(), serverURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to WebSocket server: %w", err)
+	}
+	return conn, nil
+}
+
+// sendMCPRequest sends a JSON request over the WebSocket connection and returns the parsed response.
+//
+// Parameters:
+//   - conn: The active WebSocket connection.
+//   - request: The request object to be marshaled and sent.
+//
+// Returns:
+//   - response: The parsed response from the MCP server as a map.
+//   - err: An error if marshaling, sending, or receiving fails.
+func sendMCPRequest(conn *websocket.Conn, request interface{}) (map[string]interface{}, error) {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+	if err := conn.Write(context.Background(), websocket.MessageText, data); err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	_, responseData, err := conn.ReadMessage()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	var response map[string]interface{}
+	dataBytes, ok := responseData.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("expected []byte from ReadMessage, got %T", responseData)
+	}
+	if err := json.Unmarshal(dataBytes, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return response, nil
+}
