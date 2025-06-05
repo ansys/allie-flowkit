@@ -121,6 +121,8 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"GetActionsFromConfig":                      GetActionsFromConfig,
 	"ParseHistory":                              ParseHistory,
 	"SynthesizeActionsTool4":                    SynthesizeActionsTool4,
+	"SynthesizeActionsTool13":                   SynthesizeActionsTool13,
+	"SynthesizeActionsTool14":                   SynthesizeActionsTool14,
 	"SimilartitySearchOnPathDescriptionsQdrant": SimilartitySearchOnPathDescriptionsQdrant,
 
 	// qdrant
