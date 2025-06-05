@@ -1,7 +1,9 @@
 package externalfunctions
 
 import (
+	"context"
 	"fmt"
+	"nhooyr.io/websocket"
 )
 
 // ListAll retrieves all tools, resources, and prompts from the MCP server.
@@ -16,13 +18,16 @@ import (
 //   - result: a map with lists of tool/resource/prompt names categorized by type
 //   - error: any error that occurred during the process
 func ListAll(serverURL string) (map[string][]string, error) {
-	conn, err := connectToMCP(serverURL)
+	ctx := context.Background()
+
+	conn, err := connectToMCP(ctx, serverURL)
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing after list request")
 
 	request := map[string]interface{}{"intent": "list"}
-	response, err := sendMCPRequest(conn, request)
+	response, err := sendMCPRequest(ctx, conn, request)
 	if err != nil {
 		return nil, err
 	}
@@ -60,17 +65,20 @@ func ListAll(serverURL string) (map[string][]string, error) {
 //   - result: the response from the tool execution
 //   - error: any error that occurred during execution
 func ExecuteTool(serverURL, toolName string, args map[string]interface{}) (map[string]interface{}, error) {
-	conn, err := connectToMCP(serverURL)
+	ctx := context.Background()
+
+	conn, err := connectToMCP(ctx, serverURL)
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing after execute request")
 
 	request := map[string]interface{}{
 		"intent": "execute",
 		"tool":   toolName,
 		"args":   args,
 	}
-	return sendMCPRequest(conn, request)
+	return sendMCPRequest(ctx, conn, request)
 }
 
 // GetResource retrieves a named resource from the MCP server.
@@ -86,16 +94,19 @@ func ExecuteTool(serverURL, toolName string, args map[string]interface{}) (map[s
 //   - result: the retrieved resource as a map
 //   - error: any error that occurred during the request
 func GetResource(serverURL, resourceName string) (map[string]interface{}, error) {
-	conn, err := connectToMCP(serverURL)
+	ctx := context.Background()
+
+	conn, err := connectToMCP(ctx, serverURL)
 	if err != nil {
 		return nil, err
 	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing after resource fetch")
 
 	request := map[string]interface{}{
 		"intent": "get_resource",
 		"name":   resourceName,
 	}
-	return sendMCPRequest(conn, request)
+	return sendMCPRequest(ctx, conn, request)
 }
 
 // GetSystemPrompt retrieves a system prompt by name from the MCP server.
@@ -111,16 +122,19 @@ func GetResource(serverURL, resourceName string) (map[string]interface{}, error)
 //   - promptStr: the text of the retrieved prompt
 //   - error: any error that occurred during the request
 func GetSystemPrompt(serverURL, promptName string) (string, error) {
-	conn, err := connectToMCP(serverURL)
+	ctx := context.Background()
+
+	conn, err := connectToMCP(ctx, serverURL)
 	if err != nil {
 		return "", err
 	}
+	defer conn.Close(websocket.StatusNormalClosure, "closing after prompt fetch")
 
 	request := map[string]interface{}{
 		"intent": "get_prompt",
 		"name":   promptName,
 	}
-	response, err := sendMCPRequest(conn, request)
+	response, err := sendMCPRequest(ctx, conn, request)
 	if err != nil {
 		return "", err
 	}
