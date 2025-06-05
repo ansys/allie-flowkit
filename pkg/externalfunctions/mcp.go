@@ -2,7 +2,6 @@ package externalfunctions
 
 import (
 	"fmt"
-
 )
 
 // ListAll retrieves all tools, resources, and prompts from the MCP server.
@@ -21,10 +20,6 @@ func ListAll(serverURL string) (map[string][]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		// Use websocket.StatusNormalClosure (1000) for normal closure and an empty reason.
-		conn.Close(1000, "")
-	}()
 
 	request := map[string]interface{}{"intent": "list"}
 	response, err := sendMCPRequest(conn, request)
@@ -69,7 +64,6 @@ func ExecuteTool(serverURL, toolName string, args map[string]interface{}) (map[s
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(1000, "")
 
 	request := map[string]interface{}{
 		"intent": "execute",
@@ -96,7 +90,6 @@ func GetResource(serverURL, resourceName string) (map[string]interface{}, error)
 	if err != nil {
 		return nil, err
 	}
-	defer conn.Close(1000, "")
 
 	request := map[string]interface{}{
 		"intent": "get_resource",
@@ -122,7 +115,6 @@ func GetSystemPrompt(serverURL, promptName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer conn.Close(1000, "")
 
 	request := map[string]interface{}{
 		"intent": "get_prompt",

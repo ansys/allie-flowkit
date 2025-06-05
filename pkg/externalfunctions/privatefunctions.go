@@ -2696,3 +2696,27 @@ func sendMCPRequest(conn *websocket.Conn, request interface{}) (map[string]inter
 	}
 	return response, nil
 }
+
+// sendWebSocketRequest sends a JSON request over the WebSocket connection and returns the parsed response
+func sendWebSocketRequest(conn *websocket.Conn, request interface{}) (map[string]interface{}, error) {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+	if err := conn.Write(context.Background(), websocket.MessageText, data); err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	_, responseData, err := conn.ReadMessage()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+	var response map[string]interface{}
+	dataBytes, ok := responseData.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("expected []byte from ReadMessage, got %T", responseData)
+	}
+	if err := json.Unmarshal(dataBytes, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return response, nil
+}
