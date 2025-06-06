@@ -138,4 +138,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"DenyCustomerAccessAndSendWarningMongoDbUserId": DenyCustomerAccessAndSendWarningMongoDbUserId,
 	"SendLogicAppNotificationEmail":                 SendLogicAppNotificationEmail,
 	"CreateMessageWithVariable":                     CreateMessageWithVariable,
+
+	// materials
+	"MaterialsTestFunc": MaterialsTestFunc,
 }

@@ -54,7 +54,7 @@ var ansysGPTFile string
 //go:embed pkg/externalfunctions/ansysmeshpilot.go
 var ansysMeshPilotFile string
 
-//go:embed pkg/externalfunctions/ansysmeshpilot.go
+//go:embed pkg/externalfunctions/ansysmaterials.go
 var ansysMaterialsFile string
 
 //go:embed pkg/externalfunctions/auth.go
