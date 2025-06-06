@@ -1,0 +1,1169 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>API reference &#8212; aali-flowkit</title>
+  
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/ansys_sphinx_theme.css?v=0909a4fa" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.23/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://www.nerdfonts.com/assets/css/webfont.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+
+  <!-- Include desired assets -->
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  
+
+  
+    <link href="../../_static/css/breadcrumbs.css" rel="stylesheet" />
+  
+    <script src="../../_static/documentation_options.js?v=7838c05f"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api_reference/test/index';</script>
+    <script>
+        DOCUMENTATION_OPTIONS.theme_version = '0.16.1';
+        DOCUMENTATION_OPTIONS.theme_switcher_json_url = 'https://laughing-guide-5m1lvq6.pages.github.io/versions.json';
+        DOCUMENTATION_OPTIONS.theme_switcher_version_match = 'dev';
+        DOCUMENTATION_OPTIONS.show_version_warning_banner =
+            false;
+        </script>
+    <link rel="icon" href="../../_static/ansys-favicon.png"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.6.dev0" />
+  <link rel="canonical" href="https://ansys.github.io/aali-flowkit/version/stable/api_reference/privatefunctions/graphdb/index.html" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/pyansys_logo_transparent_black.png" class="logo__image only-light" alt="aali-flowkit - Home"/>
+    <img src="../../_static/pyansys_logo_transparent_white.png" class="logo__image only-dark pst-js-only" alt="aali-flowkit - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../index.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+<div class="search-bar pst-js-only" id="search-bar">
+  <form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="search" class="form-control" name="q" placeholder="Search the docs ..."
+      aria-label="Search the docs ..." autocomplete="off" autocorrect="off"
+      autocapitalize="off" spellcheck="false" />
+    <span class="search-button__kbd-shortcut">
+      <kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd>
+    </span>
+  </form>
+  <div id="static-search-results" class="static-search-results" style="display:none;" tabindex="0"></div>
+</div>
+        </div>
+      
+      
+        <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-2"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-2"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-2"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-2">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/ansys/aali-flowkit" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<div class="search-bar pst-js-only" id="search-bar">
+  <form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="search" class="form-control" name="q" placeholder="Search the docs ..."
+      aria-label="Search the docs ..." autocomplete="off" autocorrect="off"
+      autocapitalize="off" spellcheck="false" />
+    <span class="search-button__kbd-shortcut">
+      <kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd>
+    </span>
+  </form>
+  <div id="static-search-results" class="static-search-results" style="display:none;" tabindex="0"></div>
+</div>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+  
+    <div id="announcement_msg"></div>
+<script>
+  fetch("announcement.html")
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(
+      (text) => (document.getElementById("announcement_msg").innerHTML = text),
+    )
+    .catch((error) => console.error(`Fetch problem: ${error.message}`));
+</script>
+  
+
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../index.html">
+    API reference
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<div class="version-switcher__container dropdown pst-js-only">
+  <button id="pst-version-switcher-button-3"
+    type="button"
+    class="version-switcher__button btn btn-sm dropdown-toggle"
+    data-bs-toggle="dropdown"
+    aria-haspopup="listbox"
+    aria-controls="pst-version-switcher-list-3"
+    aria-label="Version switcher list"
+  >
+    Choose version  <!-- this text may get changed later by javascript -->
+    <span class="caret"></span>
+  </button>
+  <div id="pst-version-switcher-list-3"
+    class="version-switcher__menu dropdown-menu list-group-flush py-0"
+    role="listbox" aria-labelledby="pst-version-switcher-button-3">
+    <!-- dropdown will be populated by javascript on page load -->
+  </div>
+</div></div>
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/ansys/aali-flowkit" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+         
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="https://aali.docs.ansys.com/" class="nav-link">Aali</a>
+    </li>
+     
+    <li class="breadcrumb-item">
+      <a
+        href="../../index.html"
+        class="nav-link"
+        aria-label="Home"
+      >
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+      
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">API reference</span></li>
+    
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package graphdb
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+				
+				<dd><a href="#Initialize">func Initialize(uri string) (funcError error)</a></dd>
+			
+				
+				<dd><a href="#graphdbStringList">func graphdbStringList(l []string) aali_graphdb.ListValue</a></dd>
+			
+			
+				
+				<dd><a href="#graphDbContext">type graphDbContext</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.AddCodeGenerationElementNodes">func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []sharedtypes.CodeGenerationElement) (funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.AddCodeGenerationExampleNodes">func (graphdb_context *graphDbContext) AddCodeGenerationExampleNodes(nodes []sharedtypes.CodeGenerationExample) (funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.AddUserGuideSectionNodes">func (graphdb_context *graphDbContext) AddUserGuideSectionNodes(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.CreateCodeGenerationExampleRelationships">func (graphdb_context *graphDbContext) CreateCodeGenerationExampleRelationships(nodes []sharedtypes.CodeGenerationExample) (funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.CreateCodeGenerationRelationships">func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes []sharedtypes.CodeGenerationElement) (funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.CreateSchema">func (graphdb_context *graphDbContext) CreateSchema() error</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.CreateUserGuideSectionRelationships">func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes []sharedtypes.CodeGenerationUserGuideSection) (funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.GetCodeGenerationElementAndDependencies">func (graphdb_context *graphDbContext) GetCodeGenerationElementAndDependencies(elementName string, maxHops int) (elements []sharedtypes.CodeGenerationElement, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.GetExamplesFromCodeGenerationElement">func (graphdb_context *graphDbContext) GetExamplesFromCodeGenerationElement(elementType string, elementName string) (exampleNames []string, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.GetUserGuideMainChapters">func (graphdb_context *graphDbContext) GetUserGuideMainChapters() (sections []sharedtypes.CodeGenerationUserGuideSection, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.GetUserGuideSectionChildren">func (graphdb_context *graphDbContext) GetUserGuideSectionChildren(sectionName string) (sectionChildren []sharedtypes.CodeGenerationUserGuideSection, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.GetUserGuideSectionReferences">func (graphdb_context *graphDbContext) GetUserGuideSectionReferences(sectionName string) (referencedSections string, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.GetUserGuideTableOfContents">func (graphdb_context *graphDbContext) GetUserGuideTableOfContents(maxLevel int) (tableOfContents []map[string]interface{}, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.RetrieveDependencies">func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *logging.ContextMap, relationshipName string, relationshipDirection string, sourceDocumentName string, nodeTypesFilter sharedtypes.DbArrayFilter, tagsFilter []string, maxHops int) (dependencyNames []string, funcError error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.WriteCypherQuery">func (graphdb_context *graphDbContext) WriteCypherQuery(query string) ([]map[string]any, error)</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="#graphDbContext.getUserGuideNodeRecursive">func (graphdb_context *graphDbContext) getUserGuideNodeRecursive(nodeName string, maxLevel int) (*userGuideNodeProps, error)</a></dd>
+				
+			
+				
+				<dd><a href="#userGuideNodeProps">type userGuideNodeProps</a></dd>
+				
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go">graphdb.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		
+
+		
+		
+		
+			
+			
+			<h2 id="Initialize">func <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L56">Initialize</a>
+				<a class="permalink" href="#Initialize">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func Initialize(uri <a href="https://pkg.go.dev/builtin/#string">string</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+			<p>Initialize graph database connection.
+<p>Parameters:
+<ul>
+<li>uri: URI of the graph database.
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+			
+			
+
+		
+			
+			
+			<h2 id="graphdbStringList">func <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L189">graphdbStringList</a>
+				<a class="permalink" href="#graphdbStringList">&#xb6;</a>
+				
+				
+			</h2>
+			<pre>func graphdbStringList(l []<a href="https://pkg.go.dev/builtin/#string">string</a>) <a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/aali_graphdb/">aali_graphdb</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/aali_graphdb/#ListValue">ListValue</a></pre>
+			
+			
+			
+
+		
+		
+			
+			
+			<h2 id="graphDbContext">type <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L41">graphDbContext</a>
+				<a class="permalink" href="#graphDbContext">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type graphDbContext struct {
+<span id="graphDbContext.client"></span>    client *<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/aali_graphdb/">aali_graphdb</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/aali_graphdb/#Client">Client</a>
+<span id="graphDbContext.dbname"></span>    dbname <a href="https://pkg.go.dev/builtin/#string">string</a>
+}
+</pre>
+
+			
+
+			
+				<p>Initialize DB login object
+
+				<pre>var <span id="GraphDbDriver">GraphDbDriver</span> graphDbContext</pre>
+			
+
+			
+			
+			
+
+			
+
+			
+				
+				<h3 id="graphDbContext.AddCodeGenerationElementNodes">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L209">AddCodeGenerationElementNodes</a>
+					<a class="permalink" href="#graphDbContext.AddCodeGenerationElementNodes">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) AddCodeGenerationElementNodes(nodes []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationElement">CodeGenerationElement</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>AddCodeGenerationElementNodes adds nodes to graphdb database.
+<p>Parameters:
+<ul>
+<li>nodes: List of nodes to be added.
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.AddCodeGenerationExampleNodes">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L295">AddCodeGenerationExampleNodes</a>
+					<a class="permalink" href="#graphDbContext.AddCodeGenerationExampleNodes">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) AddCodeGenerationExampleNodes(nodes []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationExample">CodeGenerationExample</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>AddCodeGenerationExampleNodes adds nodes to graph database.
+<p>Parameters:
+<ul>
+<li>nodes: List of nodes to be added.
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.AddUserGuideSectionNodes">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L363">AddUserGuideSectionNodes</a>
+					<a class="permalink" href="#graphDbContext.AddUserGuideSectionNodes">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) AddUserGuideSectionNodes(nodes []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationUserGuideSection">CodeGenerationUserGuideSection</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>AddUserGuideSectionNodes adds nodes to graph database.
+<p>Parameters:
+<ul>
+<li>nodes: List of nodes to be added.
+<li>label: Label for the nodes.
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.CreateCodeGenerationExampleRelationships">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L419">CreateCodeGenerationExampleRelationships</a>
+					<a class="permalink" href="#graphDbContext.CreateCodeGenerationExampleRelationships">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) CreateCodeGenerationExampleRelationships(nodes []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationExample">CodeGenerationExample</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>CreateCodeGenerationExampleRelationships creates relationships between nodes in graph database.
+<p>Parameters:
+<ul>
+<li>relationships: List of relationships to be created.
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.CreateCodeGenerationRelationships">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L462">CreateCodeGenerationRelationships</a>
+					<a class="permalink" href="#graphDbContext.CreateCodeGenerationRelationships">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationElement">CodeGenerationElement</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>CreateCodeGenerationRelationships creates relationships between nodes in graph database.
+<p>Parameters:
+<ul>
+<li>relationships: List of relationships to be created.
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.CreateSchema">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L130">CreateSchema</a>
+					<a class="permalink" href="#graphDbContext.CreateSchema">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) CreateSchema() <a href="https://pkg.go.dev/builtin/#error">error</a></pre>
+				
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.CreateUserGuideSectionRelationships">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L574">CreateUserGuideSectionRelationships</a>
+					<a class="permalink" href="#graphDbContext.CreateUserGuideSectionRelationships">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationUserGuideSection">CodeGenerationUserGuideSection</a>) (funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>CreateUserGuideSectionRelationships creates relationships between nodes in graph database.
+<p>Parameters:
+<ul>
+<li>nodes: List of relationships to be created.
+<li>label: Label for the nodes (UserGuide by default).
+</ul>
+<p>Returns:
+<ul>
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.GetCodeGenerationElementAndDependencies">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L757">GetCodeGenerationElementAndDependencies</a>
+					<a class="permalink" href="#graphDbContext.GetCodeGenerationElementAndDependencies">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) GetCodeGenerationElementAndDependencies(elementName <a href="https://pkg.go.dev/builtin/#string">string</a>, maxHops <a href="https://pkg.go.dev/builtin/#int">int</a>) (elements []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationElement">CodeGenerationElement</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetCodeGenerationElementAndDependencies gets a code generation element and its dependencies.
+<p>Parameters:
+<ul>
+<li>elementName: Name of the code generation element.
+<li>maxHops: Maximum number of hops to search for dependencies.
+</ul>
+<p>Returns:
+<ul>
+<li>elements: List of code generation elements.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.GetExamplesFromCodeGenerationElement">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L711">GetExamplesFromCodeGenerationElement</a>
+					<a class="permalink" href="#graphDbContext.GetExamplesFromCodeGenerationElement">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) GetExamplesFromCodeGenerationElement(elementType <a href="https://pkg.go.dev/builtin/#string">string</a>, elementName <a href="https://pkg.go.dev/builtin/#string">string</a>) (exampleNames []<a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetExamplesFromCodeGenerationElement gets examples from a code generation element.
+<p>Parameters:
+<ul>
+<li>elementType: Type of the code generation element.
+<li>elementName: Name of the code generation element.
+</ul>
+<p>Returns:
+<ul>
+<li>exampleNames: List of example names.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.GetUserGuideMainChapters">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L799">GetUserGuideMainChapters</a>
+					<a class="permalink" href="#graphDbContext.GetUserGuideMainChapters">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) GetUserGuideMainChapters() (sections []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationUserGuideSection">CodeGenerationUserGuideSection</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetUserGuideMainChapters gets the main chapters of the user guide.
+<p>Returns:
+<ul>
+<li>sections: List of user guide sections.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.GetUserGuideSectionChildren">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L849">GetUserGuideSectionChildren</a>
+					<a class="permalink" href="#graphDbContext.GetUserGuideSectionChildren">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) GetUserGuideSectionChildren(sectionName <a href="https://pkg.go.dev/builtin/#string">string</a>) (sectionChildren []<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#CodeGenerationUserGuideSection">CodeGenerationUserGuideSection</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetUserGuideSectionChildren gets the children of a user guide section.
+<p>Parameters:
+<ul>
+<li>sectionName: Name of the user guide section.
+</ul>
+<p>Returns:
+<ul>
+<li>sectionChildren: List of user guide sections.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.GetUserGuideSectionReferences">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L1007">GetUserGuideSectionReferences</a>
+					<a class="permalink" href="#graphDbContext.GetUserGuideSectionReferences">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) GetUserGuideSectionReferences(sectionName <a href="https://pkg.go.dev/builtin/#string">string</a>) (referencedSections <a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetUserGuideSectionReferences gets the references of a user guide section.
+<p>Parameters:
+<ul>
+<li>sectionName: Name of the user guide section.
+</ul>
+<p>Returns:
+<ul>
+<li>referencedSections: List of referenced sections.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.GetUserGuideTableOfContents">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L889">GetUserGuideTableOfContents</a>
+					<a class="permalink" href="#graphDbContext.GetUserGuideTableOfContents">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) GetUserGuideTableOfContents(maxLevel <a href="https://pkg.go.dev/builtin/#int">int</a>) (tableOfContents []map[<a href="https://pkg.go.dev/builtin/#string">string</a>]interface{}, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetUserGuideTableOfContents gets the table of contents of the user guide.
+<p>Parameters:
+<ul>
+<li>maxLevel: Maximum depth of the table of contents.
+</ul>
+<p>Returns:
+<ul>
+<li>tableOfContents: List of user guide sections.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.RetrieveDependencies">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L1056">RetrieveDependencies</a>
+					<a class="permalink" href="#graphDbContext.RetrieveDependencies">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) RetrieveDependencies(ctx *<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/logging/">logging</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/logging/#ContextMap">ContextMap</a>, relationshipName <a href="https://pkg.go.dev/builtin/#string">string</a>, relationshipDirection <a href="https://pkg.go.dev/builtin/#string">string</a>, sourceDocumentName <a href="https://pkg.go.dev/builtin/#string">string</a>, nodeTypesFilter <a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/">sharedtypes</a>.<a href="https://pkg.go.dev/github.com/ansys/aali-sharedtypes/pkg/sharedtypes/#DbArrayFilter">DbArrayFilter</a>, tagsFilter []<a href="https://pkg.go.dev/builtin/#string">string</a>, maxHops <a href="https://pkg.go.dev/builtin/#int">int</a>) (dependencyNames []<a href="https://pkg.go.dev/builtin/#string">string</a>, funcError <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>RetrieveDependencies retrieves the dependencies for the specified document from graph database.
+<p>Parameters:
+<ul>
+<li>ctx: ContextMap object.
+<li>relationshipName: Name of the relationship.
+<li>relationshipDirection: Direction of the relationship.
+<li>sourceDocumentId: Id of the document.
+<li>nodeTypesFilter: Node types filter.
+<li>maxHops: Maximum number of hops.
+</ul>
+<p>Returns:
+<ul>
+<li>dependenciesIds: List of dependencies ids.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.WriteCypherQuery">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L696">WriteCypherQuery</a>
+					<a class="permalink" href="#graphDbContext.WriteCypherQuery">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) WriteCypherQuery(query <a href="https://pkg.go.dev/builtin/#string">string</a>) ([]map[<a href="https://pkg.go.dev/builtin/#string">string</a>]<a href="https://pkg.go.dev/builtin/#any">any</a>, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>WriteCypherQuery executes a cypher query with write access.
+<p>Parameters:
+<ul>
+<li>query: Cypher query to execute.
+</ul>
+<p>Returns:
+<ul>
+<li>results: array of map[string]any, keys are determined by the specific cypher query that was passed in
+<li>err: error, if any
+</ul>
+
+				
+				
+				
+			
+				
+				<h3 id="graphDbContext.getUserGuideNodeRecursive">func (*graphDbContext) <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L942">getUserGuideNodeRecursive</a>
+					<a class="permalink" href="#graphDbContext.getUserGuideNodeRecursive">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (graphdb_context *graphDbContext) getUserGuideNodeRecursive(nodeName <a href="https://pkg.go.dev/builtin/#string">string</a>, maxLevel <a href="https://pkg.go.dev/builtin/#int">int</a>) (*userGuideNodeProps, <a href="https://pkg.go.dev/builtin/#error">error</a>)</pre>
+				<p>GetUserGuideNodeRecursive fetches a user guide node and its children recursively.
+<p>Parameters:
+<ul>
+<li>nodeName: Name of the user guide node.
+<li>maxLevel: Maximum depth of the table of contents.
+</ul>
+<p>Returns:
+<ul>
+<li>nodeProps: Properties of the user guide node.
+<li>funcError: Error object.
+</ul>
+
+				
+				
+				
+			
+		
+			
+			
+			<h2 id="userGuideNodeProps">type <a href="https://github.com/ansys/aali-agent/blob/main/pkg/privatefunctions/graphdb/graphdb.go#L927">userGuideNodeProps</a>
+				<a class="permalink" href="#userGuideNodeProps">&#xb6;</a>
+				
+				
+			</h2>
+			
+			<pre>type userGuideNodeProps struct {
+<span id="userGuideNodeProps.Title"></span>    Title    <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="userGuideNodeProps.Name"></span>    Name     <a href="https://pkg.go.dev/builtin/#string">string</a>
+<span id="userGuideNodeProps.Children"></span>    Children []userGuideNodeProps
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.23.9.<br>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+</article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"> 
+<div class="tocsection editthispage">
+  <a href="None">
+    <i class="fa-solid fa-pencil"></i>
+       Edit
+    on GitHub  
+  </a>
+</div>
+
+</div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/api_reference/test/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+
+  <!-- Include desired assets -->
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.7/require.min.js"></script>
+
+<script>
+// Passing the search options to the search.js file
+const SEARCH_OPTIONS = JSON.parse('{"keys": ["title", "text"], "limit": 10, "threshold": 0.2}');
+const SEARCH_FILE = "../../_static/search.json";
+</script>
+
+
+<script src="../../_static/js/search.js"></script>
+  
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright (c) 2025 ANSYS, Inc. All rights reserved.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the
+  <a href="https://sphinxdocs.ansys.com/version/stable/index.html"
+    >Ansys Sphinx Theme</a
+  >
+  1.3.2. <br />Last updated on
+  <span id="ast_build_date"></span>
+</p>
+<script>
+  var options = { day: "numeric", month: "long", year: "numeric" };
+  var ast_lastModifiedDate = new Date(document.lastModified);
+  var ast_build_date = ast_lastModifiedDate.toLocaleDateString("en-US", options);
+  document.getElementById("ast_build_date").innerHTML = ast_build_date;
+</script></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
