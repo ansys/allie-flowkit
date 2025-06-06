@@ -139,6 +139,13 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SendLogicAppNotificationEmail":                 SendLogicAppNotificationEmail,
 	"CreateMessageWithVariable":                     CreateMessageWithVariable,
 
+	// mcp
+	"ListAll":         ListAll,
+	"ExecuteTool":     ExecuteTool,
+	"GetResource":     GetResource,
+	"GetSystemPrompt": GetSystemPrompt,
+  
+  
 	// materials
 	"MaterialsTestFunc": MaterialsTestFunc,
-}
+  

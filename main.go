@@ -60,6 +60,9 @@ var ansysMaterialsFile string
 //go:embed pkg/externalfunctions/auth.go
 var authFile string
 
+//go:embed pkg/externalfunctions/mcp.go
+var mcpFile string
+
 func init() {
 	// initialize config
 	config.InitConfig([]string{}, map[string]interface{}{
@@ -91,6 +94,7 @@ func main() {
 		"ansys_mesh_pilot": ansysMeshPilotFile,
 		"ansys_materials":  ansysMaterialsFile,
 		"auth":             authFile,
+		"mcp":              mcpFile,
 	}
 
 	// Load function definitions
