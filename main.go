@@ -54,6 +54,9 @@ var ansysGPTFile string
 //go:embed pkg/externalfunctions/ansysmeshpilot.go
 var ansysMeshPilotFile string
 
+//go:embed pkg/externalfunctions/ansysmaterials.go
+var ansysMaterialsFile string
+
 //go:embed pkg/externalfunctions/auth.go
 var authFile string
 
@@ -89,6 +92,7 @@ func main() {
 		"ansys_gpt":        ansysGPTFile,
 		"qdrant":           qdrantFile,
 		"ansys_mesh_pilot": ansysMeshPilotFile,
+		"ansys_materials":  ansysMaterialsFile,
 		"auth":             authFile,
 		"mcp":              mcpFile,
 	}

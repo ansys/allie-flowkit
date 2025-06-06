@@ -144,4 +144,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"ExecuteTool":     ExecuteTool,
 	"GetResource":     GetResource,
 	"GetSystemPrompt": GetSystemPrompt,
+
+	// materials
+	"MaterialsTestFunc": MaterialsTestFunc,
 }
