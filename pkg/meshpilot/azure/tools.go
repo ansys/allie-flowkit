@@ -532,3 +532,66 @@ func Tool15() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 
 	return funcDef
 }
+
+func Tool16() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
+
+	// Get the tool name from the configuration
+	toolName := mustCfg(ctx, "APP_TOOL_16_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_16_DESCRIPTION")
+	toolProperty2Name := mustCfg(ctx, "APP_TOOL_PROPERTY_2_NAME")
+	toolProperty2Type := mustCfg(ctx, "APP_TOOL_PROPERTY_2_TYPE")
+	toolProperty2Description1 := mustCfg(ctx, "APP_TOOL_PROPERTY_2_DESCRIPTION_9")
+
+	// Define the parameters for the function
+	jsonBytes, err := json.Marshal(map[string]any{
+		"required": []string{toolProperty2Name},
+		"type":     "object",
+		"properties": map[string]any{
+			toolProperty2Name: map[string]any{
+				"type":        toolProperty2Type,
+				"description": toolProperty2Description1,
+			},
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
+		Parameters:  jsonBytes,
+	}
+
+	return funcDef
+}
+
+func Tool17() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
+	// Get context
+	ctx := &logging.ContextMap{}
+
+	// Get the tool name and description from the configuration
+	toolName := mustCfg(ctx, "APP_TOOL_17_NAME")
+	toolDescription := mustCfg(ctx, "APP_TOOL_17_DESCRIPTION")
+
+	// Define the parameters for the function
+	jsonBytes, err := json.Marshal(map[string]any{
+		"type":       "object",
+		"properties": map[string]any{},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	funcDef := &azopenai.ChatCompletionsFunctionToolDefinitionFunction{
+		Name:        to.Ptr(toolName),
+		Description: to.Ptr(toolDescription),
+		Parameters:  jsonBytes,
+	}
+
+	return funcDef
+}

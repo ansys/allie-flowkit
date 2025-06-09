@@ -222,6 +222,12 @@ func MeshPilotReAct(instruction string,
 			&azopenai.ChatCompletionsFunctionToolDefinition{
 				Function: azure.Tool15(),
 			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool16(),
+			},
+			&azopenai.ChatCompletionsFunctionToolDefinition{
+				Function: azure.Tool17(),
+			},
 		},
 		Temperature: to.Ptr[float32](0.0),
 	}, nil)
@@ -949,7 +955,7 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 		panic(errorMessage)
 	}
 
-	synthesizeActionsValue, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_VALUE"]
+	synthesizeActionsValue, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_TOOL4_VALUE"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
 		logging.Log.Error(ctx, errorMessage)
@@ -1036,9 +1042,9 @@ func SynthesizeActionsTool13(instruction string) (result string) {
 	unitSystem := out.UnitSystem
 	logging.Log.Infof(ctx, "Synthesized UnitSystem: %s", unitSystem)
 
-	message, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_13_ACTION_MESSAGE"]
+	message, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_13_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
-		errorMessage := fmt.Sprintf("failed to load APP_TOOL_13_ACTION_MESSAGE from the configuration")
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_13_ACTION_SUCCESS_MESSAGE from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
@@ -1153,9 +1159,9 @@ func SynthesizeActionsTool14(instruction string) (result string) {
 	Argument := out.Argument
 	logging.Log.Infof(ctx, "Synthesized Argument: %s", Argument)
 
-	message, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
+	message, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_14_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
-		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTION_SUCCESS_MESSAGE from the configuration")
+		errorMessage := fmt.Sprintf("failed to load APP_TOOL_14_ACTION_SUCCESS_MESSAGE from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
@@ -1210,6 +1216,165 @@ func SynthesizeActionsTool14(instruction string) (result string) {
 	logging.Log.Infof(ctx, "successfully synthesized actions for tool 14")
 
 	return result
+}
+
+// SynthesizeActionsTool16 update action as per user instruction
+//
+// Tags:
+//   - @displayName: SynthesizeActionsTool16
+//
+// Parameters:
+//   - instruction: the user instruction
+//   - actions: the list of actions
+//
+// Returns:
+//   - updatedActions: the list of synthesized actions
+func SynthesizeActionsTool16(instruction string, actions []map[string]string) (updatedActions []map[string]string) {
+
+	ctx := &logging.ContextMap{}
+
+	updatedActions = actions
+
+	var azureOpenAIKey string
+	var modelDeploymentID string
+	var azureOpenAIEndpoint string
+
+	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
+		// azure openai api key
+		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
+		// azure openai model name
+		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
+		// azure openai endpoint
+		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
+	} else {
+		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
+		errorMessage := fmt.Sprintf("environment variables missing")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
+
+	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// get prompt template from the configuration
+	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_16"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load prompt template 16 from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	prompt := fmt.Sprintf(prompt_template, instruction)
+
+	logging.Log.Debugf(ctx, "Prompt: %q\n", prompt)
+
+	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
+		DeploymentName: &modelDeploymentID,
+		Messages: []azopenai.ChatRequestMessageClassification{
+			&azopenai.ChatRequestUserMessage{
+				Content: azopenai.NewChatRequestUserMessageContent(prompt),
+			},
+		},
+		Temperature: to.Ptr[float32](0.0),
+	}, nil)
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	if len(resp.Choices) == 0 {
+		errorMessage := fmt.Sprintf("response from azure is empty")
+		logging.Log.Error(ctx, "the response from azure is empty")
+		panic(errorMessage)
+	}
+
+	message := resp.Choices[0].Message
+
+	if message == nil {
+		errorMessage := fmt.Sprintf("no message found from the choice")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+
+	// Clean the response content
+	cleanedContent := strings.TrimSpace(*message.Content)
+	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
+		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
+		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
+		cleanedContent = strings.TrimSpace(cleanedContent)
+	}
+
+	var output struct {
+		ArgumentValue string `json:"ArgumentValue"`
+		ArgumentUnits string `json:"ArgumentUnits"`
+	}
+
+	err = json.Unmarshal([]byte(cleanedContent), &output)
+	if err != nil {
+		errorMessage := fmt.Sprintf("SynthesizeActionsTool16: Failed to unmarshal response: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	argumentValue := output.ArgumentValue
+	argumentUnits := output.ArgumentUnits
+	logging.Log.Debugf(ctx, "ArgumentValue: %q, argumentUnits: %q\n", argumentValue, argumentUnits)
+
+	// Get synthesize actions find key from configuration
+	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	synthesizeActionsReplaceKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	synthesizeActionsReplaceKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_2"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// Updated actions from output
+	for i := 0; i < len(updatedActions); i++ {
+		updateAction := updatedActions[i]
+		for key, value := range updateAction {
+			if key == synthesizeActionsFindKey {
+				if value == synthesizeActionsReplaceKey1 {
+					updateAction[synthesizeActionsReplaceKey1] = argumentValue
+				} else if value == synthesizeActionsReplaceKey2 {
+					updateAction[synthesizeActionsReplaceKey2] = argumentUnits
+				}
+			}
+		}
+	}
+
+	logging.Log.Debugf(ctx, "The Updated Actions: %q\n", updatedActions)
+
+	return
 }
 
 // SynthesizeActions update action as per user instruction
@@ -1488,16 +1653,15 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
-	// Get tool action success message from configuration
-	toolActionSuccessMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTION_SUCCESS_MESSAGE"]
+	tool17Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_17_NAME"]
 	if !exists {
-		errorMessage := fmt.Sprintf("failed to load tool action success message from the configuration")
+		errorMessage := fmt.Sprintf("failed to load tool 17 name from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
 	// Get tool 2 action message from configuration
-	tool2ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_ACTION_MESSAGE"]
+	tool2ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_2_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 2 action message from the configuration")
 		logging.Log.Error(ctx, errorMessage)
@@ -1512,10 +1676,24 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
+	tool4ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 4 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
 	// Get tool 4 no action message from configuration
 	tool4NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_4_NO_ACTION_MESSAGE"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 4 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	tool5ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_5_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 5 action message from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
@@ -1528,10 +1706,24 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
+	tool6ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 6 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
 	// Get tool 6 no action message from configuration
 	tool6NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_6_NO_ACTION_MESSAGE"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 6 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	tool7ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_7_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 7 action message from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
@@ -1544,10 +1736,24 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
+	tool8ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 8 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
 	// Get tool 8 no action message from configuration
 	tool8NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_8_NO_ACTION_MESSAGE"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 8 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	tool10ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 10 action message from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
@@ -1560,7 +1766,20 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
-	message = toolActionSuccessMessage
+	tool17ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_17_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 17 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	tool17NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_17_NO_ACTION_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 17 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
 	if toolName == tool2Name {
 		if hasActions {
 			message = tool2ActionMessage
@@ -1568,28 +1787,46 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 			message = tool2NoActionMessage
 		}
 	} else if toolName == tool4Name {
-		if !hasActions {
+		if hasActions {
+			message = tool4ActionMessage
+		} else {
 			message = tool4NoActionMessage
 		}
 	} else if toolName == tool5Name {
-		if !hasActions {
+		if hasActions {
+			message = tool5ActionMessage
+		} else {
 			message = tool5NoActionMessage
 		}
 	} else if toolName == tool6Name {
-		if !hasActions {
+		if hasActions {
+			message = tool6ActionMessage
+		} else {
 			message = tool6NoActionMessage
 		}
 	} else if toolName == tool7Name {
-		if !hasActions {
+		if hasActions {
+			message = tool7ActionMessage
+		} else {
 			message = tool7NoActionMessage
 		}
 	} else if toolName == tool8Name {
-		if !hasActions {
+		if hasActions {
+			message = tool8ActionMessage
+		} else {
 			message = tool8NoActionMessage
 		}
 	} else if toolName == tool10Name {
-		if !hasActions {
+		if hasActions {
+			message = tool10ActionMessage
+		} else {
 			message = tool10NoActionMessage
+		}
+	} else if toolName == tool17Name {
+		if hasActions {
+			message = tool17ActionMessage
+		} else {
+			message = tool17NoActionMessage
 		}
 	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
