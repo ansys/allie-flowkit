@@ -44,6 +44,8 @@ import (
 
 	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/qdrant/go-client/qdrant"
+
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
 
 // MeshPilotReAct decides which tool to use based on user input
@@ -1912,37 +1914,33 @@ func GetActionsFromConfig(toolName string) (result string) {
 	}
 
 	message := toolActionSuccessMessage
-	actions := []map[string]string{}
-	switch toolName {
-	case tool9ResultName, tool11ResultName, tool12ResultName, tool15ResultName:
+	if toolName == tool9ResultName || toolName == tool11ResultName || toolName == tool12ResultName || toolName == tool15ResultName {
 		message = selectedMessage
-		actions = append(actions, map[string]string{
-			actionKey1: actionValue1,
-			actionKey2: actionValue2,
-		})
-	default:
+		actions := []map[string]string{
+			{
+				actionKey1: actionValue1,
+				actionKey2: actionValue2,
+			},
+		}
+		finalMessage := map[string]interface{}{
+			"Message": message,
+			"Actions": actions,
+		}
+		bytesStream, err := json.Marshal(finalMessage)
+		if err != nil {
+			errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
+		}
+		result = string(bytesStream)
+		logging.Log.Info(ctx, "successfully converted actions to json")
+	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	finalMessage := make(map[string]interface{})
-	finalMessage["Message"] = message
-	finalMessage["Actions"] = actions
-
-	// Marshal the actions
-	bytesStream, err := json.Marshal(finalMessage)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	result = string(bytesStream)
-	logging.Log.Info(ctx, "successfully converted actions to json")
-
-	return
+	return result
 }
 
 // SimilartitySearchOnPathDescriptions (Qdrant) do similarity search on path description
@@ -2006,4 +2004,173 @@ func SimilartitySearchOnPathDescriptionsQdrant(vector []float32, collection stri
 
 	logging.Log.Debugf(&logging.ContextMap{}, "Descriptions: %q", descriptions)
 	return
+}
+
+// ParseHistoryToHistoricMessages this function to convert chat history to historic messages
+//
+// Tags:
+//   - @displayName: ParseHistoryToHistoricMessages
+//
+// Parameters:
+//   - historyJson: chat history in json format
+//
+// Returns:
+//   - history: the history in sharedtypes.HistoricMessage format
+func ParseHistoryToHistoricMessages(historyJson string) (history []sharedtypes.HistoricMessage) {
+	ctx := &logging.ContextMap{}
+
+	var historyMaps []map[string]string
+	err := json.Unmarshal([]byte(historyJson), &historyMaps)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to unmarshal history json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	for _, msg := range historyMaps {
+		role, _ := msg["role"]
+		content, _ := msg["content"]
+		history = append(history, sharedtypes.HistoricMessage{
+			Role:    role,
+			Content: content,
+		})
+	}
+	return history
+}
+
+// GenerateSubWorkflowPrompt generates system and user prompts for subworkflow identification.
+//
+// Tags:
+//   - @displayName: GenerateSubWorkflowPrompt
+//
+// Parameters:
+//   - userInstruction: user instruction
+//
+// Returns:
+//   - systemPrompt: the system prompt
+//   - userPrompt: the user prompt
+func GenerateSubWorkflowPrompt(userInstruction string) (systemPrompt string, userPrompt string) {
+	ctx := &logging.ContextMap{}
+
+	// Retrieve subworkflows (name and description)
+	subworkflows := azure.GetSubworkflows()
+	var subworkflowListStr strings.Builder
+	for i, sw := range subworkflows {
+		subworkflowListStr.WriteString(fmt.Sprintf("%d. %s - %s\n", i+1, sw.Name, sw.Description))
+	}
+
+	// Retrieve prompt templates from configuration
+	systemPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SYSTEM_SUBWORKFLOW_IDENTIFICATION_SYSTEM_PROMPT"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load system prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	userPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SYSTEM_SUBWORKFLOW_IDENTIFICATION_USER_PROMPT"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load user prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// Format the prompts
+	systemPrompt = fmt.Sprintf(systemPromptTemplate, subworkflowListStr.String())
+	userPrompt = fmt.Sprintf(userPromptTemplate, userInstruction)
+
+	return systemPrompt, userPrompt
+}
+
+// ProcessSubworkflowIdentificationOutput this function process output of llm
+//
+// Tags:
+//   - @displayName: ProcessSubworkflowIdentificationOutput
+//
+// Parameters:
+//   - llmOutput: the llm output for subworkflow identification
+//
+// Returns:
+//   - status: status of processing
+//   - workflowName: the identified subworkflow name
+func ProcessSubworkflowIdentificationOutput(llmOutput string) (status string, workflowName string) {
+	ctx := &logging.ContextMap{}
+
+	// Clean up the output in case it is wrapped in code block
+	cleaned := strings.TrimSpace(llmOutput)
+	if strings.HasPrefix(cleaned, "```json") && strings.HasSuffix(cleaned, "```") {
+		cleaned = strings.TrimPrefix(cleaned, "```json")
+		cleaned = strings.TrimSuffix(cleaned, "```")
+		cleaned = strings.TrimSpace(cleaned)
+	}
+
+	// Parse JSON
+	var result struct {
+		Subworkflow string `json:"subworkflow"`
+	}
+	err := json.Unmarshal([]byte(cleaned), &result)
+	if err != nil {
+		logging.Log.Errorf(ctx, "Failed to parse LLM output as JSON: %v, content: %s", err, cleaned)
+		return "failure", ""
+	}
+
+	// Check if subworkflow is valid
+	if result.Subworkflow == "" || strings.ToLower(result.Subworkflow) == "none" {
+		logging.Log.Warnf(ctx, "No valid subworkflow found in LLM output: %s", cleaned)
+		return "failure", ""
+	}
+
+	return "success", result.Subworkflow
+}
+
+// MarkdownToHTML this function converts markdown to html
+//
+// Tags:
+//   - @displayName: MarkdownToHTML
+//
+// Parameters:
+//   - markdown: content in markdown format
+//
+// Returns:
+//   - html: content in html format
+func MarkdownToHTML(markdown string) (html string) {
+	logging.Log.Info(&logging.ContextMap{}, "Converting Markdown to HTML...")
+	// Use blackfriday to convert markdown to HTML
+	logging.Log.Debugf(&logging.ContextMap{}, "Markdown content: %s", markdown)
+	html = string(blackfriday.Run([]byte(markdown)))
+	return html
+}
+
+// FinalizeMessage this function takes message and generate response schema
+//
+// Tags:
+//   - @displayName: FinalizeMessage
+//
+// Parameters:
+//   - message: final message
+//
+// Returns:
+//   - result: response schema sent to chat interface
+func FinalizeMessage(message string) (result string) {
+	ctx := &logging.ContextMap{}
+	logging.Log.Info(ctx, "Finalizing message...")
+
+	actions := make([]map[string]string, 0)
+
+	finalMessage := make(map[string]interface{})
+	finalMessage["Message"] = message
+	finalMessage["Actions"] = actions
+
+	// Marshal the actions
+	bytesStream, err := json.Marshal(finalMessage)
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	result = string(bytesStream)
+	logging.Log.Debugf(ctx, "Final message: %s", result)
+	logging.Log.Info(ctx, "successfully converted actions to json")
+
+	return result
 }

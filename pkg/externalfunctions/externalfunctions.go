@@ -124,6 +124,11 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SynthesizeActionsTool13":                   SynthesizeActionsTool13,
 	"SynthesizeActionsTool14":                   SynthesizeActionsTool14,
 	"SimilartitySearchOnPathDescriptionsQdrant": SimilartitySearchOnPathDescriptionsQdrant,
+	"GenerateSubWorkflowPrompt":                 GenerateSubWorkflowPrompt,
+	"ProcessSubworkflowIdentificationOutput":    ProcessSubworkflowIdentificationOutput,
+	"MarkdownToHTML":                            MarkdownToHTML,
+	"ParseHistoryToHistoricMessages":            ParseHistoryToHistoricMessages,
+	"FinalizeMessage":                           FinalizeMessage,
 
 	// qdrant
 	"QdrantCreateCollection": QdrantCreateCollection,
