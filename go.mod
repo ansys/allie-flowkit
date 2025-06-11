@@ -7,7 +7,7 @@ toolchain go1.23.4
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
-	github.com/ansys/aali-sharedtypes v1.0.3-0.20250528102120-081315cff14d
+	github.com/ansys/aali-sharedtypes v1.0.3-0.20250610142045-6e43b4756735
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/pandodao/tokenizer-go v0.2.0

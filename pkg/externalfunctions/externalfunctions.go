@@ -146,5 +146,9 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"GetSystemPrompt": GetSystemPrompt,
 
 	// materials
-	"MaterialsTestFunc": MaterialsTestFunc,
+	"SerializeResponse":              SerializeResponse,
+	"AddGuidsToAttributes":           AddGuidsToAttributes,
+	"FilterOutNonExistingAttributes": FilterOutNonExistingAttributes,
+	"FilterOutDuplicateAttributes":   FilterOutDuplicateAttributes,
+	"ExtractCriteriaSuggestions":     ExtractCriteriaSuggestions,
 }
