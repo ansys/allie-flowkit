@@ -106,7 +106,6 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
 
 	// ansys mesh pilot
-	"MeshPilotReAct":                            MeshPilotReAct,
 	"SimilartitySearchOnPathDescriptions":       SimilartitySearchOnPathDescriptions,
 	"FindRelevantPathDescriptionByPrompt":       FindRelevantPathDescriptionByPrompt,
 	"FetchPropertiesFromPathDescription":        FetchPropertiesFromPathDescription,
