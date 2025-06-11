@@ -545,96 +545,27 @@ func FetchActionsPathFromPathDescription(db_name, description, nodeLabel string)
 //   - @displayName: SynthesizeActionsTool4
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - message: the message from the llm
 //   - actions: the list of actions
 //
 // Returns:
 //   - updatedActions: the list of synthesized actions
-func SynthesizeActionsTool4(instruction string, actions []map[string]string) (updatedActions []map[string]string) {
+func SynthesizeActionsTool4(message string, actions []map[string]string) (updatedActions []map[string]string) {
 
 	ctx := &logging.ContextMap{}
 
 	updatedActions = actions
 
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+	if len(message) == 0 {
+		errorMessage := fmt.Sprintf("the message is empty, cannot synthesize actions")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// get prompt template from the configuration
-	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_4"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	prompt := fmt.Sprintf(prompt_template, instruction)
-
-	logging.Log.Debugf(ctx, "Prompt: %q\n", prompt)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("response from azure is empty")
-		logging.Log.Error(ctx, "the response from azure is empty")
-		panic(errorMessage)
-	}
-
-	message := resp.Choices[0].Message
-
-	if message == nil {
-		errorMessage := fmt.Sprintf("no message found from the choice")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+	logging.Log.Debugf(ctx, "The Message: %s\n", message)
 
 	// Clean the response content
-	cleanedContent := strings.TrimSpace(*message.Content)
+	cleanedContent := strings.TrimSpace(message)
 	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
 		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
 		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
@@ -645,7 +576,7 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 		ScopePattern string `json:"ScopePattern"`
 	}
 
-	err = json.Unmarshal([]byte(cleanedContent), &output)
+	err := json.Unmarshal([]byte(cleanedContent), &output)
 	if err != nil {
 		errorMessage := fmt.Sprintf("SynthesizeActionsTool4: Failed to unmarshal response: %v", err)
 		logging.Log.Error(ctx, errorMessage)
