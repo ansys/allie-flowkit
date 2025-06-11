@@ -81,14 +81,15 @@ func AddGuidsToAttributes(criteriaSuggestions []sharedtypes.MaterialLlmCriterion
 	for _, criterion := range criteriaSuggestions {
 		lowerAttrName := strings.ToLower(criterion.AttributeName)
 		guid, exists := attributeMap[lowerAttrName]
-		if exists {
-			criteriaWithGuids = append(criteriaWithGuids, sharedtypes.MaterialCriterionWithGuid{
-				AttributeName: criterion.AttributeName,
-				AttributeGuid: guid,
-				Explanation:   criterion.Explanation,
-				Confidence:    criterion.Confidence,
-			})
+		if !exists {
+			panic("Could not find attribute with name " + lowerAttrName)
 		}
+		criteriaWithGuids = append(criteriaWithGuids, sharedtypes.MaterialCriterionWithGuid{
+			AttributeName: criterion.AttributeName,
+			AttributeGuid: guid,
+			Explanation:   criterion.Explanation,
+			Confidence:    criterion.Confidence,
+		})
 	}
 
 	return criteriaWithGuids
