@@ -986,53 +986,17 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 //   - @displayName: SynthesizeActionsTool13
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - content: the llm content
 //
 // Returns:
-//   - unitSystem: the synthesized string
-func SynthesizeActionsTool13(instruction string) (result string) {
+//   - result: the synthesized string
+func SynthesizeActionsTool13(content string) (result string) {
 	ctx := &logging.ContextMap{}
-
-	azureOpenAIKey := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-	modelDeploymentID := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-	azureOpenAIEndpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Error(ctx, "missing Azure OpenAI environment variables")
-		panic("environment variables missing")
-	}
-
-	client, err := azopenai.NewClientWithKeyCredential(
-		azureOpenAIEndpoint,
-		azcore.NewKeyCredential(azureOpenAIKey),
-		nil,
-	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create client: %v", err))
-	}
-
-	promptTpl := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_13"]
-	if promptTpl == "" {
-		panic("APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_13 not found in config")
-	}
-	prompt := fmt.Sprintf(promptTpl, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-	if err != nil || len(resp.Choices) == 0 || resp.Choices[0].Message == nil {
-		panic(fmt.Sprintf("chat completion error: %v", err))
-	}
 
 	var out struct {
 		UnitSystem string `json:"UnitSystem"`
 	}
-	if err := json.Unmarshal([]byte(*resp.Choices[0].Message.Content), &out); err != nil {
+	if err := json.Unmarshal([]byte(content), &out); err != nil {
 		panic(fmt.Sprintf("unmarshal UnitSystem failed: %v", err))
 	}
 	unitSystem := out.UnitSystem
@@ -1103,55 +1067,21 @@ func SynthesizeActionsTool13(instruction string) (result string) {
 //   - @displayName: SynthesizeActionsTool14
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - content: the llm content
 //
 // Returns:
 //   - result: the synthesized string
-func SynthesizeActionsTool14(instruction string) (result string) {
+func SynthesizeActionsTool14(content string) (result string) {
 	ctx := &logging.ContextMap{}
-
-	azureOpenAIKey := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-	modelDeploymentID := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-	azureOpenAIEndpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Error(ctx, "missing Azure OpenAI environment variables")
-		panic("environment variables missing")
-	}
-
-	client, err := azopenai.NewClientWithKeyCredential(
-		azureOpenAIEndpoint,
-		azcore.NewKeyCredential(azureOpenAIKey),
-		nil,
-	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create client: %v", err))
-	}
-
-	promptTpl := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_14"]
-	if promptTpl == "" {
-		panic("APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_14 not found in config")
-	}
-	prompt := fmt.Sprintf(promptTpl, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-	if err != nil || len(resp.Choices) == 0 || resp.Choices[0].Message == nil {
-		panic(fmt.Sprintf("chat completion error: %v", err))
-	}
 
 	var out struct {
 		Argument string `json:"Argument"`
 	}
-	if err := json.Unmarshal([]byte(*resp.Choices[0].Message.Content), &out); err != nil {
+
+	if err := json.Unmarshal([]byte(content), &out); err != nil {
 		panic(fmt.Sprintf("unmarshal Argument failed: %v", err))
 	}
+
 	Argument := out.Argument
 	logging.Log.Infof(ctx, "Synthesized Argument: %s", Argument)
 
@@ -1168,18 +1098,21 @@ func SynthesizeActionsTool14(instruction string) (result string) {
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
 	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_KEY_2 from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
 	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_14_NAME"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load APP_TOOL_14_NAME from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
 	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_TARGET_1"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_TARGET_1 from the configuration")
@@ -2077,7 +2010,31 @@ func GenerateSubWorkflowPrompt(userInstruction string) (systemPrompt string, use
 	systemPrompt = fmt.Sprintf(systemPromptTemplate, subworkflowListStr.String())
 	userPrompt = fmt.Sprintf(userPromptTemplate, userInstruction)
 
+	logging.Log.Debugf(ctx, "Generated System Prompt: %s", systemPrompt)
+
+	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
 	return systemPrompt, userPrompt
+}
+
+// GenerateUserPrompt generates user instruction prompt based on the provided template.
+//
+// Tags:
+//   - @displayName: GenerateUserPrompt
+//
+// Parameters:
+//   - userInstruction: user instruction
+//   - userPromptTemplate: user prompt template
+//
+// Returns:
+//   - userPrompt: the user prompt
+func GenerateUserPrompt(userInstruction string, userPromptTemplate string) (userPrompt string) {
+	ctx := &logging.ContextMap{}
+
+	userPrompt = fmt.Sprintf(userPromptTemplate, userInstruction)
+
+	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
+
+	return
 }
 
 // ProcessSubworkflowIdentificationOutput this function process output of llm

@@ -129,6 +129,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"MarkdownToHTML":                            MarkdownToHTML,
 	"ParseHistoryToHistoricMessages":            ParseHistoryToHistoricMessages,
 	"FinalizeMessage":                           FinalizeMessage,
+	"GenerateUserPrompt":                        GenerateUserPrompt,
 
 	// qdrant
 	"QdrantCreateCollection": QdrantCreateCollection,
