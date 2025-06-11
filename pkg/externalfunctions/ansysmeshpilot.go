@@ -797,13 +797,13 @@ func SynthesizeActionsTool14(content string) (result string) {
 //   - @displayName: SynthesizeActions
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - message: the message from the llm
 //   - properties: the list of properties
 //   - actions: the list of actions
 //
 // Returns:
 //   - updatedActions: the list of synthesized actions
-func SynthesizeActions(instruction string, properties []string, actions []map[string]string) (updatedActions []map[string]string) {
+func SynthesizeActions(message string, properties []string, actions []map[string]string) (updatedActions []map[string]string) {
 
 	ctx := &logging.ContextMap{}
 
@@ -814,91 +814,24 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		return
 	}
 
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+	if len(message) == 0 {
+		errorMessage := fmt.Sprintf("the message is empty, cannot synthesize actions")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// get prompt template from the configuration
-	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	prompt := fmt.Sprintf(prompt_template, properties, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("response from azure is empty")
-		logging.Log.Error(ctx, "the response from azure is empty")
-		panic(errorMessage)
-	}
-
-	message := resp.Choices[0].Message
-
-	if message == nil {
-		errorMessage := fmt.Sprintf("no message found from the choice")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+	logging.Log.Debugf(ctx, "The Message: %s\n", message)
 
 	var output map[string]interface{}
 
 	// Attempt to unmarshal the response
-	err = json.Unmarshal([]byte(*message.Content), &output)
+	err := json.Unmarshal([]byte(message), &output)
 	if err != nil {
 		// Log the error and fallback to an empty output
-		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", *message.Content, err)
+		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", message, err)
 
 		// Attempt to clean the response and retry unmarshaling
-		cleanedContent := strings.TrimSpace(*message.Content)
+		cleanedContent := strings.TrimSpace(message)
 		if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
 			cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
 			cleanedContent = strings.TrimSuffix(cleanedContent, "```")
@@ -1637,13 +1570,13 @@ func GenerateSubWorkflowPrompt(userInstruction string) (systemPrompt string, use
 	}
 
 	// Retrieve prompt templates from configuration
-	systemPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SYSTEM_SUBWORKFLOW_IDENTIFICATION_SYSTEM_PROMPT"]
+	systemPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SUBWORKFLOW_IDENTIFICATION_SYSTEM_PROMPT"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load system prompt template from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
-	userPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SYSTEM_SUBWORKFLOW_IDENTIFICATION_USER_PROMPT"]
+	userPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SUBWORKFLOW_IDENTIFICATION_USER_PROMPT"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load user prompt template from the configuration")
 		logging.Log.Error(ctx, errorMessage)
@@ -1675,6 +1608,28 @@ func GenerateUserPrompt(userInstruction string, userPromptTemplate string) (user
 	ctx := &logging.ContextMap{}
 
 	userPrompt = fmt.Sprintf(userPromptTemplate, userInstruction)
+
+	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
+
+	return
+}
+
+// GenerateUserPrompt generates user instruction prompt based on the provided template, instruction, list.
+//
+// Tags:
+//   - @displayName: GenerateUserPromptWithList
+//
+// Parameters:
+//   - userInstruction: user instruction
+//   - userList: list of items to include in the prompt
+//   - userPromptTemplate: user prompt template
+//
+// Returns:
+//   - userPrompt: the user prompt
+func GenerateUserPromptWithList(userInstruction string, userList []string, userPromptTemplate string) (userPrompt string) {
+	ctx := &logging.ContextMap{}
+
+	userPrompt = fmt.Sprintf(userPromptTemplate, userList, userInstruction)
 
 	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
 
