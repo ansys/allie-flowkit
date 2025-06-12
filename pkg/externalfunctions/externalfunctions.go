@@ -106,7 +106,6 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
 
 	// ansys mesh pilot
-	"MeshPilotReAct":                            MeshPilotReAct,
 	"SimilartitySearchOnPathDescriptions":       SimilartitySearchOnPathDescriptions,
 	"FindRelevantPathDescriptionByPrompt":       FindRelevantPathDescriptionByPrompt,
 	"FetchPropertiesFromPathDescription":        FetchPropertiesFromPathDescription,
@@ -124,6 +123,13 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SynthesizeActionsTool13":                   SynthesizeActionsTool13,
 	"SynthesizeActionsTool14":                   SynthesizeActionsTool14,
 	"SimilartitySearchOnPathDescriptionsQdrant": SimilartitySearchOnPathDescriptionsQdrant,
+	"GenerateSubWorkflowPrompt":                 GenerateSubWorkflowPrompt,
+	"ProcessSubworkflowIdentificationOutput":    ProcessSubworkflowIdentificationOutput,
+	"MarkdownToHTML":                            MarkdownToHTML,
+	"ParseHistoryToHistoricMessages":            ParseHistoryToHistoricMessages,
+	"FinalizeMessage":                           FinalizeMessage,
+	"GenerateUserPrompt":                        GenerateUserPrompt,
+	"GenerateUserPromptWithList":                GenerateUserPromptWithList,
 
 	// qdrant
 	"QdrantCreateCollection": QdrantCreateCollection,
