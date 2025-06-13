@@ -106,7 +106,6 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"StoreUserGuideSectionsInGraphDatabase":  StoreUserGuideSectionsInGraphDatabase,
 
 	// ansys mesh pilot
-	"MeshPilotReAct":                            MeshPilotReAct,
 	"SimilartitySearchOnPathDescriptions":       SimilartitySearchOnPathDescriptions,
 	"FindRelevantPathDescriptionByPrompt":       FindRelevantPathDescriptionByPrompt,
 	"FetchPropertiesFromPathDescription":        FetchPropertiesFromPathDescription,
@@ -123,8 +122,14 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SynthesizeActionsTool4":                    SynthesizeActionsTool4,
 	"SynthesizeActionsTool13":                   SynthesizeActionsTool13,
 	"SynthesizeActionsTool14":                   SynthesizeActionsTool14,
-	"SynthesizeActionsTool16":                   SynthesizeActionsTool16,
 	"SimilartitySearchOnPathDescriptionsQdrant": SimilartitySearchOnPathDescriptionsQdrant,
+	"GenerateSubWorkflowPrompt":                 GenerateSubWorkflowPrompt,
+	"ProcessSubworkflowIdentificationOutput":    ProcessSubworkflowIdentificationOutput,
+	"MarkdownToHTML":                            MarkdownToHTML,
+	"ParseHistoryToHistoricMessages":            ParseHistoryToHistoricMessages,
+	"FinalizeMessage":                           FinalizeMessage,
+	"GenerateUserPrompt":                        GenerateUserPrompt,
+	"GenerateUserPromptWithList":                GenerateUserPromptWithList,
 
 	// qdrant
 	"QdrantCreateCollection": QdrantCreateCollection,
@@ -139,4 +144,17 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"DenyCustomerAccessAndSendWarningMongoDbUserId": DenyCustomerAccessAndSendWarningMongoDbUserId,
 	"SendLogicAppNotificationEmail":                 SendLogicAppNotificationEmail,
 	"CreateMessageWithVariable":                     CreateMessageWithVariable,
+
+	// mcp
+	"ListAll":         ListAll,
+	"ExecuteTool":     ExecuteTool,
+	"GetResource":     GetResource,
+	"GetSystemPrompt": GetSystemPrompt,
+
+	// materials
+	"SerializeResponse":              SerializeResponse,
+	"AddGuidsToAttributes":           AddGuidsToAttributes,
+	"FilterOutNonExistingAttributes": FilterOutNonExistingAttributes,
+	"FilterOutDuplicateAttributes":   FilterOutDuplicateAttributes,
+	"ExtractCriteriaSuggestions":     ExtractCriteriaSuggestions,
 }

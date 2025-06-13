@@ -547,9 +547,9 @@ func AisPerformLLMRephraseRequest(systemTemplate string, userTemplate string, qu
 	for _, message := range history {
 		switch message.Role {
 		case "user":
-			historyMessages += "`HumanMessage`: `" + message.Content + "`\n"
+			historyMessages += "\"User\": \"" + message.Content + "\"\n"
 		case "assistant":
-			historyMessages += "`AIMessage`: `" + message.Content + "`\n"
+			historyMessages += "\"AI\": \"" + message.Content + "\"\n"
 		}
 	}
 

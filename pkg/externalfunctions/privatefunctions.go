@@ -50,6 +50,8 @@ import (
 
 	"github.com/google/go-github/v56/github"
 	"github.com/google/uuid"
+	"nhooyr.io/websocket"
+
 	"github.com/tiktoken-go/tokenizer"
 	"github.com/tmc/langchaingo/documentloaders"
 	"github.com/tmc/langchaingo/schema"
@@ -59,7 +61,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"golang.org/x/oauth2"
-	"nhooyr.io/websocket"
 )
 
 // transferDatafromResponseToStreamChannel transfers the data from the response channel to the stream channel
@@ -2647,4 +2648,55 @@ func logPanic(ctx *logging.ContextMap, msg string, args ...any) {
 	}
 	logging.Log.Error(logCtx, errMsg)
 	panic(errMsg)
+}
+
+// connectToMCP establishes a WebSocket connection to the MCP server.
+//
+// Parameters:
+//   - ctx: The context for managing connection timeout and cancellation.
+//   - serverURL: The WebSocket URL of the MCP server.
+//
+// Returns:
+//   - conn: The established WebSocket connection.
+//   - err: An error if the connection fails.
+func connectToMCP(ctx context.Context, serverURL string) (*websocket.Conn, error) {
+	conn, _, err := websocket.Dial(ctx, serverURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to WebSocket server: %w", err)
+	}
+	return conn, nil
+}
+
+// sendMCPRequest sends a JSON request over the WebSocket connection and returns the parsed response.
+//
+// Parameters:
+//   - ctx: The context for sending and receiving messages.
+//   - conn: The active WebSocket connection.
+//   - request: The request object to be marshaled and sent.
+//
+// Returns:
+//   - response: The parsed response from the MCP server as a map.
+//   - err: An error if marshaling, sending, or receiving fails.
+func sendMCPRequest(ctx context.Context, conn *websocket.Conn, request interface{}) (map[string]interface{}, error) {
+	data, err := json.Marshal(request)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	err = conn.Write(ctx, websocket.MessageText, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+
+	_, msg, err := conn.Read(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	var response map[string]interface{}
+	if err := json.Unmarshal(msg, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	return response, nil
 }

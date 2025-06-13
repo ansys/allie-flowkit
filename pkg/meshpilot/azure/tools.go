@@ -595,3 +595,33 @@ func Tool17() *azopenai.ChatCompletionsFunctionToolDefinitionFunction {
 
 	return funcDef
 }
+
+// GetSubworkflows returns a slice of subworkflow names and descriptions.
+func GetSubworkflows() []struct {
+	Name        string
+	Description string
+} {
+	ctx := &logging.ContextMap{}
+	subworkflows := []struct {
+		Name        string
+		Description string
+	}{}
+
+	for i := 1; i <= 15; i++ {
+		nameKey := fmt.Sprintf("APP_TOOL_%d_NAME", i)
+		descKey := fmt.Sprintf("APP_TOOL_%d_DESCRIPTION", i)
+		name, nameExists := mustCfg(ctx, nameKey), true
+		desc, descExists := mustCfg(ctx, descKey), true
+		if nameExists && descExists && name != "" && desc != "" {
+			subworkflows = append(subworkflows, struct {
+				Name        string
+				Description string
+			}{
+				Name:        name,
+				Description: desc,
+			})
+		}
+	}
+	return subworkflows
+}
+

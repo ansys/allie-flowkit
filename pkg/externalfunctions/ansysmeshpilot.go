@@ -35,309 +35,14 @@ import (
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/russross/blackfriday/v2"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-
 	"github.com/ansys/aali-flowkit/pkg/meshpilot/ampgraphdb"
 	"github.com/ansys/aali-flowkit/pkg/meshpilot/azure"
 
 	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
 	"github.com/qdrant/go-client/qdrant"
+
+	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
-
-// MeshPilotReAct decides which tool to use based on user input
-//
-// Tags:
-//   - @displayName: MeshPilotReAct
-//
-// Parameters:
-//   - instruction: the user query
-//   - history: the chat history
-//   - toolsHistory: the tool history
-//   - reActStage: the reason and action stage
-//
-// Returns:
-//   - stage: the reason and action
-//   - toolId: the tool id
-//   - toolName: the tool name
-//   - toolArgument: the tool arguments
-//   - result: the result
-func MeshPilotReAct(instruction string,
-	history []map[string]string,
-	toolsHistory []map[string]string,
-	reActStage string) (stage, toolId, toolName, toolArgument, result string) {
-
-	stage = "terminated"
-
-	ctx := &logging.ContextMap{}
-
-	logging.Log.Debugf(ctx, "Performing Mesh Pilot ReAct request")
-
-	if reActStage == "begin" {
-		toolsHistory = []map[string]string{}
-	}
-
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Info(ctx, "MeshPilot ReAct...")
-	logging.Log.Infof(ctx, "Beging stage: %q", reActStage)
-
-	messages := []azopenai.ChatRequestMessageClassification{}
-
-	// get system prompt from the configuration
-	system_prompt, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_SYSTEM_PROMPT"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load system prompt from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	messages = append(messages, &azopenai.ChatRequestSystemMessage{Content: azopenai.NewChatRequestSystemMessageContent(system_prompt)})
-
-	// populate history
-	for _, message := range history {
-		role := message["role"]
-		content := message["content"]
-
-		if role == "user" {
-			messages = append(messages, &azopenai.ChatRequestUserMessage{Content: azopenai.NewChatRequestUserMessageContent(content)})
-		} else if role == "assistant" {
-			messages = append(messages, &azopenai.ChatRequestAssistantMessage{Content: azopenai.NewChatRequestAssistantMessageContent(content)})
-		}
-	}
-
-	// user instruction
-	if len(instruction) > 0 {
-		messages = append(messages, &azopenai.ChatRequestUserMessage{Content: azopenai.NewChatRequestUserMessageContent(instruction)})
-	}
-
-	// populate tool history
-	for _, tool := range toolsHistory {
-		role := tool["role"]
-		content := tool["content"]
-		toolId := tool["toolId"]
-		if role == "assistant" {
-			toolName := tool["toolName"]
-			toolArguments := tool["toolArguments"]
-			messages = append(messages,
-				&azopenai.ChatRequestAssistantMessage{
-					Content: azopenai.NewChatRequestAssistantMessageContent(content),
-					ToolCalls: []azopenai.ChatCompletionsToolCallClassification{
-						&azopenai.ChatCompletionsFunctionToolCall{
-							Function: &azopenai.FunctionCall{
-								Arguments: &toolArguments,
-								Name:      &toolName,
-							},
-							ID: &toolId,
-						},
-					},
-				},
-			)
-
-		} else if role == "tool" {
-			messages = append(messages, &azopenai.ChatRequestToolMessage{Content: azopenai.NewChatRequestToolMessageContent(content), ToolCallID: &toolId})
-		}
-	}
-
-	logging.Log.Debugf(ctx, "messages: %q", messages)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages:       messages,
-		Tools: []azopenai.ChatCompletionsToolDefinitionClassification{
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool1(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool2(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool3(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool4(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool5(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool6(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool7(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool8(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool9(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool10(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool11(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool12(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool13(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool14(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool15(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool16(),
-			},
-			&azopenai.ChatCompletionsFunctionToolDefinition{
-				Function: azure.Tool17(),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create chat completion: %v", err)
-		logging.Log.Info(ctx, errorMessage)
-
-		actions := []map[string]string{}
-		finalResult := make(map[string]interface{})
-		finalResult["Actions"] = actions
-
-		if strings.Contains(errorMessage, "content_filter") {
-			finalResult["Message"] = "The response was filtered due to Azure OpenAI's content management policy. Please modify your prompt and retry. For more details, visit: https://go.microsoft.com/fwlink/?linkid=2198766"
-		} else {
-			finalResult["Message"] = "Does not support functionality, please report to the support team"
-		}
-
-		bytesStream, err := json.Marshal(finalResult)
-		if err != nil {
-			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
-			logging.Log.Error(ctx, errorMessage)
-			panic(errorMessage)
-		}
-
-		result = string(bytesStream)
-		return
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("No Response: %v", resp)
-		logging.Log.Info(ctx, errorMessage)
-
-		actions := []map[string]string{}
-		finalResult := make(map[string]interface{})
-		finalResult["Actions"] = actions
-		finalResult["Message"] = "Does not support functionality, please report to the support team"
-
-		bytesStream, err := json.Marshal(finalResult)
-		if err != nil {
-			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
-			logging.Log.Error(ctx, errorMessage)
-			panic(errorMessage)
-		}
-
-		result = string(bytesStream)
-		return
-	}
-
-	choice := resp.Choices[0]
-
-	finishReason := *choice.FinishReason
-	logging.Log.Info(ctx, fmt.Sprintf("Finish Reason: %s", finishReason))
-
-	if finishReason == "stop" {
-		if choice.Message == nil {
-			errorMessage := fmt.Sprintf("Finish Reason is stop but no Message")
-			logging.Log.Error(ctx, errorMessage)
-			panic(errorMessage)
-		}
-
-		content := *choice.Message.Content
-		stage = "stop"
-
-		actions := []map[string]string{}
-		finalResult := make(map[string]interface{})
-		finalResult["Actions"] = actions
-		finalResult["Message"] = string(blackfriday.Run([]byte(content)))
-
-		bytesStream, err := json.Marshal(finalResult)
-		if err != nil {
-			errorMessage := fmt.Sprintf("Failed to marshal: %v", err)
-			logging.Log.Error(ctx, errorMessage)
-			panic(errorMessage)
-		}
-
-		result = string(bytesStream)
-		logging.Log.Infof(ctx, "End stage: %q", stage)
-		return
-	}
-
-	if len(choice.Message.ToolCalls) == 0 {
-		errorMessage := fmt.Sprintf("No Tools")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	tool := choice.Message.ToolCalls[0]
-
-	// Type assertion
-	funcTool, ok := tool.(*azopenai.ChatCompletionsFunctionToolCall)
-
-	if !ok {
-		errorMessage := fmt.Sprintf("failed to convert to ChatCompletionsFunctionToolCall")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	toolId = *funcTool.ID
-	toolCall := funcTool.Function
-	toolName = *toolCall.Name
-	logging.Log.Info(ctx, fmt.Sprintf("Function name: %q", toolName))
-
-	toolArgument = *toolCall.Arguments
-	logging.Log.Info(ctx, fmt.Sprintf("Function Arguments: %q", toolArgument))
-
-	stage = "tool_call"
-	logging.Log.Infof(ctx, "End stage: %q", stage)
-	return
-}
 
 // SimilartitySearchOnPathDescriptions do similarity search on path description
 //
@@ -559,11 +264,11 @@ func SimilartitySearchOnPathDescriptions(instruction string, toolName string) (d
 //
 // Parameters:
 //   - descriptions: the list of descriptions
-//   - instruction: the user instruction
+//   - message: the message from llm
 //
 // Returns:
 //   - relevantDescription: the relevant desctiption
-func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction string) (relevantDescription string) {
+func FindRelevantPathDescriptionByPrompt(descriptions []string, message string) (relevantDescription string) {
 
 	relevantDescription = ""
 	ctx := &logging.ContextMap{}
@@ -578,84 +283,17 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		return
 	}
 
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// get the prompt template from the configuration
-	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_1"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	prompt := fmt.Sprintf(prompt_template, descriptions, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("the response from azure is empty")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	message := resp.Choices[0].Message
-
-	if message == nil {
+	if len(message) == 0 {
 		errorMessage := fmt.Sprintf("no message found from the choice")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
 	// Log the response content for debugging
-	logging.Log.Debugf(ctx, "Response Content: %s", *message.Content)
+	logging.Log.Debugf(ctx, "Response Content: %s", message)
 
 	// Strip backticks and "json" label from the response content
-	cleanedContent := strings.TrimSpace(*message.Content)
+	cleanedContent := strings.TrimSpace(message)
 	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
 		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
 		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
@@ -666,7 +304,7 @@ func FindRelevantPathDescriptionByPrompt(descriptions []string, instruction stri
 		Index int `json:"index"`
 	}
 
-	err = json.Unmarshal([]byte(cleanedContent), &output)
+	err := json.Unmarshal([]byte(cleanedContent), &output)
 	if err != nil {
 		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", cleanedContent, err)
 		logging.Log.Warn(ctx, "Falling back to the first description as relevant.")
@@ -836,96 +474,27 @@ func FetchActionsPathFromPathDescription(db_name, description, nodeLabel string)
 //   - @displayName: SynthesizeActionsTool4
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - message: the message from the llm
 //   - actions: the list of actions
 //
 // Returns:
 //   - updatedActions: the list of synthesized actions
-func SynthesizeActionsTool4(instruction string, actions []map[string]string) (updatedActions []map[string]string) {
+func SynthesizeActionsTool4(message string, actions []map[string]string) (updatedActions []map[string]string) {
 
 	ctx := &logging.ContextMap{}
 
 	updatedActions = actions
 
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+	if len(message) == 0 {
+		errorMessage := fmt.Sprintf("the message is empty, cannot synthesize actions")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// get prompt template from the configuration
-	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_4"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	prompt := fmt.Sprintf(prompt_template, instruction)
-
-	logging.Log.Debugf(ctx, "Prompt: %q\n", prompt)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("response from azure is empty")
-		logging.Log.Error(ctx, "the response from azure is empty")
-		panic(errorMessage)
-	}
-
-	message := resp.Choices[0].Message
-
-	if message == nil {
-		errorMessage := fmt.Sprintf("no message found from the choice")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+	logging.Log.Debugf(ctx, "The Message: %s\n", message)
 
 	// Clean the response content
-	cleanedContent := strings.TrimSpace(*message.Content)
+	cleanedContent := strings.TrimSpace(message)
 	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
 		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
 		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
@@ -936,7 +505,7 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 		ScopePattern string `json:"ScopePattern"`
 	}
 
-	err = json.Unmarshal([]byte(cleanedContent), &output)
+	err := json.Unmarshal([]byte(cleanedContent), &output)
 	if err != nil {
 		errorMessage := fmt.Sprintf("SynthesizeActionsTool4: Failed to unmarshal response: %v", err)
 		logging.Log.Error(ctx, errorMessage)
@@ -990,53 +559,17 @@ func SynthesizeActionsTool4(instruction string, actions []map[string]string) (up
 //   - @displayName: SynthesizeActionsTool13
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - content: the llm content
 //
 // Returns:
-//   - unitSystem: the synthesized string
-func SynthesizeActionsTool13(instruction string) (result string) {
+//   - result: the synthesized string
+func SynthesizeActionsTool13(content string) (result string) {
 	ctx := &logging.ContextMap{}
-
-	azureOpenAIKey := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-	modelDeploymentID := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-	azureOpenAIEndpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Error(ctx, "missing Azure OpenAI environment variables")
-		panic("environment variables missing")
-	}
-
-	client, err := azopenai.NewClientWithKeyCredential(
-		azureOpenAIEndpoint,
-		azcore.NewKeyCredential(azureOpenAIKey),
-		nil,
-	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create client: %v", err))
-	}
-
-	promptTpl := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_13"]
-	if promptTpl == "" {
-		panic("APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_13 not found in config")
-	}
-	prompt := fmt.Sprintf(promptTpl, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-	if err != nil || len(resp.Choices) == 0 || resp.Choices[0].Message == nil {
-		panic(fmt.Sprintf("chat completion error: %v", err))
-	}
 
 	var out struct {
 		UnitSystem string `json:"UnitSystem"`
 	}
-	if err := json.Unmarshal([]byte(*resp.Choices[0].Message.Content), &out); err != nil {
+	if err := json.Unmarshal([]byte(content), &out); err != nil {
 		panic(fmt.Sprintf("unmarshal UnitSystem failed: %v", err))
 	}
 	unitSystem := out.UnitSystem
@@ -1107,55 +640,21 @@ func SynthesizeActionsTool13(instruction string) (result string) {
 //   - @displayName: SynthesizeActionsTool14
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - content: the llm content
 //
 // Returns:
 //   - result: the synthesized string
-func SynthesizeActionsTool14(instruction string) (result string) {
+func SynthesizeActionsTool14(content string) (result string) {
 	ctx := &logging.ContextMap{}
-
-	azureOpenAIKey := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-	modelDeploymentID := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-	azureOpenAIEndpoint := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		logging.Log.Error(ctx, "missing Azure OpenAI environment variables")
-		panic("environment variables missing")
-	}
-
-	client, err := azopenai.NewClientWithKeyCredential(
-		azureOpenAIEndpoint,
-		azcore.NewKeyCredential(azureOpenAIKey),
-		nil,
-	)
-	if err != nil {
-		panic(fmt.Sprintf("failed to create client: %v", err))
-	}
-
-	promptTpl := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_14"]
-	if promptTpl == "" {
-		panic("APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_14 not found in config")
-	}
-	prompt := fmt.Sprintf(promptTpl, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-	if err != nil || len(resp.Choices) == 0 || resp.Choices[0].Message == nil {
-		panic(fmt.Sprintf("chat completion error: %v", err))
-	}
 
 	var out struct {
 		Argument string `json:"Argument"`
 	}
-	if err := json.Unmarshal([]byte(*resp.Choices[0].Message.Content), &out); err != nil {
+
+	if err := json.Unmarshal([]byte(content), &out); err != nil {
 		panic(fmt.Sprintf("unmarshal Argument failed: %v", err))
 	}
+
 	Argument := out.Argument
 	logging.Log.Infof(ctx, "Synthesized Argument: %s", Argument)
 
@@ -1172,18 +671,21 @@ func SynthesizeActionsTool14(instruction string) (result string) {
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
 	actionKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_KEY_2"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_KEY_2 from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
 	actionValue1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_14_NAME"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load APP_TOOL_14_NAME from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
+
 	actionValue2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_ACTIONS_TARGET_1"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load APP_TOOL_ACTIONS_TARGET_1 from the configuration")
@@ -1224,96 +726,27 @@ func SynthesizeActionsTool14(instruction string) (result string) {
 //   - @displayName: SynthesizeActionsTool16
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - message: the message from the llm
 //   - actions: the list of actions
 //
 // Returns:
 //   - updatedActions: the list of synthesized actions
-func SynthesizeActionsTool16(instruction string, actions []map[string]string) (updatedActions []map[string]string) {
+func SynthesizeActionsTool16(message string, actions []map[string]string) (updatedActions []map[string]string) {
 
 	ctx := &logging.ContextMap{}
 
 	updatedActions = actions
 
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+	if len(message) == 0 {
+		errorMessage := fmt.Sprintf("the message is empty, cannot synthesize actions")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// get prompt template from the configuration
-	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_TOOL_16"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load prompt template 16 from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	prompt := fmt.Sprintf(prompt_template, instruction)
-
-	logging.Log.Debugf(ctx, "Prompt: %q\n", prompt)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("response from azure is empty")
-		logging.Log.Error(ctx, "the response from azure is empty")
-		panic(errorMessage)
-	}
-
-	message := resp.Choices[0].Message
-
-	if message == nil {
-		errorMessage := fmt.Sprintf("no message found from the choice")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+	logging.Log.Debugf(ctx, "The Message: %s\n", message)
 
 	// Clean the response content
-	cleanedContent := strings.TrimSpace(*message.Content)
+	cleanedContent := strings.TrimSpace(message)
 	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
 		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
 		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
@@ -1325,7 +758,7 @@ func SynthesizeActionsTool16(instruction string, actions []map[string]string) (u
 		ArgumentUnits string `json:"ArgumentUnits"`
 	}
 
-	err = json.Unmarshal([]byte(cleanedContent), &output)
+	err := json.Unmarshal([]byte(cleanedContent), &output)
 	if err != nil {
 		errorMessage := fmt.Sprintf("SynthesizeActionsTool16: Failed to unmarshal response: %v", err)
 		logging.Log.Error(ctx, errorMessage)
@@ -1383,13 +816,13 @@ func SynthesizeActionsTool16(instruction string, actions []map[string]string) (u
 //   - @displayName: SynthesizeActions
 //
 // Parameters:
-//   - instruction: the user instruction
+//   - message: the message from the llm
 //   - properties: the list of properties
 //   - actions: the list of actions
 //
 // Returns:
 //   - updatedActions: the list of synthesized actions
-func SynthesizeActions(instruction string, properties []string, actions []map[string]string) (updatedActions []map[string]string) {
+func SynthesizeActions(message string, properties []string, actions []map[string]string) (updatedActions []map[string]string) {
 
 	ctx := &logging.ContextMap{}
 
@@ -1400,91 +833,24 @@ func SynthesizeActions(instruction string, properties []string, actions []map[st
 		return
 	}
 
-	var azureOpenAIKey string
-	var modelDeploymentID string
-	var azureOpenAIEndpoint string
-
-	if len(config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES) > 0 {
-		// azure openai api key
-		azureOpenAIKey = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_API_KEY"]
-		// azure openai model name
-		modelDeploymentID = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_CHAT_MODEL_NAME"]
-		// azure openai endpoint
-		azureOpenAIEndpoint = config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["AZURE_OPENAI_ENDPOINT"]
-	} else {
-		errorMessage := fmt.Sprintf("failed to load workflow config variables")
+	if len(message) == 0 {
+		errorMessage := fmt.Sprintf("the message is empty, cannot synthesize actions")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	if azureOpenAIKey == "" || modelDeploymentID == "" || azureOpenAIEndpoint == "" {
-		errorMessage := fmt.Sprintf("environment variables missing")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	keyCredential := azcore.NewKeyCredential(azureOpenAIKey)
-
-	client, err := azopenai.NewClientWithKeyCredential(azureOpenAIEndpoint, keyCredential, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to create client: %v\n", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// get prompt template from the configuration
-	prompt_template, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load prompt template from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	prompt := fmt.Sprintf(prompt_template, properties, instruction)
-
-	resp, err := client.GetChatCompletions(context.TODO(), azopenai.ChatCompletionsOptions{
-		DeploymentName: &modelDeploymentID,
-		Messages: []azopenai.ChatRequestMessageClassification{
-			&azopenai.ChatRequestUserMessage{
-				Content: azopenai.NewChatRequestUserMessageContent(prompt),
-			},
-		},
-		Temperature: to.Ptr[float32](0.0),
-	}, nil)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("error occur during chat completion %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	if len(resp.Choices) == 0 {
-		errorMessage := fmt.Sprintf("response from azure is empty")
-		logging.Log.Error(ctx, "the response from azure is empty")
-		panic(errorMessage)
-	}
-
-	message := resp.Choices[0].Message
-
-	if message == nil {
-		errorMessage := fmt.Sprintf("no message found from the choice")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "The Message: %s\n", *message.Content)
+	logging.Log.Debugf(ctx, "The Message: %s\n", message)
 
 	var output map[string]interface{}
 
 	// Attempt to unmarshal the response
-	err = json.Unmarshal([]byte(*message.Content), &output)
+	err := json.Unmarshal([]byte(message), &output)
 	if err != nil {
 		// Log the error and fallback to an empty output
-		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", *message.Content, err)
+		logging.Log.Errorf(ctx, "Failed to unmarshal response content: %s, error: %v", message, err)
 
 		// Attempt to clean the response and retry unmarshaling
-		cleanedContent := strings.TrimSpace(*message.Content)
+		cleanedContent := strings.TrimSpace(message)
 		if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
 			cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
 			cleanedContent = strings.TrimSuffix(cleanedContent, "```")
@@ -1653,6 +1019,7 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
+	// Get tool action success message from configuration
 	tool17Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_17_NAME"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 17 name from the configuration")
@@ -2149,37 +1516,33 @@ func GetActionsFromConfig(toolName string) (result string) {
 	}
 
 	message := toolActionSuccessMessage
-	actions := []map[string]string{}
-	switch toolName {
-	case tool9ResultName, tool11ResultName, tool12ResultName, tool15ResultName:
+	if toolName == tool9ResultName || toolName == tool11ResultName || toolName == tool12ResultName || toolName == tool15ResultName {
 		message = selectedMessage
-		actions = append(actions, map[string]string{
-			actionKey1: actionValue1,
-			actionKey2: actionValue2,
-		})
-	default:
+		actions := []map[string]string{
+			{
+				actionKey1: actionValue1,
+				actionKey2: actionValue2,
+			},
+		}
+		finalMessage := map[string]interface{}{
+			"Message": message,
+			"Actions": actions,
+		}
+		bytesStream, err := json.Marshal(finalMessage)
+		if err != nil {
+			errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+			logging.Log.Error(ctx, errorMessage)
+			panic(errorMessage)
+		}
+		result = string(bytesStream)
+		logging.Log.Info(ctx, "successfully converted actions to json")
+	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
 
-	finalMessage := make(map[string]interface{})
-	finalMessage["Message"] = message
-	finalMessage["Actions"] = actions
-
-	// Marshal the actions
-	bytesStream, err := json.Marshal(finalMessage)
-
-	if err != nil {
-		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	result = string(bytesStream)
-	logging.Log.Info(ctx, "successfully converted actions to json")
-
-	return
+	return result
 }
 
 // SimilartitySearchOnPathDescriptions (Qdrant) do similarity search on path description
@@ -2243,4 +1606,221 @@ func SimilartitySearchOnPathDescriptionsQdrant(vector []float32, collection stri
 
 	logging.Log.Debugf(&logging.ContextMap{}, "Descriptions: %q", descriptions)
 	return
+}
+
+// ParseHistoryToHistoricMessages this function to convert chat history to historic messages
+//
+// Tags:
+//   - @displayName: ParseHistoryToHistoricMessages
+//
+// Parameters:
+//   - historyJson: chat history in json format
+//
+// Returns:
+//   - history: the history in sharedtypes.HistoricMessage format
+func ParseHistoryToHistoricMessages(historyJson string) (history []sharedtypes.HistoricMessage) {
+	ctx := &logging.ContextMap{}
+
+	var historyMaps []map[string]string
+	err := json.Unmarshal([]byte(historyJson), &historyMaps)
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to unmarshal history json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	for _, msg := range historyMaps {
+		role, _ := msg["role"]
+		content, _ := msg["content"]
+		history = append(history, sharedtypes.HistoricMessage{
+			Role:    role,
+			Content: content,
+		})
+	}
+	return history
+}
+
+// GenerateSubWorkflowPrompt generates system and user prompts for subworkflow identification.
+//
+// Tags:
+//   - @displayName: GenerateSubWorkflowPrompt
+//
+// Parameters:
+//   - userInstruction: user instruction
+//
+// Returns:
+//   - systemPrompt: the system prompt
+//   - userPrompt: the user prompt
+func GenerateSubWorkflowPrompt(userInstruction string) (systemPrompt string, userPrompt string) {
+	ctx := &logging.ContextMap{}
+
+	// Retrieve subworkflows (name and description)
+	subworkflows := azure.GetSubworkflows()
+	var subworkflowListStr strings.Builder
+	for i, sw := range subworkflows {
+		subworkflowListStr.WriteString(fmt.Sprintf("%d. %s - %s\n", i+1, sw.Name, sw.Description))
+	}
+
+	// Retrieve prompt templates from configuration
+	systemPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SUBWORKFLOW_IDENTIFICATION_SYSTEM_PROMPT"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load system prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+	userPromptTemplate, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_SUBWORKFLOW_IDENTIFICATION_USER_PROMPT"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load user prompt template from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	// Format the prompts
+	systemPrompt = fmt.Sprintf(systemPromptTemplate, subworkflowListStr.String())
+	userPrompt = fmt.Sprintf(userPromptTemplate, userInstruction)
+
+	logging.Log.Debugf(ctx, "Generated System Prompt: %s", systemPrompt)
+
+	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
+	return systemPrompt, userPrompt
+}
+
+// GenerateUserPrompt generates user instruction prompt based on the provided template.
+//
+// Tags:
+//   - @displayName: GenerateUserPrompt
+//
+// Parameters:
+//   - userInstruction: user instruction
+//   - userPromptTemplate: user prompt template
+//
+// Returns:
+//   - userPrompt: the user prompt
+func GenerateUserPrompt(userInstruction string, userPromptTemplate string) (userPrompt string) {
+	ctx := &logging.ContextMap{}
+
+	userPrompt = fmt.Sprintf(userPromptTemplate, userInstruction)
+
+	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
+
+	return
+}
+
+// GenerateUserPrompt generates user instruction prompt based on the provided template, instruction, list.
+//
+// Tags:
+//   - @displayName: GenerateUserPromptWithList
+//
+// Parameters:
+//   - userInstruction: user instruction
+//   - userList: list of items to include in the prompt
+//   - userPromptTemplate: user prompt template
+//
+// Returns:
+//   - userPrompt: the user prompt
+func GenerateUserPromptWithList(userInstruction string, userList []string, userPromptTemplate string) (userPrompt string) {
+	ctx := &logging.ContextMap{}
+
+	userPrompt = fmt.Sprintf(userPromptTemplate, userList, userInstruction)
+
+	logging.Log.Debugf(ctx, "Generated User Prompt: %s", userPrompt)
+
+	return
+}
+
+// ProcessSubworkflowIdentificationOutput this function process output of llm
+//
+// Tags:
+//   - @displayName: ProcessSubworkflowIdentificationOutput
+//
+// Parameters:
+//   - llmOutput: the llm output for subworkflow identification
+//
+// Returns:
+//   - status: status of processing
+//   - workflowName: the identified subworkflow name
+func ProcessSubworkflowIdentificationOutput(llmOutput string) (status string, workflowName string) {
+	ctx := &logging.ContextMap{}
+
+	// Clean up the output in case it is wrapped in code block
+	cleaned := strings.TrimSpace(llmOutput)
+	if strings.HasPrefix(cleaned, "```json") && strings.HasSuffix(cleaned, "```") {
+		cleaned = strings.TrimPrefix(cleaned, "```json")
+		cleaned = strings.TrimSuffix(cleaned, "```")
+		cleaned = strings.TrimSpace(cleaned)
+	}
+
+	// Parse JSON
+	var result struct {
+		Subworkflow string `json:"subworkflow"`
+	}
+	err := json.Unmarshal([]byte(cleaned), &result)
+	if err != nil {
+		logging.Log.Errorf(ctx, "Failed to parse LLM output as JSON: %v, content: %s", err, cleaned)
+		return "failure", ""
+	}
+
+	// Check if subworkflow is valid
+	if result.Subworkflow == "" || strings.ToLower(result.Subworkflow) == "none" {
+		logging.Log.Warnf(ctx, "No valid subworkflow found in LLM output: %s", cleaned)
+		return "failure", ""
+	}
+
+	logging.Log.Debugf(ctx, "Identified Subworkflow: %s", result.Subworkflow)
+
+	return "success", result.Subworkflow
+}
+
+// MarkdownToHTML this function converts markdown to html
+//
+// Tags:
+//   - @displayName: MarkdownToHTML
+//
+// Parameters:
+//   - markdown: content in markdown format
+//
+// Returns:
+//   - html: content in html format
+func MarkdownToHTML(markdown string) (html string) {
+	logging.Log.Info(&logging.ContextMap{}, "Converting Markdown to HTML...")
+	// Use blackfriday to convert markdown to HTML
+	logging.Log.Debugf(&logging.ContextMap{}, "Markdown content: %s", markdown)
+	html = string(blackfriday.Run([]byte(markdown)))
+	return html
+}
+
+// FinalizeMessage this function takes message and generate response schema
+//
+// Tags:
+//   - @displayName: FinalizeMessage
+//
+// Parameters:
+//   - message: final message
+//
+// Returns:
+//   - result: response schema sent to chat interface
+func FinalizeMessage(message string) (result string) {
+	ctx := &logging.ContextMap{}
+	logging.Log.Info(ctx, "Finalizing message...")
+
+	actions := make([]map[string]string, 0)
+
+	finalMessage := make(map[string]interface{})
+	finalMessage["Message"] = message
+	finalMessage["Actions"] = actions
+
+	// Marshal the actions
+	bytesStream, err := json.Marshal(finalMessage)
+
+	if err != nil {
+		errorMessage := fmt.Sprintf("failed to convert actions to json: %v", err)
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	result = string(bytesStream)
+	logging.Log.Debugf(ctx, "Final message: %s", result)
+	logging.Log.Info(ctx, "successfully converted actions to json")
+
+	return result
 }

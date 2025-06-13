@@ -132,8 +132,11 @@ export const goTypes: string[] = [
     "[]DbData",
     "[]CodeGenerationElement",
     "[]CodeGenerationExample",
-    "[]CodeGenerationUserGuideSection"
-    "[]RLAgent" // added new type here
+    "[]CodeGenerationUserGuideSection",
+    "[]RLAgent",
+    "[]MaterialLlmCriterion",
+    "[]MaterialFullCriterion",
+    "[]MaterialAttribute", // added new type here
   ]
   // . . .
 ```
