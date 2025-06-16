@@ -122,6 +122,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SynthesizeActionsTool4":                    SynthesizeActionsTool4,
 	"SynthesizeActionsTool13":                   SynthesizeActionsTool13,
 	"SynthesizeActionsTool14":                   SynthesizeActionsTool14,
+	"SynthesizeActionsTool16":                   SynthesizeActionsTool16,
 	"SimilartitySearchOnPathDescriptionsQdrant": SimilartitySearchOnPathDescriptionsQdrant,
 	"GenerateSubWorkflowPrompt":                 GenerateSubWorkflowPrompt,
 	"ProcessSubworkflowIdentificationOutput":    ProcessSubworkflowIdentificationOutput,

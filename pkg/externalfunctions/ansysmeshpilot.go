@@ -767,15 +767,7 @@ func SynthesizeActionsTool16(message string, actions []map[string]string) (updat
 
 	argumentValue := output.ArgumentValue
 	argumentUnits := output.ArgumentUnits
-	logging.Log.Debugf(ctx, "ArgumentValue: %q, argumentUnits: %q\n", argumentValue, argumentUnits)
-
-	// Get synthesize actions find key from configuration
-	synthesizeActionsFindKey, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_FIND_KEY"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
+	logging.Log.Debugf(ctx, "argumentValue: %q, argumentUnits: %q\n", argumentValue, argumentUnits)
 
 	synthesizeActionsReplaceKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
 	if !exists {
@@ -793,14 +785,11 @@ func SynthesizeActionsTool16(message string, actions []map[string]string) (updat
 
 	// Updated actions from output
 	for i := 0; i < len(updatedActions); i++ {
-		updateAction := updatedActions[i]
-		for key, value := range updateAction {
-			if key == synthesizeActionsFindKey {
-				if value == synthesizeActionsReplaceKey1 {
-					updateAction[synthesizeActionsReplaceKey1] = argumentValue
-				} else if value == synthesizeActionsReplaceKey2 {
-					updateAction[synthesizeActionsReplaceKey2] = argumentUnits
-				}
+		for key, _ := range updatedActions[i] {
+			if key == synthesizeActionsReplaceKey1 {
+				updatedActions[i][synthesizeActionsReplaceKey1] = argumentValue
+			} else if key == synthesizeActionsReplaceKey2 {
+				updatedActions[i][synthesizeActionsReplaceKey2] = argumentUnits
 			}
 		}
 	}
@@ -922,18 +911,32 @@ func SynthesizeActions(message string, properties []string, actions []map[string
 			convValue := fmt.Sprintf("%f", v)
 			updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey1, convValue)
 		case map[string]interface{}:
-			for key, value := range v {
-				switch key {
-				case synthesizeOutputKey1:
-					updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey1, value.(string))
-				case synthesizeOutputKey2:
-					updateMeshPilotActionProperty(updatedActions, synthesizeActionsFindKey, key, synthesizeActionsReplaceKey2, value.(string))
-				}
+			outerKey := key
+
+			if val, ok := v[synthesizeOutputKey1].(string); ok {
+				updateMeshPilotActionProperty(
+					updatedActions,
+					synthesizeActionsFindKey,
+					outerKey,
+					synthesizeActionsReplaceKey1,
+					val,
+				)
+			}
+			if units, ok := v[synthesizeOutputKey2].(string); ok {
+				updateMeshPilotActionProperty(
+					updatedActions,
+					synthesizeActionsFindKey,
+					outerKey,
+					synthesizeActionsReplaceKey2,
+					units,
+				)
 			}
 		default:
 			logging.Log.Infof(ctx, "Key: %s, Value is of a different type: %T", key, v)
 		}
 	}
+
+	logging.Log.Debugf(ctx, "The SynthesizeActions Updated Actions: %q\n", updatedActions)
 
 	return
 }
@@ -1015,6 +1018,13 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 	tool10Name, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_10_NAME"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 10 name from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	tool16Name, exexists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_16_NAME"]
+	if !exexists {
+		errorMessage := fmt.Sprintf("failed to load tool 16 name from the configuration")
 		logging.Log.Error(ctx, errorMessage)
 		panic(errorMessage)
 	}
@@ -1133,6 +1143,20 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 		panic(errorMessage)
 	}
 
+	tool16ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_16_ACTION_SUCCESS_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 16 action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
+	tool16NoActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_16_NO_ACTION_MESSAGE"]
+	if !exists {
+		errorMessage := fmt.Sprintf("failed to load tool 16 no action message from the configuration")
+		logging.Log.Error(ctx, errorMessage)
+		panic(errorMessage)
+	}
+
 	tool17ActionMessage, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_TOOL_17_ACTION_SUCCESS_MESSAGE"]
 	if !exists {
 		errorMessage := fmt.Sprintf("failed to load tool 17 action message from the configuration")
@@ -1188,6 +1212,12 @@ func FinalizeResult(actions []map[string]string, toolName string) (result string
 			message = tool10ActionMessage
 		} else {
 			message = tool10NoActionMessage
+		}
+	} else if toolName == tool16Name {
+		if hasActions {
+			message = tool16ActionMessage
+		} else {
+			message = tool16NoActionMessage
 		}
 	} else if toolName == tool17Name {
 		if hasActions {

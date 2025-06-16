@@ -25,6 +25,7 @@ package azure
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -607,7 +608,14 @@ func GetSubworkflows() []struct {
 		Description string
 	}{}
 
-	for i := 1; i <= 15; i++ {
+	toolAmount := mustCfg(ctx, "APP_TOOL_TOTAL_AMOUNT")
+	toolAmountInt, err := strconv.Atoi(toolAmount)
+	if err != nil {
+		logging.Log.Error(ctx, fmt.Sprintf("Invalid tool amount: %s", toolAmount))
+		panic(err)
+	}
+
+	for i := 1; i <= toolAmountInt; i++ {
 		nameKey := fmt.Sprintf("APP_TOOL_%d_NAME", i)
 		descKey := fmt.Sprintf("APP_TOOL_%d_DESCRIPTION", i)
 		name, nameExists := mustCfg(ctx, nameKey), true
@@ -624,4 +632,3 @@ func GetSubworkflows() []struct {
 	}
 	return subworkflows
 }
-
