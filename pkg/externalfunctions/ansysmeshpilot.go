@@ -720,85 +720,6 @@ func SynthesizeActionsTool14(content string) (result string) {
 	return result
 }
 
-// SynthesizeActionsTool16 update action as per user instruction
-//
-// Tags:
-//   - @displayName: SynthesizeActionsTool16
-//
-// Parameters:
-//   - message: the message from the llm
-//   - actions: the list of actions
-//
-// Returns:
-//   - updatedActions: the list of synthesized actions
-func SynthesizeActionsTool16(message string, actions []map[string]string) (updatedActions []map[string]string) {
-
-	ctx := &logging.ContextMap{}
-
-	updatedActions = actions
-
-	if len(message) == 0 {
-		errorMessage := fmt.Sprintf("the message is empty, cannot synthesize actions")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	logging.Log.Debugf(ctx, "The Message: %s\n", message)
-
-	// Clean the response content
-	cleanedContent := strings.TrimSpace(message)
-	if strings.HasPrefix(cleanedContent, "```json") && strings.HasSuffix(cleanedContent, "```") {
-		cleanedContent = strings.TrimPrefix(cleanedContent, "```json")
-		cleanedContent = strings.TrimSuffix(cleanedContent, "```")
-		cleanedContent = strings.TrimSpace(cleanedContent)
-	}
-
-	var output struct {
-		ArgumentValue string `json:"ArgumentValue"`
-		ArgumentUnits string `json:"ArgumentUnits"`
-	}
-
-	err := json.Unmarshal([]byte(cleanedContent), &output)
-	if err != nil {
-		errorMessage := fmt.Sprintf("SynthesizeActionsTool16: Failed to unmarshal response: %v", err)
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	argumentValue := output.ArgumentValue
-	argumentUnits := output.ArgumentUnits
-	logging.Log.Debugf(ctx, "argumentValue: %q, argumentUnits: %q\n", argumentValue, argumentUnits)
-
-	synthesizeActionsReplaceKey1, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_1"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	synthesizeActionsReplaceKey2, exists := config.GlobalConfig.WORKFLOW_CONFIG_VARIABLES["APP_PROMPT_TEMPLATE_SYNTHESIZE_ACTION_REPLACE_KEY_2"]
-	if !exists {
-		errorMessage := fmt.Sprintf("failed to load synthesize actions find key from the configuration")
-		logging.Log.Error(ctx, errorMessage)
-		panic(errorMessage)
-	}
-
-	// Updated actions from output
-	for i := 0; i < len(updatedActions); i++ {
-		for key, _ := range updatedActions[i] {
-			if key == synthesizeActionsReplaceKey1 {
-				updatedActions[i][synthesizeActionsReplaceKey1] = argumentValue
-			} else if key == synthesizeActionsReplaceKey2 {
-				updatedActions[i][synthesizeActionsReplaceKey2] = argumentUnits
-			}
-		}
-	}
-
-	logging.Log.Debugf(ctx, "The Updated Actions: %q\n", updatedActions)
-
-	return
-}
-
 // SynthesizeActions update action as per user instruction
 //
 // Tags:
@@ -1565,7 +1486,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 			panic(errorMessage)
 		}
 		result = string(bytesStream)
-		logging.Log.Info(ctx, "successfully converted actions to json")
+		logging.Log.Info(ctx, "successfully converted actions to json: %q", result)
 	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
