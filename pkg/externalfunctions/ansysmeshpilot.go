@@ -1486,7 +1486,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 			panic(errorMessage)
 		}
 		result = string(bytesStream)
-		logging.Log.Info(ctx, "successfully converted actions to json: %q", result)
+		logging.Log.Infof(ctx, "successfully converted actions to json: %q", result)
 	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
