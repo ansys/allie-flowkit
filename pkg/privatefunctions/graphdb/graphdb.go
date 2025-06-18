@@ -830,7 +830,7 @@ func (graphdb_context *graphDbContext) GetUserGuideMainChapters() (sections []sh
 		sections = result[0]
 	default:
 		errMsg := fmt.Sprintf("got more than 1 first child: %d", len(result))
-		logging.Log.Error(&logging.ContextMap{}, "%v", errMsg)
+		logging.Log.Error(&logging.ContextMap{}, errMsg)
 		return nil, errors.New(errMsg)
 	}
 
