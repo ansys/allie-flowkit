@@ -52,6 +52,73 @@ jobs:
     secrets: inherit
 
 # ---------------------------------------------------------------------
+# RELEASE DOCKER ── publish Docker image to GitHub Container Registry
+# ---------------------------------------------------------------------
+  release-docker:
+    name : Generate Docker release
+    needs: [check-tag-branch]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if tag name contains 'dev'
+        run: echo "IS_DEV_TAG=$(echo ${{ github.ref_name }} | grep -q 'dev' && echo 'true' || echo 'false')" >> $GITHUB_ENV
+
+      - name: Decompose tag into components
+        if: env.IS_DEV_TAG == 'false'
+        run: |
+          if [[ ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Split the tag into its components
+            IFS='.' read -ra PARTS <<< "${{ github.ref_name }}"
+            echo "X=${PARTS[0]}" >> $GITHUB_ENV
+            echo "Y=${PARTS[1]}" >> $GITHUB_ENV
+            echo "Z=${PARTS[2]}" >> $GITHUB_ENV
+          else
+            echo "Invalid tag format. Expected vX.Y.Z but got ${{ github.ref_name }}"
+            exit 1
+          fi
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        if: env.IS_DEV_TAG == 'false'
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ env.X }} ,
+            ghcr.io/${{ github.repository }}:${{ env.X }}.${{ env.Y }} ,
+            ghcr.io/${{ github.repository }}:${{ env.X }}.${{ env.Y }}.${{ env.Z }} ,
+            ghcr.io/${{ github.repository }}:latest
+
+      - name: Build and push Docker image dev
+        if: env.is_dev_tag == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+# ---------------------------------------------------------------------
 # BUILD BINARIES  ── build binaries for Linux, Windows & macOS
 # ---------------------------------------------------------------------
   build:
@@ -261,7 +328,7 @@ jobs:
 # RELEASE  ── publish files to GitHub
 # ---------------------------------------------------------------------
   release:
-    needs: [sign-windows-binaries]
+    needs: [sign-windows-binaries, release-docker]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -300,73 +367,6 @@ jobs:
           fail_on_unmatched_files: false
           files: |
             release_files/**/${{ github.event.repository.name }}_*_${{ github.ref_name }}*
-
-# ---------------------------------------------------------------------
-# RELEASE DOCKER ── publish Docker image to GitHub Container Registry
-# ---------------------------------------------------------------------
-  release-docker:
-    name : Generate Docker release
-    needs: [sign-windows-binaries]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check if tag name contains 'dev'
-        run: echo "IS_DEV_TAG=$(echo ${{ github.ref_name }} | grep -q 'dev' && echo 'true' || echo 'false')" >> $GITHUB_ENV
-
-      - name: Decompose tag into components
-        if: env.IS_DEV_TAG == 'false'
-        run: |
-          if [[ ${{ github.ref_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            # Split the tag into its components
-            IFS='.' read -ra PARTS <<< "${{ github.ref_name }}"
-            echo "X=${PARTS[0]}" >> $GITHUB_ENV
-            echo "Y=${PARTS[1]}" >> $GITHUB_ENV
-            echo "Z=${PARTS[2]}" >> $GITHUB_ENV
-          else
-            echo "Invalid tag format. Expected vX.Y.Z but got ${{ github.ref_name }}"
-            exit 1
-          fi
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        if: env.IS_DEV_TAG == 'false'
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ env.X }} ,
-            ghcr.io/${{ github.repository }}:${{ env.X }}.${{ env.Y }} ,
-            ghcr.io/${{ github.repository }}:${{ env.X }}.${{ env.Y }}.${{ env.Z }} ,
-            ghcr.io/${{ github.repository }}:latest
-
-      - name: Build and push Docker image dev
-        if: env.is_dev_tag == 'true'
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          build-args: |
-            GITHUB_TOKEN=${{ secrets.PYANSYS_CI_BOT_TOKEN }}
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
 # ---------------------------------------------------------------------
 # UPLOAD RELEASE DOCS ── upload release documentation to GitHub Pages
