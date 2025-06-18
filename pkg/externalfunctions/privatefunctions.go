@@ -233,6 +233,9 @@ func sendTokenCountToEndpoint(jwtToken string, tokenCountEndpoint string, inputT
 	// Set headers
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Authorization", "Bearer "+jwtToken)
+	if strings.Contains(tokenCountEndpoint, "staging") {
+		request.Header.Set("Xp05t", "Ke9$YM55oL96NCnF")
+	}
 
 	// Create an HTTP client and make the request
 	client := &http.Client{}
