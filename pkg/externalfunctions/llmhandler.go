@@ -685,7 +685,7 @@ func PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput(input strin
 	totalTokenCount, err := openAiTokenCount(tokenCountModelName, input+systemPrompt)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error getting input token count: %v", err)
-		logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+		logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 		panic(errorMessage)
 	}
 
@@ -694,7 +694,7 @@ func PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput(input strin
 		historyTokenCount, err := openAiTokenCount(tokenCountModelName, message.Content)
 		if err != nil {
 			errorMessage := fmt.Sprintf("Error getting history token count: %v", err)
-			logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+			logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 			panic(errorMessage)
 		}
 		totalTokenCount += historyTokenCount
@@ -704,7 +704,7 @@ func PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput(input strin
 	outputTokenCount, err := openAiTokenCount(tokenCountModelName, responseAsStr)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error getting output token count: %v", err)
-		logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+		logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 		panic(errorMessage)
 	}
 	totalTokenCount += outputTokenCount
@@ -762,7 +762,7 @@ func PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOut
 	totalTokenCount, err := openAiTokenCount(tokenCountModelName, input+systemPrompt)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error getting input token count: %v", err)
-		logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+		logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 		panic(errorMessage)
 	}
 
@@ -771,7 +771,7 @@ func PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOut
 		historyTokenCount, err := openAiTokenCount(tokenCountModelName, message.Content)
 		if err != nil {
 			errorMessage := fmt.Sprintf("Error getting history token count: %v", err)
-			logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+			logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 			panic(errorMessage)
 		}
 		totalTokenCount += historyTokenCount
@@ -781,7 +781,7 @@ func PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOut
 	outputTokenCount, err := openAiTokenCount(tokenCountModelName, responseAsStr)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error getting output token count: %v", err)
-		logging.Log.Errorf(&logging.ContextMap{}, errorMessage)
+		logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 		panic(errorMessage)
 	}
 	totalTokenCount += outputTokenCount
