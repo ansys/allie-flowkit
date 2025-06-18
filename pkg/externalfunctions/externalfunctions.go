@@ -88,9 +88,11 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"CreateGeneralDataExtractionDocumentObjects": CreateGeneralDataExtractionDocumentObjects,
 
 	// generic
-	"AssignStringToString": AssignStringToString,
-	"SendRestAPICall":      SendRestAPICall,
-	"PrintFeedback":        PrintFeedback,
+	"AssignStringToString":   AssignStringToString,
+	"SendRestAPICall":        SendRestAPICall,
+	"PrintFeedback":          PrintFeedback,
+	"ExtractJSONStringField": ExtractJSONStringField,
+	"InterpolateString":      InterpolateString,
 
 	// code generation
 	"LoadCodeGenerationElements":      LoadCodeGenerationElements,

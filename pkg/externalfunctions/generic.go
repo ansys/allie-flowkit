@@ -29,6 +29,8 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 )
@@ -131,4 +133,80 @@ func PrintFeedback(feedback sharedtypes.Feedback) {
 	}
 	// print json string to console
 	fmt.Println(string(jsonString))
+}
+
+// ExtractJSONStringField extracts a string field from a JSON string using a key path.
+// The key path is a dot-separated string that specifies the path to the field in the JSON object.
+//
+// Tags:
+//   - @displayName: Extract JSON String Field
+//
+// Parameters:
+//   - jsonStr: the JSON string to extract the field from
+//   - keyPath: the dot-separated path to the field in the JSON object
+//
+// Returns:
+//   - the value of the field as a string
+func ExtractJSONStringField(jsonStr string, keyPath string) string {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		panic(fmt.Sprintf("Error unmarshalling JSON: %v", err))
+	}
+
+	keys := strings.Split(keyPath, ".")
+	var current interface{} = data
+
+	for _, key := range keys {
+		m, ok := current.(map[string]interface{})
+		if !ok {
+			panic(fmt.Sprintf("Expected map for key %q but got %T", key, current))
+		}
+		current, ok = m[key]
+		if !ok {
+			panic(fmt.Sprintf("Key %q not found in JSON", key))
+		}
+	}
+
+	// Convert final value to string
+	switch v := current.(type) {
+	case string:
+		return v
+	default:
+		// Try to marshal the value back to a JSON string
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to convert final value to string: %v", err))
+		}
+		return string(bytes)
+	}
+}
+
+// InterpolateString interpolates a string by replacing placeholders of the form [[__var.key__]] with values from the provided map.
+// The placeholders are case-sensitive and must match the keys in the map.
+//
+// Tags:
+//   - @displayName: Interpolate String
+//
+// Parameters:
+//   - input: the input string containing placeholders
+//   - values: a map containing key-value pairs for interpolation
+//
+// Returns:
+//   - the interpolated string with placeholders replaced by corresponding values from the map
+func InterpolateString(input string, key string, value string) string {
+	// Define the regex pattern to match placeholders of the form [[__var.key__]]
+	pattern := `\[\[__var\.` + regexp.QuoteMeta(key) + `__\]\]`
+
+	// Compile the regex
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		panic(fmt.Sprintf("Error compiling regex: %v", err))
+	}
+
+	// Replace the placeholders with the corresponding value
+	output := re.ReplaceAllString(input, value)
+
+	fmt.Printf("Interpolated string: %s\n", output)
+
+	return output
 }
