@@ -51,6 +51,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"GetListCollections":       GetListCollections,
 	"RetrieveDependencies":     RetrieveDependencies,
 	"GeneralGraphDbQuery":      GeneralGraphDbQuery,
+	"AddGraphDbParameter":      AddGraphDbParameter,
 	"GeneralQuery":             GeneralQuery,
 	"SimilaritySearch":         SimilaritySearch,
 	"CreateKeywordsDbFilter":   CreateKeywordsDbFilter,

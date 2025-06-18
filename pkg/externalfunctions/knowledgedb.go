@@ -25,9 +25,11 @@ package externalfunctions
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
 	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
+	"github.com/ansys/aali-sharedtypes/pkg/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
@@ -176,29 +178,49 @@ func RetrieveDependencies(
 	return dependenciesIds
 }
 
+// AddGraphDbParameter adds a new GraphDbParameter to a map[string]GraphDbParameter
+//
+// Tags:
+//   - @displayName: Add Graph DB Parameter
+//
+// Parameters:
+//   - parameters: the existing collection of parameters
+//   - name: the name of the new parameter
+//   - value: the value of the new parameter
+//   - paramType: the type of the new parameter
+//
+// Returns:
+//   - The original parameters with the new one added
+func AddGraphDbParameter(parameters aali_graphdb.ParameterMap, name string, value string, paramType string) aali_graphdb.ParameterMap {
+	valType := sharedtypes.GraphDbValueType(strings.ToLower(paramType))
+	val, err := valType.Parse(value)
+	if err != nil {
+		logPanic(nil, "could not build graph DB parameter: %v", err)
+	}
+	parameters[name] = val
+	return parameters
+}
+
 // GeneralGraphDbQuery executes the given Cypher query and returns the response.
 //
-// The function returns the neo4j response.
+// The function returns the graph db response.
 //
 // Tags:
 //   - @displayName: General Graph DB Query
 //
 // Parameters:
-//   - query: the Neo4j query to be executed.
+//   - query: the Cypher query to be executed.
+//   - parameters: parameters to pass to the query during execution
 //
 // Returns:
-//   - databaseResponse: the Neo4j response
-func GeneralGraphDbQuery(query string) []map[string]any {
+//   - databaseResponse: the graph db response
+func GeneralGraphDbQuery(query string, parameters aali_graphdb.ParameterMap) []map[string]any {
 	// Initialize the graph database.
 	err := graphdb.Initialize(config.GlobalConfig.GRAPHDB_ADDRESS)
 	if err != nil {
-		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
-		logging.Log.Error(&logging.ContextMap{}, errMsg)
-		panic(errMsg)
+		logPanic(nil, "error initializing graphdb: %v", err)
 	}
-
-	// Execute the Cypher query.
-	res, err := graphdb.GraphDbDriver.WriteCypherQuery(query)
+	res, err := graphdb.GraphDbDriver.WriteCypherQuery(query, parameters)
 	if err != nil {
 		logPanic(nil, "error executing cypher query: %q", err)
 	}
