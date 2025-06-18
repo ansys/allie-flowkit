@@ -509,7 +509,7 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding BelongsTo relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -526,7 +526,7 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding Returns relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -553,7 +553,7 @@ func (graphdb_context *graphDbContext) CreateCodeGenerationRelationships(nodes [
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding UsesParameter relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -601,7 +601,7 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding References relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -619,7 +619,7 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding NextSibling relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -638,7 +638,7 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding NextParent relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -658,7 +658,7 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 			)
 			if err != nil {
 				errMsg := fmt.Sprintf("Error during cypher query adding HasFirstChild relationships: %v", err)
-				logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+				logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 				return errors.New(errMsg)
 			}
 		}
@@ -676,7 +676,7 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 		)
 		if err != nil {
 			errMsg := fmt.Sprintf("Error during cypher query adding HasChild relationships: %v", err)
-			logging.Log.Errorf(&logging.ContextMap{}, errMsg)
+			logging.Log.Errorf(&logging.ContextMap{}, "%v", errMsg)
 			return errors.New(errMsg)
 		}
 	}
@@ -830,7 +830,7 @@ func (graphdb_context *graphDbContext) GetUserGuideMainChapters() (sections []sh
 		sections = result[0]
 	default:
 		errMsg := fmt.Sprintf("got more than 1 first child: %d", len(result))
-		logging.Log.Error(&logging.ContextMap{}, errMsg)
+		logging.Log.Error(&logging.ContextMap{}, "%v", errMsg)
 		return nil, errors.New(errMsg)
 	}
 
