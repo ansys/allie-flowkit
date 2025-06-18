@@ -157,4 +157,5 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"FilterOutNonExistingAttributes": FilterOutNonExistingAttributes,
 	"FilterOutDuplicateAttributes":   FilterOutDuplicateAttributes,
 	"ExtractCriteriaSuggestions":     ExtractCriteriaSuggestions,
+	"PerformMultipleGeneralRequestsAndExtractAttributesWithOpenAiTokenOutput": PerformMultipleGeneralRequestsAndExtractAttributesWithOpenAiTokenOutput,
 }
