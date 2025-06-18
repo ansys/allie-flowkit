@@ -93,7 +93,7 @@ func CreatePayloadAndSendHttpRequest(url string, requestType string, requestObje
 
 	// Check the response status code.
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf(resp.Status), resp.StatusCode
+		return fmt.Errorf("%v", resp.Status), resp.StatusCode
 	}
 
 	return nil, 0
