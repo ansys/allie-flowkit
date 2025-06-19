@@ -29,7 +29,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
@@ -101,9 +100,6 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 
 	// Check if the response code is successful (2xx)
 	success = resp.StatusCode >= 200 && resp.StatusCode < 300
-	if !success {
-		panic(fmt.Sprintf("Request failed with status code: %d, body: %s", resp.StatusCode, string(body)))
-	}
 
 	return success, string(body)
 }
@@ -183,34 +179,6 @@ func ExtractJSONStringField(jsonStr string, keyPath string) string {
 		}
 		return string(bytes)
 	}
-}
-
-// InterpolateString interpolates a string by replacing placeholders of the form [[__var.key__]] with values from the provided map.
-// The placeholders are case-sensitive and must match the keys in the map.
-//
-// Tags:
-//   - @displayName: Interpolate String
-//
-// Parameters:
-//   - input: the input string containing placeholders
-//   - values: a map containing key-value pairs for interpolation
-//
-// Returns:
-//   - the interpolated string with placeholders replaced by corresponding values from the map
-func InterpolateString(input string, key string, value string) string {
-	// Define the regex pattern to match placeholders of the form [[__var.key__]]
-	pattern := `\[\[__var\.` + regexp.QuoteMeta(key) + `__\]\]`
-
-	// Compile the regex
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		panic(fmt.Sprintf("Error compiling regex: %v", err))
-	}
-
-	// Replace the placeholders with the corresponding value
-	output := re.ReplaceAllString(input, value)
-
-	return output
 }
 
 // GenerateUUID generates a new UUID (Universally Unique Identifier).
