@@ -33,6 +33,7 @@ import (
 	"strings"
 
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	"github.com/google/uuid"
 )
 
 // SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
@@ -100,6 +101,9 @@ func SendRestAPICall(requestType string, endpoint string, header map[string]stri
 
 	// Check if the response code is successful (2xx)
 	success = resp.StatusCode >= 200 && resp.StatusCode < 300
+	if !success {
+		panic(fmt.Sprintf("Request failed with status code: %d, body: %s", resp.StatusCode, string(body)))
+	}
 
 	return success, string(body)
 }
@@ -206,7 +210,16 @@ func InterpolateString(input string, key string, value string) string {
 	// Replace the placeholders with the corresponding value
 	output := re.ReplaceAllString(input, value)
 
-	fmt.Printf("Interpolated string: %s\n", output)
-
 	return output
+}
+
+// GenerateUUID generates a new UUID (Universally Unique Identifier).
+//
+// Tags:
+//   - @displayName: Generate UUID
+//
+// Returns:
+//   - a string representation of the generated UUID
+func GenerateUUID() string {
+	return strings.Replace(uuid.New().String(), "-", "", -1)
 }

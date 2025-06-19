@@ -93,6 +93,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PrintFeedback":          PrintFeedback,
 	"ExtractJSONStringField": ExtractJSONStringField,
 	"InterpolateString":      InterpolateString,
+	"GenerateUUID":           GenerateUUID,
 
 	// code generation
 	"LoadCodeGenerationElements":      LoadCodeGenerationElements,
@@ -159,4 +160,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"FilterOutNonExistingAttributes": FilterOutNonExistingAttributes,
 	"FilterOutDuplicateAttributes":   FilterOutDuplicateAttributes,
 	"ExtractCriteriaSuggestions":     ExtractCriteriaSuggestions,
+
+	// rhsc
+	"SetCopilotGenerateRequestJsonBody": SetCopilotGenerateRequestJsonBody,
 }

@@ -63,6 +63,9 @@ var authFile string
 //go:embed pkg/externalfunctions/mcp.go
 var mcpFile string
 
+//go:embed pkg/externalfunctions/rhsc.go
+var rhscFile string
+
 func init() {
 	// initialize config
 	config.InitConfig([]string{}, map[string]interface{}{
@@ -95,6 +98,7 @@ func main() {
 		"ansys_materials":  ansysMaterialsFile,
 		"auth":             authFile,
 		"mcp":              mcpFile,
+		"rhsc":             rhscFile,
 	}
 
 	// Load function definitions
