@@ -308,13 +308,6 @@ func getTokenCount(modelName, text string) int {
 }
 
 func ExtractJson(text string) (json string) {
-	// Remove Markdown code block markers
-	text = strings.TrimSpace(text)
-	text = strings.TrimPrefix(text, "```json")
-	text = strings.TrimPrefix(text, "```JSON")
-	text = strings.TrimSuffix(text, "```")
-	text = strings.TrimSpace(text)
-
 	re := regexp.MustCompile("{[\\s\\S]*}")
 	matches := re.FindStringSubmatch(text)
 	if len(matches) >= 1 {
