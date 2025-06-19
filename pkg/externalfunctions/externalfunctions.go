@@ -88,9 +88,11 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"CreateGeneralDataExtractionDocumentObjects": CreateGeneralDataExtractionDocumentObjects,
 
 	// generic
-	"AssignStringToString": AssignStringToString,
-	"SendRestAPICall":      SendRestAPICall,
-	"PrintFeedback":        PrintFeedback,
+	"AssignStringToString":   AssignStringToString,
+	"SendRestAPICall":        SendRestAPICall,
+	"PrintFeedback":          PrintFeedback,
+	"ExtractJSONStringField": ExtractJSONStringField,
+	"GenerateUUID":           GenerateUUID,
 
 	// code generation
 	"LoadCodeGenerationElements":      LoadCodeGenerationElements,
@@ -157,4 +159,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"FilterOutNonExistingAttributes": FilterOutNonExistingAttributes,
 	"FilterOutDuplicateAttributes":   FilterOutDuplicateAttributes,
 	"ExtractCriteriaSuggestions":     ExtractCriteriaSuggestions,
+
+	// rhsc
+	"SetCopilotGenerateRequestJsonBody": SetCopilotGenerateRequestJsonBody,
 }

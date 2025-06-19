@@ -279,3 +279,21 @@ type EmailRequest struct {
 	Subject string `json:"subject"`
 	Content string `json:"content"`
 }
+
+type copilotGenerateRequest struct {
+	Query     string                 `json:"query"`
+	SessionID string                 `json:"session_id"`
+	Mode      string                 `json:"mode"`
+	Timeout   int                    `json:"timeout"`
+	Priority  int                    `json:"priority"`
+	Options   copilotGenerateOptions `json:"options"`
+}
+
+type copilotGenerateOptions struct {
+	AgentPreference  string `json:"agent_preference"`
+	SaveIntermediate bool   `json:"save_intermediate"`
+	SimilarityTopK   int    `json:"similarity_top_k"`
+	NoCritique       bool   `json:"no_critique"`
+	MaxIterations    int    `json:"max_iterations"`
+	ForceAzure       bool   `json:"force_azure"`
+}
