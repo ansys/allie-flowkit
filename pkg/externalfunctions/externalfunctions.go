@@ -92,7 +92,6 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"SendRestAPICall":        SendRestAPICall,
 	"PrintFeedback":          PrintFeedback,
 	"ExtractJSONStringField": ExtractJSONStringField,
-	"InterpolateString":      InterpolateString,
 	"GenerateUUID":           GenerateUUID,
 
 	// code generation
