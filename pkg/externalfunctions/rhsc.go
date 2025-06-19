@@ -24,7 +24,6 @@ package externalfunctions
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
 // SetGenerateRequestJsonBody creates a JSON body for the generate request to RHSC Copilot.
@@ -81,6 +80,6 @@ func SetCopilotGenerateRequestJsonBody(
 	}
 
 	jsonBody = string(bytes)
-	fmt.Printf("Generated JSON body for Copilot Generate Request: %s\n", jsonBody)
+
 	return jsonBody
 }
