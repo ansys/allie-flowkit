@@ -1,0 +1,167 @@
+.. _basic_usage:
+
+Basic Usage
+===========
+
+ The AALI Agent handles communication across the AALI system components, supporting various workflow types  
+ (:ref:`workflow_types`) and enabling interaction through websocket connections or the AALI Chat interface.
+
+----
+
+.. card:: Connect to the AALI Agent
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   After choosing a workflow, you can connect to the AALI Agent by creating a websocket connection.
+
+   Example using `wscat`:
+
+   .. code-block:: bash
+
+      wscat -c ws://<agent-host>:<agent-port>
+
+   👉 **Recommended**: Use AALI Chat, which manages connection setup and message flow automatically.
+
+   .. note::
+      You can also use the `AALI Python client library <https://github.com/ansys/aali-clients-python>`_ to communicate with the agent programmatically.
+
+----
+
+.. card:: Connect to a Workflow
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   After connection, send a `context` message:
+
+   .. code-block:: json
+
+      {
+          "session_type": "workflow",
+          "workflow_id": "<workflow_id>",
+          "variables": {
+              "variable1": "value1",
+              "variable2": "value2"
+          }
+      }
+
+   **Supported context properties:**
+
+   - `session_type`: `"workflow"` (default) or `"exec"`
+   - `workflow_id`: ID of the workflow to execute
+   - `exec_id`, `api_key`: Required for `exec` sessions
+   - `jwt_token`: Required if authentication is enabled
+   - `variables`: Optional dictionary of initial workflow inputs
+
+   If valid, the agent responds:
+
+   .. code-block:: json
+
+      {
+          "connectionStatus": "success"
+      }
+
+----
+
+.. card:: Interact Within the Workflow
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   Once the workflow runs and reaches a `chat_interface` node, you receive a response.  
+   If no such node exists, the workflow completes silently after `context`.
+
+   **Single-message response:**
+
+   .. code-block:: json
+
+      {
+          "instruction_id": "<instruction_id>",
+          "type": "message",
+          "chat_data": "<message>",
+          "code_validation": "unvalidated"
+      }
+
+   **Streamed response:**
+
+   .. code-block:: json
+
+      {
+          "instruction_id": "<instruction_id>",
+          "type": "stream",
+          "is_last": false,
+          "position": 1,
+          "chat_data": "<stream message>",
+          "code_validation": "unvalidated"
+      }
+
+   **Reply to a message:**
+
+   .. code-block:: json
+
+      {
+          "instruction_id": "<instruction_id>",
+          "type": "message",
+          "input": "<user message>"
+      }
+
+   **Error message format:**
+
+   .. code-block:: json
+
+      {
+          "type": "error",
+          "error": {
+              "code": "<error code>",
+              "message": "<error message>"
+          }
+      }
+
+----
+
+.. card:: Modify Workflow Variables
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   **At startup (in `context`):**
+
+   .. code-block:: json
+
+      {
+          "session_type": "workflow",
+          "workflow_id": "<workflow_id>",
+          "variables": {
+              "variable1": "value1"
+          }
+      }
+
+   **During execution:**
+
+   .. code-block:: json
+
+      {
+          "instruction_id": "<instruction_id>",
+          "type": "set_variable_values",
+          "variable_values": {
+              "variable1": "value1"
+          }
+      }
+
+   **Query exposed variables:**
+
+   .. code-block:: json
+
+      {
+          "instruction_id": "<instruction_id>",
+          "type": "get_variable_values"
+      }
+
+   **Response format:**
+
+   .. code-block:: json
+
+      {
+          "instruction_id": "<instruction_id>",
+          "type": "variable_values",
+          "variable_values": {
+              "variable1": "value1"
+          }
+      }

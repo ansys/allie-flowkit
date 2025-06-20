@@ -1,0 +1,35 @@
+.. _aali_agent_docs_index:
+
+Aali Agent Documentation
+========================
+
+**AALI Agent** is the core process orchestrator of the AALI system. It manages workflow lifecycles, coordinates communication with other services, and ensures execution reliability across backend components.
+
+----
+
+.. grid:: 1
+   :gutter: 3
+
+   .. grid-item-card:: :material-regular:`directions_run;35px` Getting Started
+      :text-align: center
+      :class-card: sd-shadow-sm sd-rounded-1
+      :link: getting_started/index
+      :link-type: doc
+
+      Step-by-step instructions to build the agent, configure runtime settings, and launch the process locally or in Docker.
+
+   .. grid-item-card:: :material-regular:`psychology;35px` User Guide
+      :text-align: center
+      :class-card: sd-shadow-sm sd-rounded-1
+      :link: user_guide/index
+      :link-type: doc
+
+      Learn how the agent handles workflows, manages lifecycle events, and interacts with FlowKit, Exec, and KVDB.
+
+   .. grid-item-card:: :material-regular:`bolt;35px` Advanced Topics
+      :text-align: center
+      :class-card: sd-shadow-sm sd-rounded-1
+      :link: advanced/index
+      :link-type: doc
+
+      Explore the internal API structure, environment configs, and extension points for production integration.

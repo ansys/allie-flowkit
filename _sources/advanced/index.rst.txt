@@ -1,0 +1,41 @@
+.. _advanced_index:
+
+Advanced Topics
+===============
+
+Explore advanced features and internal logic of the AALI Agent system.
+
+.. grid:: 2
+   :gutter: 2 3 3 4
+
+   .. grid-item-card:: :material-regular:`architecture;32px` Agent Architecture
+      :link: agent_architecture
+      :link-type: doc
+      :text-align: left
+      :class-card: sd-shadow-sm sd-rounded-1 sd-equal-height
+
+      How the agent communicates with FlowKit, Exec, KVDB, and more.
+
+   .. grid-item-card:: :material-regular:`bolt;32px` Execution Control
+      :link: execution_control
+      :link-type: doc
+      :text-align: left
+      :class-card: sd-shadow-sm sd-rounded-1 sd-equal-height
+
+      How the agent manages instruction flow, fallback logic, and control paths.
+
+   .. grid-item-card:: :material-regular:`schema;32px` API Reference
+      :link: api_reference
+      :link-type: doc
+      :text-align: left
+      :class-card: sd-shadow-sm sd-rounded-1 sd-equal-height
+
+      Detailed documentation of agent modules and internal Go packages.
+
+   .. grid-item-card:: :material-regular:`bug_report;32px` Troubleshooting
+      :link: troubleshooting
+      :link-type: doc
+      :text-align: left
+      :class-card: sd-shadow-sm sd-rounded-1 sd-equal-height
+
+      Common issues, agent startup failures, fallback behavior, and debugging guidance.

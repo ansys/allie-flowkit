@@ -1,0 +1,45 @@
+.. _workflow_types:
+
+Workflow Types
+==============
+
+ The AALI Agent supports both pre-defined (built-in) workflows and custom workflows defined by users.  
+ Each workflow represents a series of steps executed in sequence to fulfill a task.
+
+----
+
+.. card:: Provided Workflows
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   The AALI Agent includes three built-in workflows, each tailored for a different purpose:
+
+   **Standard Workflow**  
+   Generates Python code snippets based on user input. You specify a `collection` (e.g. PyMAPDL)  
+   and can optionally set `keywords` or enable `validateCode`. The agent returns executable code.
+
+   **General Workflow**  
+   Generates general-purpose text responses not tied to any specific PyAnsys library.  
+   It operates similarly to the standard workflow, but focuses on conversational outputs.
+
+   **Data Extraction Workflow**  
+   Extracts data from sources like local storage or GitHub, storing it in a target database.  
+   Before use, you must configure this workflow using the  
+   `AALI Agent Configurator <https://github.com/ansys/aali-agent-configurator>`_  
+   to provide authentication tokens and extraction parameters.
+
+----
+
+.. card:: Custom Workflows
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   Custom workflows allow you to define your own execution logic. Using the  
+   `AALI Agent Configurator <https://github.com/ansys/aali-agent-configurator>`_, you can:
+
+   #. Define the ordered list of steps the workflow should execute.
+   #. Configure workflow nodes and their corresponding variables.
+   #. Set default values and logic for runtime overrides.
+
+   As described in :ref:`basic_usage`, you can modify any exposed workflow variable  
+   at startup or during execution to adapt the workflow’s behavior dynamically.

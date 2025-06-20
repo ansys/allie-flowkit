@@ -1,0 +1,54 @@
+.. _workflow_design:
+
+Workflow Design
+===============
+
+Here is how to design and define a new workflow for the AALI Agent using the Agent Configurator.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Workflow Structure
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      A workflow consists of nodes, connected in a logical order. Each node has:
+
+      - A **name**
+      - A **type** (e.g., ``exec``, ``chat_interface``, ``fallback``)
+      - Optional **inputs** and **outputs**
+
+      The agent walks through this structure based on instruction flow.
+
+   .. grid-item-card:: Node Types
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Core node types include:
+
+      - ``chat_interface``: handles front-end interaction  
+      - ``exec``: invokes execution environment  
+      - ``llm_call``: sends request to LLM Handler  
+      - ``condition``: branches the flow  
+      - ``fallback``: defines a path if the prior node fails  
+
+   .. grid-item-card:: Exposing Variables
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      You can expose variables at the workflow level (e.g., ``collection``, ``validateCode``, ``keywords``).  
+      Variables are injected during context setup and can be modified at runtime by the client.
+
+   .. grid-item-card:: Fallback Logic
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Any node can define a ``fallback_node`` to redirect execution if it fails.  
+      This makes workflows more robust by providing recovery paths and alternative logic trees.
+
+----
+
+To build a workflow, use the Agent Configurator and export your definition into the Config service.  
+You can also validate JSON format manually, or preview node graphs in the Web UI.

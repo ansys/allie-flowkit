@@ -1,0 +1,46 @@
+.. _agent_architecture:
+
+Agent Architecture
+==================
+
+The AALI Agent is the central orchestrator of the entire AALI system.  
+Its job is to route, validate, and coordinate execution across several connected services.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Execution Backends
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      The agent interfaces with multiple services to execute instructions and workflows:
+
+      - **FlowKit**: Executes Python-based logic, routes instructions, returns state.
+      - **Exec**: WebSocket-based process controller for isolated task execution.
+      - **KVDB**: Key-value in-memory database used for runtime session memory and workflow state.
+
+   .. grid-item-card:: Configuration + Definition Sources
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      These sources help the agent define what a workflow is, where it runs, and what parameters it expects:
+
+      - **Config Service**: Loads workflow definitions, environment defaults, and agent runtime settings.
+      - **Agent Variables**: Preloaded or injected at runtime, allowing workflows to branch, validate, or adapt.
+
+   .. grid-item-card:: Communication & Integration
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      The agent exposes a WebSocket layer and communicates through structured, versioned JSON instructions:
+
+      - **Chat Layer**: Any frontend (like AALI Chat) connects via WebSocket to issue instructions and get replies.
+      - **Context Management**: The agent parses context payloads and uses them to initialize or modify workflows.
+      - **Instruction Routing**: Messages are routed internally to the correct service via `instruction_id`.
+
+----
+
+The architecture is modular, asynchronous, and designed to handle fallback logic, streaming outputs,  
+and variable resolution across components. It makes the AALI Agent a powerful core in distributed LLM orchestration.

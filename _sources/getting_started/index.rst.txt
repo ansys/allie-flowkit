@@ -1,0 +1,35 @@
+.. _aali_agent_getting_started:
+
+Getting Started
+===============
+
+This section describes how to install and configure the AALI Agent.  
+You can install it from scratch, deploy it via Docker, or download the latest release.
+
+
+.. grid:: 2
+   :gutter: 3
+
+   .. grid-item-card:: :material-regular:`terminal;32px` Install from Scratch
+      :link: from_scratch
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Instructions to compile and configure AALI Agent from source using the Go toolchain.
+
+   .. grid-item-card:: :material-regular:`rocket;32px` Deploy as a Docker Container
+      :link: docker_container
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Guide to build the agent Docker image and run it in isolated containerized environments.
+
+   .. grid-item-card:: :material-regular:`download;32px` Download Latest Release
+      :link: latest_release
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Direct download instructions for prebuilt AALI Agent binaries for your system.

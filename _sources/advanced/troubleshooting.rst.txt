@@ -1,0 +1,43 @@
+.. _troubleshooting:
+
+Troubleshooting
+===============
+
+Here are common issues encountered when running or integrating the AALI Agent, along with suggested resolutions and debugging tips.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Agent fails to start
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      - Check that the ``config.yaml`` file exists and is correctly formatted.  
+      - Ensure required backend endpoints (e.g. LLM Handler, Exec, KVDB) are reachable and healthy.  
+      - Try running ``go build`` manually and inspect for any build-time errors.
+
+   .. grid-item-card:: WebSocket session hangs or disconnects
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      - Ensure the client sends a valid ``context`` message before any instruction.  
+      - Confirm the agent logs show connection activity and payload handling.  
+      - Check for broken or reused ``instruction_id`` values in multi-message streams.
+
+   .. grid-item-card:: Workflow does not progress
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      - Verify that each workflow node has a valid ``type``, ``name``, and expected inputs.  
+      - Ensure that fallback logic is defined in case of failure.  
+      - Enable debug mode to trace routing between agent and execution backends.
+
+   .. grid-item-card:: LLM or Exec returns empty or null
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      - Check that the input payloads are complete and contextually valid.  
+      - Review backend logs (LLM Handler, Exec) for errors or validation issues.  
+      - Test individual steps with external tools like ``wscat`` to isolate the service.

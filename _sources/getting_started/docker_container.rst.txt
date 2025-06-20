@@ -1,0 +1,71 @@
+.. _docker_container:
+
+Deploy as a Docker Container
+============================
+
+Find here how to build and run the AALI Agent in a Docker container,  
+including log access and optional configuration file sharing.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Build the Container
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Use the included `Dockerfile` to build the image:
+
+      .. code:: bash
+
+         # From the root of the repository
+         docker build -f docker/Dockerfile -t ghcr.io/ansys/aali-agent:latest .
+
+   .. grid-item-card:: Run the Container
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Run the container and expose the default port:
+
+      .. code:: bash
+
+         docker run -it -d --rm -p 8080:8080 --name aali-agent ghcr.io/ansys/aali-agent:latest
+
+      To use a custom configuration file:
+
+      .. code:: bash
+
+         docker run -it -d --rm -p 8080:8080 \
+           -v /path/to/config.yaml:/app/config.yaml \
+           --name aali-agent \
+           ghcr.io/ansys/aali-agent:latest
+
+      If no configuration file is provided, the container will default to using the  
+      example `config/config.yaml <https://github.com/ansys/aali-agent/blob/main/config/config.yaml>`_ file.
+
+   .. grid-item-card:: Request the Logs
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      To view the logs from the running container:
+
+      .. code:: bash
+
+         docker logs aali-agent
+
+      To stream logs in real-time:
+
+      .. code:: bash
+
+         docker logs -f aali-agent
+
+   .. grid-item-card:: Stop the Container
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      To stop the running container:
+
+      .. code:: bash
+
+         docker stop aali-agent

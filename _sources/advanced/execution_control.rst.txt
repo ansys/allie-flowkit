@@ -1,0 +1,49 @@
+.. _execution_control:
+
+Execution Control
+=================
+
+The AALI Agent manages execution flow using an internal queue and routing logic.  
+It ensures that instructions are processed in order, can fail gracefully, and support dynamic behavior.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Instruction Routing & Matching
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      The agent uses ``instruction_id`` to match incoming responses with active workflow states.  
+      It routes instructions to the appropriate handler (e.g. Exec, FlowKit) and expects confirmation  
+      responses to maintain reliable flow control.
+
+   .. grid-item-card:: Fallback Handling
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      If a step fails or is not fulfilled by the expected backend, fallback paths defined in the  
+      workflow definition are triggered. These allow alternative logic to execute, such as retries,  
+      secondary calls, or error messages.
+
+   .. grid-item-card:: Variable Injection & Runtime Adaptation
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Workflows can expose variables to be injected at runtime via context payloads.  
+      These variables influence branching logic, enable runtime overrides, and support  
+      dynamic workflow shaping based on user input or external state.
+
+   .. grid-item-card:: Streaming vs Non-Streaming Output
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      The agent supports both single-message and streamed responses.  
+      In streamed mode, intermediate messages are sent with ``position`` and ``is_last`` flags  
+      to control incremental updates — essential for live UIs and long operations.
+
+----
+
+This orchestration layer allows workflows to function across infrastructure boundaries with full control,  
+adaptability, and fallback logic baked into the execution model.

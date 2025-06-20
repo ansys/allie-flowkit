@@ -1,0 +1,69 @@
+.. _latest_release:
+
+Download and Use the Latest Release
+===================================
+
+This guide shows how to download the latest AALI Agent release, configure it, and launch it on your OS.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Download the Latest Release
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      The latest release includes:
+
+      - Source code
+      - Executable for Windows (`aali-agent-<VERSION>.exe`)
+      - Executable for Linux (`aali-agent-<VERSION>`)
+
+      Download from the  
+      `Latest AALI Agent Release <https://github.com/ansys/aali-agent/releases/latest>`_.
+
+      You can also browse all versions on the  
+      `AALI Agent Releases Page <https://github.com/ansys/aali-agent/releases>`_.
+
+   .. grid-item-card:: Set Up the Configuration File
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      The AALI Agent requires a valid `config.yaml` file. You can provide it in one of two ways:
+
+      - Place it in the **same directory** as the executable.
+      - Set the environment variable `AALI_CONFIG_PATH` to its location.
+
+      If no config is found, the agent uses the  
+      default `config/config.yaml <https://github.com/ansys/aali-agent/blob/main/config/config.yaml>`_.
+
+   .. grid-item-card:: Start the AALI Agent
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Run the executable depending on your OS:
+
+      .. tab-set::
+
+         .. tab-item:: Linux
+
+            .. code-block:: bash
+
+               chmod +x aali-agent-<VERSION>
+               ./aali-agent-<VERSION>
+
+         .. tab-item:: Windows
+
+            .. code-block:: pwsh
+
+               aali-agent-<VERSION>.exe
+
+      If successful, the terminal output should look like this:
+
+      .. code-block:: bash
+
+         ...
+         2023/12/04 11:36:37 AALIAgent version: ...
+         2023/12/04 11:36:37 Registering auxiliary endpoints and workflows...
+         2023/12/04 11:36:37 WebSocket service is listening on port 8080...

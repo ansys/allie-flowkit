@@ -1,0 +1,42 @@
+.. _user_guide:
+
+User Guide
+==========
+
+This section provides an overview of the AALI Agent and describes workflow types,  
+workflow creation, and basic usage for interacting with the system.
+
+.. grid:: 2
+   :gutter: 2 3 3 4
+
+   .. grid-item-card:: :material-regular:`visibility;32px` Overview
+      :link: overview
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Provides an overview of the AALI Agent, describing key functionalities and how it works.
+
+   .. grid-item-card:: :material-regular:`apps;32px` Workflow Types
+      :link: workflow_types
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Describes the different workflow types supported and executed by the AALI Agent.
+
+   .. grid-item-card:: :material-regular:`build_circle;32px` Workflow Design
+      :link: workflow_design
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Learn how to define new workflows using nodes, fallback paths, and exposed variables.
+
+   .. grid-item-card:: :material-regular:`checklist;32px` Basic Usage
+      :link: basic_usage
+      :link-type: doc
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Outlines how to start workflows, manage executions, and interact with related backend services.

@@ -1,0 +1,42 @@
+.. _api_reference:
+
+API Reference
+=============
+
+.. vale off
+
++-------------------------------------------------------------+
+| Module                                                      |
++=============================================================+
+| `auth <auth/index.html>`__                                  |
++-------------------------------------------------------------+
+| `execconnection <exec/execconnection/index.html>`__         |
++-------------------------------------------------------------+
+| `execfiles <exec/execfiles/index.html>`__                   |
++-------------------------------------------------------------+
+| `execmongodb <exec/execmongodb/index.html>`__               |
++-------------------------------------------------------------+
+| `execstructs <exec/execstructs/index.html>`__               |
++-------------------------------------------------------------+
+| `internalstates <internalstates/index.html>`__              |
++-------------------------------------------------------------+
+| `mongodb <mongodb/index.html>`__                            |
++-------------------------------------------------------------+
+| `shared <shared/index.html>`__                              |
++-------------------------------------------------------------+
+| `webserver <webserver/index.html>`__                        |
++-------------------------------------------------------------+
+| `workflowapi <workflows/workflowapi/index.html>`__          |
++-------------------------------------------------------------+
+| `workflowbinaries <workflows/workflowbinaries/index.html>`__|
++-------------------------------------------------------------+
+| `workflowhelper <workflows/workflowhelper/index.html>`__    |
++-------------------------------------------------------------+
+| `workflowstore <workflows/workflowstore/index.html>`__      |
++-------------------------------------------------------------+
+| `workflowstructs <workflows/workflowstructs/index.html>`__  |
++-------------------------------------------------------------+
+| `workflowworkers <workflows/workflowworkers/index.html>`__  |
++-------------------------------------------------------------+
+
+.. vale on

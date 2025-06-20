@@ -1,0 +1,50 @@
+.. _overview:
+
+Overview
+========
+
+ The `AALI <https://aali.docs.pyansys.com/>`_ system provides an LLM-based application  
+ designed to deliver tailored responses to user queries involving PyAnsys libraries.  
+ It is composed of multiple components, each handling a specific part of the process.
+
+ Interacting with these components individually requires boilerplate logic  
+ and internal API knowledge — which is where the **AALI Agent** steps in.
+
+----
+
+.. card:: The Purpose of the AALI Agent
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   The AALI Agent abstracts complexity across the system and provides a unified API for managing workflows.
+
+   It is responsible for:
+
+   - Communicating with the AALI Chat or other chat interfaces
+   - Handling LLM requests via AALI LLM Handler (vector embedding, keyword extraction, completions)
+   - Communicating with AALI DB for similarity searches
+   - Connecting to AALI Exec for remote code execution
+   - Performing code validation when needed
+
+----
+
+.. card:: Customization and Extensibility
+   :class-card: sd-shadow-sm sd-rounded-1
+   :text-align: left
+
+   The AALI Agent is built around customizable **workflows**, each defining  
+   a sequence of operations to fulfill a task. Examples include:
+
+   - **Standard workflow**:
+     1. Receive query
+     2. Embed vectors
+     3. Extract keywords
+     4. Perform similarity search
+     5. Generate final query
+     6. Call chat completion
+     7. (Optional) Validate generated code
+
+   - **Custom workflow**:
+     Developers can define their own logic and execution flow when running the agent in development mode.
+
+   For more details, see :ref:`workflow_types`.

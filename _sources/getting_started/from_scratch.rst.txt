@@ -1,0 +1,98 @@
+.. _from_scratch:
+
+Install the AALI Agent from Scratch
+===================================
+
+This guide walks you through setting up the AALI Agent from source.  
+You'll install required tools, clone the repository, configure your environment, and run the agent.
+
+----
+
+.. grid:: 1
+   :gutter: 2
+
+   .. grid-item-card:: Install Git and Go
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Before you can run the AALI Agent, you must install `Git <https://git-scm.com/>`_  
+      and the `Go programming language <https://go.dev/doc/>`_. Follow the steps for your OS:
+
+      .. tab-set::
+
+         .. tab-item:: Windows
+
+            #. Install `Git for Windows <https://git-scm.com/download/win>`_  
+            #. Install Go via the `official Windows guide <https://go.dev/doc/install>`_
+
+         .. tab-item:: Linux
+
+            .. code:: bash
+
+               apt update
+               apt install git
+               snap install go --classic
+
+         .. tab-item:: Mac
+
+            .. code:: bash
+
+               brew install git
+               brew install go
+
+   .. grid-item-card:: Clone the Repository
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      Once Git and Go are installed, clone the repository:
+
+      .. code:: bash
+
+         git clone https://github.com/ansys/aali-agent.git
+
+      If the repository is private, make sure you have the proper access permissions.
+
+   .. grid-item-card:: Set Up the Configuration File
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      You need a valid `config.yaml` file to run the agent.  
+      An example is available in the  
+      `config/config.yaml <https://github.com/ansys/aali-agent/blob/main/config/config.yaml>`_ file:
+
+      .. code:: yaml
+
+         # LLM handler configuration
+         LLM_HANDLER_ENDPOINT: ws://1.1.1.1:80
+
+         # Knowledge DB configuration
+         KNOWLEDGE_DB_ENDPOINT: http://1.1.1.1:80
+
+         # Executor configuration
+         EXECUTOR_ENDPOINT: ws://1.1.1.1:3000
+
+         # Logging settings
+         AGENT_DEBUG_LOGS: true
+
+   .. grid-item-card:: Start the AALI Agent
+      :class-card: sd-shadow-sm sd-rounded-1
+      :text-align: left
+
+      With everything configured, start the service using:
+
+      .. code:: bash
+
+         cd aali-agent
+
+         # Clean and build
+         go clean
+         go build
+
+         # Run on Linux
+         ./aali-agent
+
+         # Run on Windows
+         .\aali-agent.exe
+
+      Once the AALI Agent starts, you're ready to interact with it.  
+      For details on usage, see :ref:`basic_usage`.
