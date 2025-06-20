@@ -59,7 +59,8 @@ func SerializeResponse(criteriaSuggestions []sharedtypes.MaterialCriterionWithGu
 
 	responseJson, err := json.Marshal(response)
 	if err != nil {
-		panic("Failed to serialize suggested criteria into json: " + err.Error())
+		logging.Log.Debugf(&logging.ContextMap{}, "Failed to serialize suggested criteria into json: %v", err)
+		panic("Failed to serialize suggested criteria into json")
 	}
 
 	return string(responseJson)
@@ -87,7 +88,8 @@ func AddGuidsToAttributes(criteriaSuggestions []sharedtypes.MaterialLlmCriterion
 		guid, exists := attributeMap[lowerAttrName]
 
 		if !exists {
-			panic("Could not find attribute with name " + lowerAttrName)
+			logging.Log.Debugf(&logging.ContextMap{}, "Could not find attribute to match: %s", lowerAttrName)
+			panic("Could not find attribute to match")
 		}
 
 		criteriaWithGuids = append(criteriaWithGuids, sharedtypes.MaterialCriterionWithGuid{
@@ -123,8 +125,7 @@ func FilterOutNonExistingAttributes(criteriaSuggestions []sharedtypes.MaterialLl
 		if attributeMap[strings.ToLower(suggestion.AttributeName)] {
 			filteredCriteria = append(filteredCriteria, suggestion)
 		} else {
-			logging.Log.Warnf(&logging.ContextMap{}, "Filtered out non existing attribute")
-			logging.Log.Debugf(&logging.ContextMap{}, "Attribute name: %s", suggestion.AttributeName)
+			logging.Log.Debugf(&logging.ContextMap{}, "Filtered out non existing attribute: %s", suggestion.AttributeName)
 		}
 	}
 
@@ -182,8 +183,7 @@ func ExtractCriteriaSuggestions(llmResponse string) (criteriaSuggestions []share
 	}
 
 	if len(criteria.Criteria) == 0 {
-		logging.Log.Infof(&logging.ContextMap{}, "Deserialized JSON successfully but found 0 criteria.")
-		logging.Log.Debugf(&logging.ContextMap{}, "%+v", criteria)
+		logging.Log.Debugf(&logging.ContextMap{}, "Deserialized JSON successfully but found 0 criteria. Object: %+v", criteria)
 	} else {
 		logging.Log.Debugf(&logging.ContextMap{}, "Successfully extracted %d criteria.", len(criteria.Criteria))
 	}
@@ -256,7 +256,7 @@ func PerformMultipleGeneralRequestsAndExtractAttributesWithOpenAiTokenOutput(inp
 	logging.Log.Debugf(&logging.ContextMap{}, "Total token count: %d", totalTokenCount)
 
 	if len(allCriteria) == 0 {
-		logging.Log.Warnf(&logging.ContextMap{}, "No valid criteria found in any response")
+		logging.Log.Debugf(&logging.ContextMap{}, "No valid criteria found in any response")
 		return []sharedtypes.MaterialLlmCriterion{}, outputTokenCount
 	}
 
@@ -314,7 +314,6 @@ func ExtractJson(text string) (json string) {
 		return strings.TrimSpace(matches[0])
 	}
 
-	logging.Log.Warnf(&logging.ContextMap{}, "No valid JSON found in response")
-	logging.Log.Debugf(&logging.ContextMap{}, "%s", text)
+	logging.Log.Debugf(&logging.ContextMap{}, "No valid JSON found in response %s", text)
 	return ""
 }
