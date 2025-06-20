@@ -154,13 +154,13 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"GetSystemPrompt": GetSystemPrompt,
 
 	// materials
-	"SerializeResponse":              	SerializeResponse,
-	"AddGuidsToAttributes":           	AddGuidsToAttributes,
-	"FilterOutNonExistingAttributes": 	FilterOutNonExistingAttributes,
-	"FilterOutDuplicateAttributes":   	FilterOutDuplicateAttributes,
-	"ExtractCriteriaSuggestions":     	ExtractCriteriaSuggestions,
-	"LogRequestSuccess": 			  	LogRequestSuccess,
-	"LogRequestFailed": 			  	LogRequestFailed,
+	"SerializeResponse":                SerializeResponse,
+	"AddGuidsToAttributes":             AddGuidsToAttributes,
+	"FilterOutNonExistingAttributes":   FilterOutNonExistingAttributes,
+	"FilterOutDuplicateAttributes":     FilterOutDuplicateAttributes,
+	"ExtractCriteriaSuggestions":       ExtractCriteriaSuggestions,
+	"LogRequestSuccess":                LogRequestSuccess,
+	"LogRequestFailed":                 LogRequestFailed,
 	"LogRequestFailedDebugWithMessage": LogRequestFailedDebugWithMessage,
 	"PerformMultipleGeneralRequestsAndExtractAttributesWithOpenAiTokenOutput": PerformMultipleGeneralRequestsAndExtractAttributesWithOpenAiTokenOutput,
 
