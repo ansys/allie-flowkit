@@ -301,7 +301,6 @@ func getTokenCount(modelName, text string) int {
 	count, err := openAiTokenCount(modelName, text)
 	if err != nil {
 		errorMessage := fmt.Sprintf("Error getting output token count: %v", err)
-		logging.Log.Errorf(&logging.ContextMap{}, "%v", errorMessage)
 		panic(errorMessage)
 	}
 	return count
