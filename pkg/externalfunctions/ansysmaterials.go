@@ -317,3 +317,49 @@ func ExtractJson(text string) (json string) {
 	logging.Log.Debugf(&logging.ContextMap{}, "No valid JSON found in response %s", text)
 	return ""
 }
+
+// LogRequestSuccess writes a .Info log entry indicating that a request was completed successfully.
+//
+// Tags:
+//   - @displayName: Log request success
+//
+// Parameters:
+//   - none
+//
+// Returns:
+//   - none
+func LogRequestSuccess() {
+	logging.Log.Infof(&logging.ContextMap{}, "Request successful")
+	return
+}
+
+// LogRequestFailed writes a .Info log entry indicating that a request was not completed successfully.
+//
+// Tags:
+//   - @displayName: Log request failed
+//
+// Parameters:
+//   - none
+//
+// Returns:
+//   - none
+func LogRequestFailed() {
+	logging.Log.Infof(&logging.ContextMap{}, "Request failed")
+	return
+}
+
+// LogRequestFailedDebugWithMessage writes a .Debug log entry indicating that a request was not completed successfully with additional message.
+//
+// Tags:
+//   - @displayName: Log request failed with message
+//
+// Parameters:
+//   - msg1: the first part of the debug message
+//   - msg2: the second part of the debug message
+//
+// Returns:
+//   - none
+func LogRequestFailedDebugWithMessage(msg1, msg2 string) {
+	logging.Log.Debugf(&logging.ContextMap{}, "Request failed:%s %s", msg1, msg2)
+	return
+}
