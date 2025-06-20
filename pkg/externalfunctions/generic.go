@@ -29,8 +29,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
+	"github.com/google/uuid"
 )
 
 // SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
@@ -131,4 +133,61 @@ func PrintFeedback(feedback sharedtypes.Feedback) {
 	}
 	// print json string to console
 	fmt.Println(string(jsonString))
+}
+
+// ExtractJSONStringField extracts a string field from a JSON string using a key path.
+// The key path is a dot-separated string that specifies the path to the field in the JSON object.
+//
+// Tags:
+//   - @displayName: Extract JSON String Field
+//
+// Parameters:
+//   - jsonStr: the JSON string to extract the field from
+//   - keyPath: the dot-separated path to the field in the JSON object
+//
+// Returns:
+//   - the value of the field as a string
+func ExtractJSONStringField(jsonStr string, keyPath string) string {
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &data); err != nil {
+		panic(fmt.Sprintf("Error unmarshalling JSON: %v", err))
+	}
+
+	keys := strings.Split(keyPath, ".")
+	var current interface{} = data
+
+	for _, key := range keys {
+		m, ok := current.(map[string]interface{})
+		if !ok {
+			panic(fmt.Sprintf("Expected map for key %q but got %T", key, current))
+		}
+		current, ok = m[key]
+		if !ok {
+			panic(fmt.Sprintf("Key %q not found in JSON", key))
+		}
+	}
+
+	// Convert final value to string
+	switch v := current.(type) {
+	case string:
+		return v
+	default:
+		// Try to marshal the value back to a JSON string
+		bytes, err := json.Marshal(v)
+		if err != nil {
+			panic(fmt.Sprintf("Unable to convert final value to string: %v", err))
+		}
+		return string(bytes)
+	}
+}
+
+// GenerateUUID generates a new UUID (Universally Unique Identifier).
+//
+// Tags:
+//   - @displayName: Generate UUID
+//
+// Returns:
+//   - a string representation of the generated UUID
+func GenerateUUID() string {
+	return strings.Replace(uuid.New().String(), "-", "", -1)
 }
