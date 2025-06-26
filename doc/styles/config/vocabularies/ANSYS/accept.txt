@@ -1,7 +1,0 @@
-AaliFlowKit
-Aali Flow Kit
-[Aa]llie
-[Aa]ali
-(?i)Ansys
-API
-externalfunctions
