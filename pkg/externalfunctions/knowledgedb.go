@@ -28,6 +28,7 @@ import (
 
 	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
 	qdrant_utils "github.com/ansys/aali-flowkit/pkg/privatefunctions/qdrant"
+	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"github.com/google/uuid"
@@ -188,6 +189,15 @@ func RetrieveDependencies(
 // Returns:
 //   - databaseResponse: the Neo4j response
 func GeneralGraphDbQuery(query string) []map[string]any {
+	// Initialize the graph database.
+	err := graphdb.Initialize(config.GlobalConfig.GRAPHDB_ADDRESS)
+	if err != nil {
+		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
+		logging.Log.Error(&logging.ContextMap{}, errMsg)
+		panic(errMsg)
+	}
+
+	// Execute the Cypher query.
 	res, err := graphdb.GraphDbDriver.WriteCypherQuery(query)
 	if err != nil {
 		logPanic(nil, "error executing cypher query: %q", err)

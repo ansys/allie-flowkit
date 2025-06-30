@@ -6,8 +6,6 @@ github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 h1:bvDV9
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24/go.mod h1:8o94RPi1/7XTJvwPpRSzSUedZrtlirdB3r9Z20bi2f8=
 github.com/AssemblyAI/assemblyai-go-sdk v1.7.0 h1:BoqkOoDyffe8z7JeQVO8H7I1Al3REyCDPUZjgRnMvbs=
 github.com/AssemblyAI/assemblyai-go-sdk v1.7.0/go.mod h1:ytTvsjAVL+nXZnzBfDagQ/LxDQaKL9W/eTiCo3ZuPJA=
-github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2 h1:+hDUZnYHHoXu05iXiJcL53MZW7raZZejB8ZtzVW7yyc=
-github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2/go.mod h1:49PyorVrwk6G+e8Vghvn7EkAS6wSPdXEu5a8iW2/vC8=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1 h1:DSDNVxqkoXJiko6x8a90zidoYqnYYa6c1MTzDKzKkTo=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1/go.mod h1:zGqV2R4Cr/k8Uye5w+dgQ06WJtEcbQG/8J7BB6hnCr4=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2 h1:F0gBpfdPLGsw+nsgk6aqqkZS1jiixa5WwFe3fk/T3Ys=
@@ -32,8 +30,8 @@ github.com/PuerkitoBio/goquery v1.9.2 h1:4/wZksC3KgkQw7SQgkKotmKljk0M6V8TUvA8Wb4
 github.com/PuerkitoBio/goquery v1.9.2/go.mod h1:GHPCaP0ODyyxqcNoFGYlAprUFH81NuRPd0GX3Zu2Mvk=
 github.com/andybalholm/cascadia v1.3.2 h1:3Xi6Dw5lHF15JtdcmAHD3i1+T8plmv7BQ/nsViSLyss=
 github.com/andybalholm/cascadia v1.3.2/go.mod h1:7gtRlve5FxPPgIgX36uWBX58OdBsSS6lUvCFb+h7KvU=
-github.com/ansys/aali-sharedtypes v1.0.3-0.20250610142045-6e43b4756735 h1:TcwzUikepZsYF5JYg9YJBggYxMaZRT/8kq+UgCxsA0g=
-github.com/ansys/aali-sharedtypes v1.0.3-0.20250610142045-6e43b4756735/go.mod h1:0EW/5tawNgU2UD4AVNhL59Ozspx/Hib3tAnXI4hEBbU=
+github.com/ansys/aali-sharedtypes v1.0.3-0.20250630132600-2dcf36f661a4 h1:6U0AkNxn17rlozAZWLes77kfk0eSiWdheGJpfUNMn5g=
+github.com/ansys/aali-sharedtypes v1.0.3-0.20250630132600-2dcf36f661a4/go.mod h1:0EW/5tawNgU2UD4AVNhL59Ozspx/Hib3tAnXI4hEBbU=
 github.com/aymerick/douceur v0.2.0 h1:Mv+mAeH1Q+n9Fr+oyamOlAkUNPWPlA8PPGR0QAaYuPk=
 github.com/aymerick/douceur v0.2.0/go.mod h1:wlT5vV2O3h55X9m7iVYN0TBM0NH/MmbLnd30/FjWUq4=
 github.com/cenkalti/backoff v2.2.1+incompatible h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=
