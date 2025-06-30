@@ -3,9 +3,7 @@ module github.com/ansys/aali-flowkit
 go 1.24.2
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/ai/azopenai v0.7.2
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1
-	github.com/ansys/aali-sharedtypes v1.0.3-0.20250610142045-6e43b4756735
+	github.com/ansys/aali-sharedtypes v1.0.3-0.20250630132600-2dcf36f661a4
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/pandodao/tokenizer-go v0.2.0
@@ -32,6 +30,7 @@ require (
 	cloud.google.com/go v0.121.1 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/AssemblyAI/assemblyai-go-sdk v1.7.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azsecrets v1.3.1 // indirect
