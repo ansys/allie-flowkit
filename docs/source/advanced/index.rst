@@ -3,7 +3,7 @@
 Advanced Topics
 ===============
 
-Explore architectural features, extensibility patterns, and debugging tools available in the Flowkit backend.
+Architectural features, extensibility patterns, and tools available in the Flowkit.
 
 .. grid:: 3
    :gutter: 2
@@ -42,7 +42,7 @@ Explore architectural features, extensibility patterns, and debugging tools avai
       :text-align: center
       :class-card: sd-shadow-sm sd-rounded-md
 
-      Fix GRPC issues, agent response problems, or function misconfigurations.
+      GRPC issues, agent response problems, or function misconfigurations.
 
    .. grid-item-card:: :material-regular:`build_circle;32px` API Reference
       :link: api_reference

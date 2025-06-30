@@ -55,3 +55,18 @@ _build/
 
 # Environment-specific
 .env
+
+# Extra
+.venv
+doc/_build
+/config.yaml
+/workflowStore/
+error.log
+
+
+# macOS system files
+.DS_Store
+
+
+
+

@@ -4,7 +4,7 @@
 Getting Started
 ===============
 
-This section explains how to install and run Aali Flowkit locally, so you can start registering and executing functions via GRPC.
+This section explains how to install and run Aali Flowkit locally.
 
 .. grid:: 2
    :gutter: 2

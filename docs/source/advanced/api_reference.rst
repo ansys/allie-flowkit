@@ -3,6 +3,9 @@
 API Reference
 =============
 
+.. note::
+   This page is a placeholder for future auto-generated API documentation.
+
 .. grid:: 1
    :gutter: 2
 
@@ -43,5 +46,3 @@ API Reference
       All functions must implement the `Run` handler.  
       If `Stream` is `true`, then `RunStream` should also be defined.
 
-.. note::
-   This page is a placeholder for future auto-generated API documentation.

@@ -4,7 +4,7 @@
 Aali Flowkit Documentation
 ==========================
 
-Aali Flowkit is the core toolbox of the AALI system. It exposes a GRPC server and provides a framework for defining, registering, and executing external functions. This guide walks you through setup, usage, and backend customization.
+Aali Flowkit is the core toolbox of the AALI system. It exposes a GRPC server and provides a framework for defining, registering, and executing external functions.
 
 ----
 
@@ -33,4 +33,4 @@ Aali Flowkit is the core toolbox of the AALI system. It exposes a GRPC server an
       :link: advanced/index
       :link-type: doc
 
-      Explore GRPC APIs, protofile structure, and deep agent integration.
+      Explore GRPC APIs, protofile structure, and agent integration.

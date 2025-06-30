@@ -4,7 +4,7 @@
 User Guide
 ==========
 
-Explore Flowkit's core features: how to register functions, manage input/output, invoke commands, and connect to the Agent.
+Flowkit's core features: how to register functions, manage input/output, invoke commands, and connect to the Agent.
 
 ----
 
@@ -53,7 +53,7 @@ Explore Flowkit's core features: how to register functions, manage input/output,
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: center
 
-      Use developer commands like `/reset` or `/summary`.
+      Use developer commands.
 
    .. grid-item-card:: :material-regular:`hub;32px` Agent Integration
       :link: agent_integration

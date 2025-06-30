@@ -1,7 +1,7 @@
 .. _troubleshooting:
 
-Troubleshooting
-===============
+Common Issues 
+=============
 
 .. grid:: 1
    :gutter: 2
