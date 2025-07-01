@@ -97,6 +97,9 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PrintFeedback":          PrintFeedback,
 	"ExtractJSONStringField": ExtractJSONStringField,
 	"GenerateUUID":           GenerateUUID,
+	"JsonPath":               JsonPath,
+	"StringConcat":           StringConcat,
+	"StringFormat":           StringFormat,
 
 	// code generation
 	"LoadCodeGenerationElements":      LoadCodeGenerationElements,
