@@ -640,6 +640,66 @@ func PerformGeneralRequestSpecificModelAndModelOptions(input string, history []s
 	return responseAsStr, nil
 }
 
+// PerformGeneralRequestSpecificModelModelOptionsAndImages performs a general request to LLM with a specific model including model options and images
+//
+// Tags:
+//   - @displayName: General LLM Request (Specific Models, Model Options & Images)
+//
+// Parameters:
+//   - input: the user input
+//   - history: the conversation history
+//   - isStream: the flag to indicate whether the response should be streamed
+//   - systemPrompt: the system prompt
+//   - modelId: the model ID
+//   - modelOptions: the model options
+//   - images: the images to include in the request
+//
+// Returns:
+//   - message: the response message
+//   - stream: the stream channel
+func PerformGeneralRequestSpecificModelModelOptionsAndImages(input string, history []sharedtypes.HistoricMessage, isStream bool, systemPrompt string, modelIds []string, modelOptions sharedtypes.ModelOptions, images []string) (message string, stream *chan string) {
+	// get the LLM handler endpoint
+	llmHandlerEndpoint := config.GlobalConfig.LLM_HANDLER_ENDPOINT
+
+	// Set up WebSocket connection with LLM and send chat request
+	responseChannel := sendChatRequest(input, "general", history, 0, systemPrompt, llmHandlerEndpoint, modelIds, &modelOptions, images)
+
+	// If isStream is true, create a stream channel and return asap
+	if isStream {
+		// Create a stream channel
+		streamChannel := make(chan string, 400)
+
+		// Start a goroutine to transfer the data from the response channel to the stream channel
+		go transferDatafromResponseToStreamChannel(&responseChannel, &streamChannel, false, false, "", 0, 0, "", "", "", false, "")
+
+		// Return the stream channel
+		return "", &streamChannel
+	}
+
+	// Close the response channel
+	defer close(responseChannel)
+
+	// else Process all responses
+	var responseAsStr string
+	for response := range responseChannel {
+		// Check if the response is an error
+		if response.Type == "error" {
+			panic(response.Error)
+		}
+
+		// Accumulate the responses
+		responseAsStr += *(response.ChatData)
+
+		// If we are at the last message, break the loop
+		if *(response.IsLast) {
+			break
+		}
+	}
+
+	// Return the response
+	return responseAsStr, nil
+}
+
 // PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput performs a general request to LLM with a specific model
 // and returns the token count using OpenAI token count model. Does not stream the response.
 //
@@ -1078,4 +1138,30 @@ func ShortenMessageHistory(history []sharedtypes.HistoricMessage, maxLength int)
 	}
 
 	return history[len(history)-maxLength:]
+}
+
+// CheckTokenLimitReached checks if the query exceeds the token limit for the specified model
+//
+// Tags:
+//   - @displayName: Check Token Limit Reached
+//
+// Parameters:
+//   - query: the query string
+//   - tokenLimit: the token limit
+//   - modelName: the name of the model to check against
+//
+// Returns:
+//   - tokenLimitReached: true if the token limit is reached, false otherwise
+func CheckTokenLimitReached(query string, tokenLimit int, modelName string, tokenLimitMessage string) (tokenLimitReached bool, responseMessage string) {
+	// Check if the query exceeds the token limit
+	tokenCount, err := openAiTokenCount(modelName, query)
+	if err != nil {
+		panic(fmt.Sprintf("Error counting tokens: %v", err))
+	}
+	if tokenCount > tokenLimit {
+		logging.Log.Warnf(&logging.ContextMap{}, "Query exceeds token limit: %d tokens, limit is %d tokens", tokenCount, tokenLimit)
+		return true, tokenLimitMessage
+	}
+
+	return false, ""
 }

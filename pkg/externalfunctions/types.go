@@ -200,6 +200,15 @@ type ACSSearchResponseCrtech struct {
 	IndexName           string  `json:"indexName"`
 }
 
+// AnsysGPTRetrieverModuleRequest represents the request structure for the Ansys GPT Retriever Module.
+type AnsysGPTRetrieverModuleRequest struct {
+	UserInput     string `json:"user_input"`
+	DataSource    string `json:"data_source"`
+	FilterPhysics string `json:"filter_physics"`
+	NumDocs       int    `json:"num_docs"`
+	Platform      string `json:"platform"`
+}
+
 // DataExtractionBranch represents the branch structure for the data extraction.
 type DataExtractionBranch struct {
 	Text             string
