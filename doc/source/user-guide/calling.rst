@@ -40,4 +40,3 @@ Calling Registered Functions
 
       - `output`: Result or stream output
       - `logs`: Structured log messages (optional)
-      - `

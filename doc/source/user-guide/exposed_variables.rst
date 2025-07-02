@@ -10,7 +10,7 @@ Exposed Variables
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Workflows often need to reuse values across nodes.
+      Workflows often need to reuse values across nodes.  
       Flowkit supports passing key-value pairs between steps using GRPC `input` and `output` maps.
 
       Examples:

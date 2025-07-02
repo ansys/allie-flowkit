@@ -12,7 +12,7 @@ Slash Commands
 
       Flowkit itself does **not** handle raw slash commands like `/reset` or `/summary`.
 
-      These commands are parsed and interpreted by the **AALI Agent** or client application.
+      These commands are parsed and interpreted by the **AALI Agent** or client application.  
       The agent then converts them into valid GRPC function calls and sends them to Flowkit.
 
    .. grid-item-card:: Function Dispatching

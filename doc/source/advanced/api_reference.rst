@@ -4,7 +4,7 @@ API Reference
 =============
 
 .. note::
-   This page is a placeholder for future auto-generated API documentation.
+   This page is a placeholder for auto-generated API documentation in development.
 
 .. grid:: 1
    :gutter: 2
@@ -43,5 +43,6 @@ API Reference
            RunStream   func(context.Context, *Request, ServerStream) error
          }
 
-      All functions must implement the `Run` handler.
+      All functions must implement the `Run` handler.  
       If `Stream` is `true`, then `RunStream` should also be defined.
+
