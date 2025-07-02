@@ -3,7 +3,7 @@ module github.com/ansys/aali-flowkit
 go 1.24.2
 
 require (
-	github.com/ansys/aali-sharedtypes v1.0.3-0.20250701071655-0c7a692c343d
+	github.com/ansys/aali-sharedtypes v1.0.3-0.20250702130656-22fbe6c19d34
 	github.com/google/go-github/v56 v56.0.0
 	github.com/google/uuid v1.6.0
 	github.com/pandodao/tokenizer-go v0.2.0
@@ -18,6 +18,7 @@ require (
 	golang.org/x/text v0.24.0
 	google.golang.org/grpc v1.72.0
 	gopkg.in/yaml.v2 v2.4.0
+	k8s.io/client-go v0.33.2
 	nhooyr.io/websocket v1.8.17
 )
 
@@ -64,7 +65,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
+	github.com/google/pprof v0.0.0-20241029153458-d1b30febd7db // indirect
 	github.com/gorilla/css v1.0.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3 // indirect
 	github.com/klauspost/compress v1.17.6 // indirect

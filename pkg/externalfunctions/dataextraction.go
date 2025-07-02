@@ -897,6 +897,11 @@ func StoreElementsInGraphDatabase(elements []sharedtypes.CodeGenerationElement) 
 		panic(errMsg)
 	}
 
+	err = graphdb.GraphDbDriver.CreateSchema()
+	if err != nil {
+		logPanic(ctx, "error error creating aali schema: %v", err)
+	}
+
 	// Add the elements to the graph database.
 	err = graphdb.GraphDbDriver.AddCodeGenerationElementNodes(elements)
 	if err != nil {
@@ -1322,6 +1327,11 @@ func StoreExamplesInGraphDatabase(examples []sharedtypes.CodeGenerationExample) 
 		panic(errMsg)
 	}
 
+	err = graphdb.GraphDbDriver.CreateSchema()
+	if err != nil {
+		logPanic(ctx, "error error creating aali schema: %v", err)
+	}
+
 	// Add the elements to the graph database.
 	err = graphdb.GraphDbDriver.AddCodeGenerationExampleNodes(examples)
 	if err != nil {
@@ -1592,6 +1602,11 @@ func StoreUserGuideSectionsInGraphDatabase(sections []sharedtypes.CodeGeneration
 		errMsg := fmt.Sprintf("error initializing graphdb: %v", err)
 		logging.Log.Error(ctx, errMsg)
 		panic(errMsg)
+	}
+
+	err = graphdb.GraphDbDriver.CreateSchema()
+	if err != nil {
+		logPanic(ctx, "error error creating aali schema: %v", err)
 	}
 
 	// Add the elements to the graph database.

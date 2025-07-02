@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/ansys/aali-flowkit/pkg/privatefunctions/graphdb"
+	"github.com/ansys/aali-sharedtypes/pkg/aali_graphdb"
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
@@ -547,6 +548,7 @@ func TestRetrieveDependencies(t *testing.T) {
 	logging.InitLogger(&setup.config)
 
 	require.NoError(graphdb.Initialize(setup.config.GRAPHDB_ADDRESS))
+	require.NoError(graphdb.GraphDbDriver.CreateSchema())
 	driver := graphdb.GraphDbDriver
 
 	// first add data
@@ -607,6 +609,7 @@ func TestGeneralGraphDbQuery(t *testing.T) {
 	logging.InitLogger(&setup.config)
 
 	require.NoError(graphdb.Initialize(setup.config.GRAPHDB_ADDRESS))
+	require.NoError(graphdb.GraphDbDriver.CreateSchema())
 	driver := graphdb.GraphDbDriver
 
 	// first add data
@@ -630,7 +633,65 @@ func TestGeneralGraphDbQuery(t *testing.T) {
 	require.NoError(driver.CreateUserGuideSectionRelationships(data))
 
 	// now make a query
-	res := GeneralGraphDbQuery("MATCH (n {parent:'1'}) RETURN n.name AS name")
+	res := GeneralGraphDbQuery("MATCH (n {parent:'1'}) RETURN n.name AS name", nil)
+	expected := []string{"1a", "1b"}
+	require.Len(res, len(expected))
+	for _, r := range res {
+		name := r["name"].(string)
+		assert.Contains(expected, name)
+	}
+}
+
+func TestGeneralGraphDbQueryWithParameters(t *testing.T) {
+	// setup containers
+	ctx := context.Background()
+
+	require := require.New(t)
+	assert := assert.New(t)
+
+	setup := setupFlowkitTestContainers(
+		t,
+		ctx,
+		flowkitTestContainersConfig{
+			qdrant:       false,
+			aaliEmbedder: false,
+			aaliLlm:      false,
+			aaliGraphDb:  true,
+		},
+	)
+	config.GlobalConfig = &setup.config
+	logging.InitLogger(&setup.config)
+
+	require.NoError(graphdb.Initialize(setup.config.GRAPHDB_ADDRESS))
+	require.NoError(graphdb.GraphDbDriver.CreateSchema())
+	driver := graphdb.GraphDbDriver
+
+	// first add data
+	data := []sharedtypes.CodeGenerationUserGuideSection{
+		{Name: "1", NextSibling: "2", Level: 0},
+		{Name: "1a", IsFirstChild: true, NextSibling: "1b", NextParent: "2", Parent: "1", Level: 1},
+		{Name: "1b", NextParent: "2", Parent: "1", Level: 1},
+		{Name: "2", NextSibling: "3", Level: 0},
+		{Name: "3", NextSibling: "4", Level: 0},
+		{Name: "3a", IsFirstChild: true, NextSibling: "3b", NextParent: "4", Parent: "3", Level: 1},
+		{Name: "3b", NextSibling: "3c", NextParent: "4", Parent: "3", Level: 1},
+		{Name: "3b1", IsFirstChild: true, NextSibling: "3b2", NextParent: "3c", Parent: "3b", Level: 2},
+		{Name: "3b2", NextParent: "3c", Parent: "3b", Level: 2},
+		{Name: "3c", NextSibling: "3d", NextParent: "4", Parent: "3", Level: 1},
+		{Name: "3d", NextParent: "4", Parent: "3", Level: 1},
+		{Name: "3d1", IsFirstChild: true, NextParent: "4", Parent: "3d", Level: 1},
+		{Name: "4", Level: 0},
+		{Name: "4a", IsFirstChild: true, Parent: "4", Level: 1},
+	}
+	require.NoError(driver.AddUserGuideSectionNodes(data))
+	require.NoError(driver.CreateUserGuideSectionRelationships(data))
+
+	// make a parameter map
+	paramMap := aali_graphdb.ParameterMap{}
+	AddGraphDbParameter(paramMap, "parent", "1", "string")
+
+	// now make a query
+	res := GeneralGraphDbQuery("MATCH (n {parent:$parent}) RETURN n.name AS name", paramMap)
 	expected := []string{"1a", "1b"}
 	require.Len(res, len(expected))
 	for _, r := range res {

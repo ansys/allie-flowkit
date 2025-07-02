@@ -33,6 +33,7 @@ import (
 
 	"github.com/ansys/aali-sharedtypes/pkg/sharedtypes"
 	"github.com/google/uuid"
+	"k8s.io/client-go/util/jsonpath"
 )
 
 // SendAPICall sends an API call to the specified URL with the specified headers and query parameters.
@@ -190,4 +191,82 @@ func ExtractJSONStringField(jsonStr string, keyPath string) string {
 //   - a string representation of the generated UUID
 func GenerateUUID() string {
 	return strings.Replace(uuid.New().String(), "-", "", -1)
+}
+
+// JsonPath extracts some data from an arbitrary data structure using a JSONPath pattern
+//
+// Tags:
+//   - @displayName: JSON Path
+//
+// Parameters:
+//   - pat (string): The JSON Path pattern
+//   - data (any): The data to extract from
+//   - oneResult (bool): Whether you are expecting to extract 1 result or an array of results
+//     If you set oneResult=true but there are not exactle 1 result in the output, you will
+//     receive an error. This should only be set if the result is guaranteed to have length 1.
+//
+// Returns
+//   - The extracted data. If oneResult=false, this will be an array of any.
+func JsonPath(pat string, data any, oneResult bool) any {
+	jpath := jsonpath.New("")
+	jpath.EnableJSONOutput(true)
+	pat = fmt.Sprintf("{ %v }", pat)
+	err := jpath.Parse(pat)
+	if err != nil {
+		logPanic(nil, "could not parse the provided JSONPath %q: %v", pat, err)
+	}
+	res, err := jpath.FindResults(data)
+	if err != nil {
+		logPanic(nil, "could not find JSONPath results with pattern %q in data %#v: %v", pat, data, err)
+	}
+
+	if len(res) != 1 {
+		// this should be unreachable since it is hardcoded above only 1 root node (surrounded by {}) in the pattern
+		logPanic(nil, "there should only ever be 1 root node but found %d", len(res))
+	}
+
+	reflectVals := res[0]
+	if oneResult {
+		if len(reflectVals) != 1 {
+			logPanic(nil, "specified 1 result but found %d", len(reflectVals))
+		}
+		return reflectVals[0].Interface()
+	} else {
+		anyVals := make([]any, len(reflectVals))
+		for i, reflectVal := range reflectVals {
+			anyVals[i] = reflectVal.Interface()
+		}
+		return anyVals
+	}
+}
+
+// StringConcat concatenates 2 strings together, with an optional separator.
+//
+// Tags:
+//   - @displayName: Concatenate Strings
+//
+// Parameters
+//   - a (string) the first string
+//   - b (string) the second string
+//   - separator (string) the separator string. If not provided, will be an empty string.
+func StringConcat(a string, b string, separator string) string {
+	return fmt.Sprintf("%v%v%v", a, separator, b)
+}
+
+// StringFormat formats any data as a string.
+//
+// Use this to turn non-string data into a string representation. This uses go's `fmt.Sprintf` under the hood.
+//
+// Tags:
+//   - @displayName: Format data as string
+//
+// Parameters
+//   - data (any): the data to format as a string
+//   - format (string): the format specifier to use. If not provided will default to "%v".
+//     See the [go fmt docs](https://pkg.go.dev/fmt) for details.
+func StringFormat(data any, format string) string {
+	if format == "" {
+		format = "%v"
+	}
+	return fmt.Sprintf(format, data)
 }

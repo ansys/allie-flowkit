@@ -114,19 +114,13 @@ func Initialize(uri string) (funcError error) {
 		}
 	}
 
-	// initialize the schema
-	err = GraphDbDriver.CreateSchema()
-	if err != nil {
-		logging.Log.Errorf(logCtx, "unable to create graph DB schema: %q", err)
-		return err
-	}
-
 	// Log successfull connection
 	logging.Log.Debugf(logCtx, "Initialized graphdb database connection to %v", addr)
 
 	return nil
 }
 
+// Initialize the aali data extraction schema.
 func (graphdb_context *graphDbContext) CreateSchema() error {
 	stmts := []string{
 		`CREATE NODE TABLE IF NOT EXISTS Element(
@@ -693,8 +687,8 @@ func (graphdb_context *graphDbContext) CreateUserGuideSectionRelationships(nodes
 // Returns:
 //   - results: array of map[string]any, keys are determined by the specific cypher query that was passed in
 //   - err: error, if any
-func (graphdb_context *graphDbContext) WriteCypherQuery(query string) ([]map[string]any, error) {
-	return graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, query, nil)
+func (graphdb_context *graphDbContext) WriteCypherQuery(query string, parameters aali_graphdb.Parameters) ([]map[string]any, error) {
+	return graphdb_context.client.CypherQueryWrite(graphdb_context.dbname, query, parameters)
 }
 
 ////////////// Read functions //////////////

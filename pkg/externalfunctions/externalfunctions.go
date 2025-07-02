@@ -51,6 +51,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"GetListCollections":       GetListCollections,
 	"RetrieveDependencies":     RetrieveDependencies,
 	"GeneralGraphDbQuery":      GeneralGraphDbQuery,
+	"AddGraphDbParameter":      AddGraphDbParameter,
 	"GeneralQuery":             GeneralQuery,
 	"SimilaritySearch":         SimilaritySearch,
 	"CreateKeywordsDbFilter":   CreateKeywordsDbFilter,
@@ -96,6 +97,9 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PrintFeedback":          PrintFeedback,
 	"ExtractJSONStringField": ExtractJSONStringField,
 	"GenerateUUID":           GenerateUUID,
+	"JsonPath":               JsonPath,
+	"StringConcat":           StringConcat,
+	"StringFormat":           StringFormat,
 
 	// code generation
 	"LoadCodeGenerationElements":      LoadCodeGenerationElements,
