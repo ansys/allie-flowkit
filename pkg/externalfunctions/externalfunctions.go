@@ -34,6 +34,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"PerformGeneralModelSpecificationRequest":                                        PerformGeneralModelSpecificationRequest,
 	"PerformGeneralRequestSpecificModel":                                             PerformGeneralRequestSpecificModel,
 	"PerformGeneralRequestSpecificModelAndModelOptions":                              PerformGeneralRequestSpecificModelAndModelOptions,
+	"PerformGeneralRequestSpecificModelModelOptionsAndImages":                        PerformGeneralRequestSpecificModelModelOptionsAndImages,
 	"PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput":                PerformGeneralRequestSpecificModelNoStreamWithOpenAiTokenOutput,
 	"PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOutput": PerformGeneralRequestSpecificModelAndModelOptionsNoStreamWithOpenAiTokenOutput,
 	"PerformCodeLLMRequest":                                                          PerformCodeLLMRequest,
@@ -43,6 +44,7 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"BuildFinalQueryForCodeLLMRequest":                                               BuildFinalQueryForCodeLLMRequest,
 	"AppendMessageHistory":                                                           AppendMessageHistory,
 	"ShortenMessageHistory":                                                          ShortenMessageHistory,
+	"CheckTokenLimitReached":                                                         CheckTokenLimitReached,
 
 	// knowledge db
 	"SendVectorsToKnowledgeDB": SendVectorsToKnowledgeDB,
@@ -72,7 +74,8 @@ var ExternalFunctionsMap = map[string]interface{}{
 	"AisReturnIndexList":                             AisReturnIndexList,
 	"AisAcsSemanticHybridSearchs":                    AisAcsSemanticHybridSearchs,
 	"AisChangeAcsResponsesByFactor":                  AisChangeAcsResponsesByFactor,
-	"AisPerformLLMFinalRequest":                      AisPerformLLMFinalRequest,
+	"AecGetContextFromRetrieverModule":               AecGetContextFromRetrieverModule,
+	"AecPerformLLMFinalRequest":                      AecPerformLLMFinalRequest,
 
 	// data extraction
 	"GetGithubFilesToExtract":                    GetGithubFilesToExtract,

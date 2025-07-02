@@ -23,12 +23,16 @@
 package externalfunctions
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ansys/aali-sharedtypes/pkg/config"
 	"github.com/ansys/aali-sharedtypes/pkg/logging"
@@ -780,10 +784,111 @@ func AisChangeAcsResponsesByFactor(factors map[string]float64, semanticSearchOut
 	return semanticSearchOutput
 }
 
-// AisPerformLLMFinalRequest performs a final request to LLM
+// AecGetContextFromRetrieverModule retrieves context from the Ansys GPT Retriever Module
 //
 // Tags:
-//   - @displayName: AIS Final Request
+//   - @displayName: AEC Get Context from Retriever Module
+//
+// Parameters:
+//   - retrieverModuleEndpoint: the endpoint of the retriever module
+//   - userQuery: the user query
+//   - dataSources: the data sources
+//   - physics: the physics
+//   - topK: the number of results to be returned
+//   - plattform: the platform
+//   - retrieverModuleKey: the key for the retriever module
+//
+// Returns:
+//   - context: the context retrieved from the retriever module
+func AecGetContextFromRetrieverModule(
+	retrieverModuleEndpoint string,
+	userQuery string,
+	dataSources []string,
+	physics []string,
+	topK int,
+	plattform string,
+	retrieverModuleKey string) (context []sharedtypes.AnsysGPTRetrieverModuleChunk) {
+
+	// Prepare properties
+	if len(physics) == 0 {
+		physics = []string{"None"}
+	}
+	physicsString := strings.Join(physics, ", ")
+	dataSourceString := strings.Join(dataSources, ", ")
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// Create the request body
+	body := AnsysGPTRetrieverModuleRequest{
+		UserInput:     userQuery,
+		DataSource:    dataSourceString,
+		FilterPhysics: physicsString,
+		NumDocs:       topK,
+		Platform:      plattform,
+	}
+
+	// Marshal the request body to JSON
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		panic(fmt.Errorf("error marshalling request body: %v", err))
+	}
+
+	// Create a new HTTP request
+	request, err := http.NewRequest("POST", retrieverModuleEndpoint, bytes.NewBuffer(jsonBody))
+	if err != nil {
+		panic(fmt.Errorf("error creating request: %v", err))
+	}
+
+	// Set headers
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("RM-key", retrieverModuleKey)
+
+	// Create an HTTP client and make the request
+	resp, err := client.Do(request)
+	if err != nil {
+		panic(fmt.Errorf("error making request: %v", err))
+	}
+	defer resp.Body.Close()
+
+	// Check the response status
+	if resp.StatusCode != 200 {
+		panic(fmt.Errorf("error response from retriever module: %v", resp.Status))
+	}
+
+	// Parse the response
+	response := map[string]sharedtypes.AnsysGPTRetrieverModuleChunk{}
+	err = json.NewDecoder(resp.Body).Decode(&response)
+	if err != nil {
+		panic(fmt.Errorf("error decoding response: %v", err))
+	}
+	logging.Log.Debugf(&logging.ContextMap{}, "Received response from retriever module: %v", response)
+
+	// Extract the context from the response
+	context = make([]sharedtypes.AnsysGPTRetrieverModuleChunk, len(response))
+	for chunkNum, chunk := range response {
+		// Extract int from chunkNum
+		_, chunkNumstring, found := strings.Cut(chunkNum, "chunk ")
+		if !found {
+			panic(fmt.Errorf("error extracting chunk number from '%v'", chunkNum))
+		}
+		chunkNumInt, err := strconv.Atoi(chunkNumstring)
+		if err != nil {
+			panic(fmt.Errorf("error converting chunk number to int: %v", err))
+		}
+		// Store the chunk in the context slice
+		context[chunkNumInt-1] = chunk
+	}
+
+	return context
+}
+
+// AecPerformLLMFinalRequest performs a final request to LLM
+//
+// Tags:
+//   - @displayName: AEC Final Request
 //
 // Parameters:
 //   - systemTemplate: the system template for the final request
@@ -796,11 +901,11 @@ func AisChangeAcsResponsesByFactor(factors map[string]float64, semanticSearchOut
 //
 // Returns:
 //   - stream: the stream channel
-func AisPerformLLMFinalRequest(systemTemplate string,
+func AecPerformLLMFinalRequest(systemTemplate string,
 	userTemplate string,
 	query string,
 	history []sharedtypes.HistoricMessage,
-	context []sharedtypes.ACSSearchResponse,
+	context []sharedtypes.AnsysGPTRetrieverModuleChunk,
 	prohibitedWords []string,
 	errorList1 []string,
 	errorList2 []string,
