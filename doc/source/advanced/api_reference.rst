@@ -43,6 +43,5 @@ API Reference
            RunStream   func(context.Context, *Request, ServerStream) error
          }
 
-      All functions must implement the `Run` handler.  
+      All functions must implement the `Run` handler.
       If `Stream` is `true`, then `RunStream` should also be defined.
-

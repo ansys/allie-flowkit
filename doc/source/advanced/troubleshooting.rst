@@ -1,6 +1,6 @@
 .. _troubleshooting:
 
-Common Issues 
+Common Issues
 =============
 
 .. grid:: 1
