@@ -1,13 +1,17 @@
-name: Deploy Docs
+name: Build and Deploy FlowKit Docs
 
 on:
   push:
     branches:
-      - main
       - docs
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,21 +24,29 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        working-directory: docs
         run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install --upgrade pip
+          pip install sphinx sphinx-copybutton sphinx_design sphinx_external_toc ansys-sphinx-theme myst-parser
 
-      - name: Build Sphinx documentation
-        working-directory: docs
+      - name: Clean previous build
+        run: rm -rf doc/_build/html
+
+      - name: Build documentation
+        run: sphinx-build -b html doc/source doc/_build/html
+
+      - name: Confirm built content
         run: |
-          source .venv/bin/activate
-          sphinx-build -b html source _build/html
+          echo "::group::Built Files"
+          ls -la doc/_build/html
+          echo "::endgroup::"
+          echo "::group::index.html Preview"
+          head -n 30 doc/_build/html/index.html || true
+          echo "::endgroup::"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/_build/html
+          publish_branch: gh-pages
+          publish_dir: doc/_build/html
+          force_orphan: true
