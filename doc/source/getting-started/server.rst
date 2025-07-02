@@ -3,7 +3,7 @@
 Flowkit GRPC Server
 ===========================
 
-This guide explains how to run the Flowkit GRPC server and verify that it's operational for handling external function requests.
+ This guide explains how to run the Flowkit GRPC server and verify that it's operational for handling external function requests.
 
 .. grid:: 1
    :gutter: 2

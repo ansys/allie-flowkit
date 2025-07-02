@@ -4,7 +4,7 @@
 Getting Started
 ===============
 
-This section explains how to install and run Aali Flowkit locally.
+ This section explains how to install and run AALI Flowkit locally.
 
 .. grid:: 2
    :gutter: 2
