@@ -1410,6 +1410,12 @@ func GetActionsFromConfig(toolName string) (result string) {
 			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL15",
 			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_3",
 		},
+		"tool18": {
+			"resultName":    "APP_TOOL18_RESULT_NAME",
+			"resultMessage": "APP_TOOL18_RESULT_MESSAGE",
+			"actionValue1":  "APP_ACTIONS_VALUE_1_TOOL18",
+			"actionValue2":  "APP_TOOL_ACTIONS_TARGET_1",
+		},
 	}
 
 	// Help function to get the config value
@@ -1428,12 +1434,14 @@ func GetActionsFromConfig(toolName string) (result string) {
 	tool11ResultName := getConfigValue(configKeys["tool11"]["resultName"], "failed to load tool 11 result name from the configuration")
 	tool12ResultName := getConfigValue(configKeys["tool12"]["resultName"], "failed to load tool 12 result name from the configuration")
 	tool15ResultName := getConfigValue(configKeys["tool15"]["resultName"], "failed to load tool 15 result name from the configuration")
+	tool18ResultName := getConfigValue(configKeys["tool18"]["resultName"], "failed to load tool 18 result name from the configuration")
 
 	// Get tool result message from the configuration
 	tool9ResultMessage := getConfigValue(configKeys["tool9"]["resultMessage"], "failed to load tool 9 result message from the configuration")
 	tool11ResultMessage := getConfigValue(configKeys["tool11"]["resultMessage"], "failed to load tool 11 result message from the configuration")
 	tool12ResultMessage := getConfigValue(configKeys["tool12"]["resultMessage"], "failed to load tool 12 result message from the configuration")
 	tool15ResultMessage := getConfigValue(configKeys["tool15"]["resultMessage"], "failed to load tool 15 result message from the configuration")
+	tool18ResultMessage := getConfigValue(configKeys["tool18"]["resultMessage"], "failed to load tool 18 result message from the configuration")
 
 	// Get tool action success message from configuration
 	toolActionSuccessMessage := getConfigValue("APP_TOOL_ACTION_SUCCESS_MESSAGE", "failed to load tool action success message from the configuration")
@@ -1460,6 +1468,10 @@ func GetActionsFromConfig(toolName string) (result string) {
 		actionValue1 = getConfigValue(configKeys["tool15"]["actionValue1"], "failed to load tool 15 action value 1 from the configuration")
 		actionValue2 = getConfigValue(configKeys["tool15"]["actionValue2"], "failed to load tool 15 action value 2 from the configuration")
 		selectedMessage = tool15ResultMessage
+	} else if toolName == tool18ResultName {
+		actionValue1 = getConfigValue(configKeys["tool18"]["actionValue1"], "failed to load tool 18 action value 1 from the configuration")
+		actionValue2 = getConfigValue(configKeys["tool18"]["actionValue2"], "failed to load tool 18 action value 2 from the configuration")
+		selectedMessage = tool18ResultMessage
 	} else {
 		errorMessage := fmt.Sprintf("Invalid toolName %s", toolName)
 		logging.Log.Error(ctx, errorMessage)
@@ -1467,7 +1479,7 @@ func GetActionsFromConfig(toolName string) (result string) {
 	}
 
 	message := toolActionSuccessMessage
-	if toolName == tool9ResultName || toolName == tool11ResultName || toolName == tool12ResultName || toolName == tool15ResultName {
+	if toolName == tool9ResultName || toolName == tool11ResultName || toolName == tool12ResultName || toolName == tool15ResultName || toolName == tool18ResultName {
 		message = selectedMessage
 		actions := []map[string]string{
 			{
