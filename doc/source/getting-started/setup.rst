@@ -3,6 +3,8 @@
 Setup
 =====
 
+This section explains how to install, build, and run the Flowkit GRPC server, and how to connect to it from the AALI Agent.
+
 .. grid:: 1
    :gutter: 2
 
@@ -17,7 +19,7 @@ Setup
          git clone https://github.com/your-org/aali-flowkit.git
          cd aali-flowkit
 
-      You can now build the Go binary:
+      Then build the Go binary:
 
       .. code-block:: bash
 
@@ -27,19 +29,19 @@ Setup
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Start the GRPC server by running the built binary:
+      Start the GRPC server by executing the built binary:
 
       .. code-block:: bash
 
          ./flowkit
 
-      The server will listen on port `50051` by default.
+      By default, the server listens on port `50051`.
 
    .. grid-item-card:: Agent Connection
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Once running, Flowkit accepts GRPC requests from the AALI Agent or any other GRPC client.
+      Once running, Flowkit accepts GRPC requests from the AALI Agent or any other GRPC-compatible client.
 
-      - Requests should specify the function name and input parameters
-      - The response will contain the result or a stream of messages
+      - Ensure the function name and input parameters match expected definitions
+      - The server will respond with a result or a streamed set of messages

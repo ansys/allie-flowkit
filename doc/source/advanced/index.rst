@@ -24,14 +24,6 @@ Architectural features, extensibility patterns, and tools available in the Flowk
 
       Shared `.proto` files and service contracts used across AALI.
 
-   .. grid-item-card:: :material-regular:`integration_instructions;32px` Agent Integration Details
-      :link: integration
-      :link-type: doc
-      :text-align: center
-      :class-card: sd-shadow-sm sd-rounded-md
-
-      Technical breakdown of how agents communicate with Flowkit.
-
 .. grid:: 2
    :gutter: 2
    :margin: 2 0 0 0
