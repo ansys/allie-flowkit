@@ -5,7 +5,7 @@ Advanced Topics
 
 Architectural features, extensibility patterns, and tools available in the Flowkit.
 
-.. grid:: 3
+.. grid:: 2
    :gutter: 2
 
    .. grid-item-card:: :material-regular:`hub;32px` GRPC Server & API
