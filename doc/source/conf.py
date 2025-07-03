@@ -43,7 +43,6 @@ extensions = [
 html_theme = "ansys_sphinx_theme"
 
 external_toc_path = "_toc.yml"
-external_toc_exclude_missing = False
 
 
 html_css_files = ["https://fonts.googleapis.com/icon?family=Material+Icons"]
