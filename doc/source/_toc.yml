@@ -23,6 +23,5 @@ entries:
     entries:
       - file: advanced/grpc
       - file: advanced/protofiles
-      - file: advanced/integration
       - file: advanced/api_reference
       - file: advanced/troubleshooting

@@ -10,28 +10,30 @@ GRPC Server & API
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Flowkit exposes a GRPC service with three core methods:
+      Flowkit exposes a GRPC service for external function execution:
 
-      - `ListFunctions` — Returns metadata about all registered functions
-      - `RunFunction` — Executes a standard function and returns the result
-      - `StreamFunction` — Executes a stream-capable function and returns a streaming response
+      - ``CallFunction`` — Executes a function and returns a single response.
+      - ``CallFunctionStream`` — Executes a stream-capable function and returns a streaming response.
+      - ``ListFunctions`` — Returns metadata about all registered functions.
 
-      These methods are used internally by the Agent, but can also be accessed by other tools.
+      These methods are available to the AALI Agent and any GRPC-compatible client.
 
    .. grid-item-card:: Proto Contract
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      The GRPC service is defined in shared `.proto` files in the `aali-sharedtypes` repo.
+      The GRPC service and message formats are defined in the ``proto/externalfunctions.proto`` file, shared via the ``aali-sharedtypes`` repository.
 
-      Example:
+      Example service definition:
 
       .. code-block:: proto
 
-         service Flowkit {
-           rpc RunFunction(FunctionRequest) returns (FunctionResponse);
-           rpc StreamFunction(FunctionRequest) returns (stream FunctionResponse);
-           rpc ListFunctions(Empty) returns (FunctionList);
+         service ExternalFunctionService {
+           rpc CallFunction (FunctionCallRequest) returns (FunctionCallResponse);
+           rpc CallFunctionStream (FunctionCallRequest) returns (stream FunctionCallResponse);
+           rpc ListFunctions (Empty) returns (FunctionList);
          }
 
-      These proto definitions are shared across Flowkit and Agent.
+      Request and response messages include fields for the function name, input arguments, outputs, and errors.
+
+      These proto definitions are shared by both Flowkit and the AALI Agent.

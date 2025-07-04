@@ -3,6 +3,8 @@
 Execution Context
 =================
 
+This section describes the environment and conventions when writing functions for Flowkit, including the context object, parameter handling, and state management best practices.
+
 .. grid:: 1
    :gutter: 2
 
@@ -10,32 +12,65 @@ Execution Context
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Every function in Flowkit receives a `context.Context` object when executed. This object provides:
+      Every function in Flowkit receives a `context.Context` object as the first parameter.
+      This object provides:
 
-      - Cancellation propagation
-      - Deadlines and timeouts
-      - Request-scoped values
+      - Cancellation propagation (for timeouts or aborted workflows)
+      - Deadlines and timeouts (set upstream)
+      - Request-scoped values and metadata
 
-      Use it to enforce execution limits or access scoped metadata.
+      Use the context object to:
+      - Enforce execution limits
+      - Access request metadata (e.g., user/session) if needed
 
-   .. grid-item-card:: Input / Output Handling
+      Example usage:
+
+      .. code-block:: go
+
+         func MyFunction(ctx context.Context, input string) (output string, err error) {
+             select {
+             case <-ctx.Done():
+                 return "", ctx.Err()
+             default:
+                 // Your logic here
+             }
+         }
+
+   .. grid-item-card:: Input and Output Handling
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Functions receive input in the form of a generic `map[string]interface{}`.
+      Functions in Flowkit define **typed arguments** (not just `map[string]interface{}`):
 
-      - Input data is passed as a JSON-compatible object
-      - Output is returned using the same format
-      - Intermediate state can be stored in logs or custom fields
+      .. code-block:: go
 
-   .. grid-item-card:: Shared State (Optional)
+         func TransformData(dataform string, depth int) (transformed string, err error)
+
+      When invoked over GRPC, the input arguments are mapped from the request message fields, and the outputs are returned as response fields.
+
+      - Input and output values should be **JSON-serializable** when needed (for interoperability)
+      - See `pkg/externalfunctions/externalfunctions.go` and the proto definitions for details.
+
+      Logs and debug output can be returned as part of the response if desired.
+
+   .. grid-item-card:: State and Session Context
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      Although Flowkit doesn't persist memory across calls by default, function authors can implement stateful logic using:
+      By default, each function call is **stateless and idempotent**.
+      Flowkit does not persist in-memory state across calls.
 
-      - In-memory stores (for dev/debug)
-      - External databases or cache systems
-      - Streamed outputs for partial state updates
+      To manage state or share data across workflow steps:
+      - Use input/output variables via the GRPC maps (see :ref:`Exposed Variables <exposed_variables>`)
+      - For more advanced use cases, connect to external databases, caches, or file systems.
 
-      Best practice: treat each function call as **idempotent** and stateless unless necessary.
+      **Best Practice:**
+      Treat each function as independent and stateless unless explicit session context is required.
+
+   .. grid-item-card:: More Information
+      :class-card: sd-shadow-sm sd-rounded-md
+      :text-align: left
+
+      - See `proto/externalfunctions.proto` for message details
+      - For input/output conventions, review sample functions in `pkg/externalfunctions/`
+      - For workflow session context, see :ref:`Exposed Variables <exposed_variables>`

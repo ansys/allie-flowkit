@@ -3,48 +3,59 @@
 Function Registration
 =====================
 
+This section explains how to add and register new functions in Flowkit so they are available for external calls via the GRPC API.
+
 .. grid:: 1
    :gutter: 2
 
-   .. grid-item-card:: Registering Functions in Flowkit
+   .. grid-item-card:: Adding a New Function
       :class-card: sd-shadow-sm sd-rounded-md
       :text-align: left
 
-      In Flowkit, functions are modular units of logic that must be registered before they can be called over GRPC. Each function is stored in a shared registry with a unique name and optional metadata.
+      To expose a new function in Flowkit:
 
-      **How it works:**
+      1. **Define your function** in the appropriate package inside `pkg/externalfunctions/`.
+      2. **Include a `displayName` tag** in the comments for UI integration.
 
-      - Functions are registered at startup using `flowkit.RegisterFunction(...)`
-      - Each function has a name, description, and implementation logic
-      - Optionally, a function can support streaming results
-
-      The function must follow this signature:
+      Example:
 
       .. code-block:: go
 
-         func(ctx context.Context, req *Request) (*Response, error)
+         // File: aali-flowkit/pkg/externalfunctions/data_extraction.go
 
-      Example registration:
+         // TransformData processes input data and returns a transformed result.
+         // Tags:
+         //   - @displayName: Transform the Data
+         func TransformData(dataform string, depth int) (transformed string, err error) {
+             // Implementation
+             return "transformed_data", nil
+         }
+
+   .. grid-item-card:: Register the Function in the Registry
+      :class-card: sd-shadow-sm sd-rounded-md
+      :text-align: left
+
+      Register the function in `pkg/externalfunctions/externalfunctions.go` by adding it to the `ExternalFunctionsMap`:
 
       .. code-block:: go
 
-         flowkit.RegisterFunction("add", &Function{
-             Name: "add",
-             Description: "Adds two integers",
-             Run: func(ctx context.Context, req *Request) (*Response, error) {
-                 // Implementation here...
-             },
-         })
+         var ExternalFunctionsMap = map[string]interface{}{
+             // Existing functions...
+             "TransformData": TransformData, // Add your function here
+         }
 
-      To register a streaming function:
+      The key is the function name (as called from the agent), and the value is the Go function.
 
-      .. code-block:: go
+      **Note:**
+      All functions must be registered here to be available via GRPC.
 
-         flowkit.RegisterFunction("streamLogs", &Function{
-             Name:   "streamLogs",
-             Stream: true,
-             Description: "Streams log output line by line",
-             RunStream: func(ctx context.Context, req *Request, stream ServerStream) error {
-                 // Stream logic...
-             },
-         })
+   .. grid-item-card:: Function Signature Requirements
+      :class-card: sd-shadow-sm sd-rounded-md
+      :text-align: left
+
+      All registered functions must use standard Go signatures (see examples in `externalfunctions/`).
+
+      For advanced features like streaming responses, consult the proto definition and core implementation. Most functions are single-response by default.
+
+      For more details, see the main README section:
+      **Adding New Functions, Types, and Categories**
